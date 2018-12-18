@@ -28,7 +28,7 @@ PIN = 6666
 
 APPNAME = "Cardano ADA"
 APP_LOAD_PARAMS =--appFlags 0 --curve ed25519 --path "44'/1815'"
-APP_LOAD_PARAMS += --rootPrivateKey $(SIGNKEY) $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
 APPVERSION_M=0
 APPVERSION_N=1
 APPVERSION_P=2
@@ -95,8 +95,7 @@ deploy:
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
 
 load: build
-	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
+	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
 
 test: build-test
 	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig

@@ -26,25 +26,25 @@
 
 
 
-  enum blake2b_constant
+  enum x_blake2b_constant
   {
-    BLAKE2B_BLOCKBYTES = 128,
-    BLAKE2B_OUTBYTES   = 64,
-    BLAKE2B_KEYBYTES   = 64,
-    BLAKE2B_SALTBYTES  = 16,
-    BLAKE2B_PERSONALBYTES = 16
+    X_BLAKE2B_BLOCKBYTES = 128,
+    X_BLAKE2B_OUTBYTES   = 64,
+    X_BLAKE2B_KEYBYTES   = 64,
+    X_BLAKE2B_SALTBYTES  = 16,
+    X_BLAKE2B_PERSONALBYTES = 16
   };
 
-  typedef struct blake2b_state__
+  typedef struct x_blake2b_state__
   {
     uint64_t h[8];
     uint64_t t[2];
     uint64_t f[2];
-    uint8_t  buf[BLAKE2B_BLOCKBYTES];
+    uint8_t  buf[X_BLAKE2B_BLOCKBYTES];
     size_t   buflen;
     size_t   outlen;
     uint8_t  last_node;
-  } blake2b_state;
+  } x_blake2b_state;
 
   BLAKE2_PACKED(struct blake2b_param__
   {
@@ -58,8 +58,8 @@
     uint8_t  node_depth;    /* 17 */
     uint8_t  inner_length;  /* 18 */
     uint8_t  reserved[14];  /* 32 */
-    uint8_t  salt[BLAKE2B_SALTBYTES]; /* 48 */
-    uint8_t  personal[BLAKE2B_PERSONALBYTES];  /* 64 */
+    uint8_t  salt[X_BLAKE2B_SALTBYTES]; /* 48 */
+    uint8_t  personal[X_BLAKE2B_PERSONALBYTES];  /* 64 */
   });
 
   typedef struct blake2b_param__ blake2b_param;
@@ -67,14 +67,14 @@
 
   /* Padded structs result in a compile-time error */
   enum {
-    BLAKE2_DUMMY_2 = 1/(sizeof(blake2b_param) == BLAKE2B_OUTBYTES)
+    BLAKE2_DUMMY_2 = 1/(sizeof(blake2b_param) == X_BLAKE2B_OUTBYTES)
   };
 
-  int blake2b_init( blake2b_state *S, size_t outlen );
-  int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t keylen );
-  int blake2b_init_param( blake2b_state *S, const blake2b_param *P );
-  int blake2b_update( blake2b_state *S, const void *in, size_t inlen );
-  int blake2b_final( blake2b_state *S, void *out, size_t outlen );
+  int blake2b_init( x_blake2b_state *S, size_t outlen );
+  int blake2b_init_key( x_blake2b_state *S, size_t outlen, const void *key, size_t keylen );
+  int blake2b_init_param( x_blake2b_state *S, const blake2b_param *P );
+  int blake2b_update( x_blake2b_state *S, const void *in, size_t inlen );
+  int blake2b_final( x_blake2b_state *S, void *out, size_t outlen );
 
   /* Simple API */
   int blake2b( void *out, size_t outlen, const void *in, size_t inlen, const void *key, size_t keylen );
