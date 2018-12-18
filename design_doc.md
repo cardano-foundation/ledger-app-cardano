@@ -163,7 +163,11 @@ TODO: design streaming protocol for this call
 
 **Ledger responsibilities**
 
-**Ledger transaction parsing**
+**Ledger transaction parsing (pseudocode)**
+
+- token refers to CBOR token under the cursor. Note that token is variable-length in CBOR and therefore the application should wait for more date if it cannot fully determine the current token
+- consume token moves cursor to the next token
+- parse functions parse data structure and move cursor to the next token after the data structure
 
 ```Python
 parseTransaction():
