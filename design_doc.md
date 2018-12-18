@@ -130,3 +130,4 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 - respond with public key
 - if `P1 == 1`
   - display public key to the user
+  - do not perform APDU processing until user closes the public key screen
