@@ -8,22 +8,31 @@ Each "logical" call consists of a series of APDU exchanges where APDU is in the 
 ### Command
 
 
-|field   |CLA|INS|P1 |P2 |Lc |Data|
-|--------|---|---|---|---|---|----|
-|size (B)| 1 | 1 | 1 | 1 | 1 |var |
+|field   |CLA|INS|P1 |P2 |Lc |Data| Le |
+|--------|---|---|---|---|---|----|----|
+|**size (B)**| 1 | 1 | 1 | 1 | 1 |variable |  0 |
 
 
 Where
-- CLA is ????
-- INS is the instruction number
-- P1 and P2 are instruction parameters
-- Lc is length of the data body
+- `CLA` is ????
+- `INS` is the instruction number
+- `P1` and `P2` are instruction parameters
+- `Lc` is length of the data body. Note: unlike standard APDU, `ledger.js` produces `Lc` of exactly 1 byte (even for empty data). Data of length >= 256 are not supported
 - Data is binary data
-
+- `Le` is max length of response. This APDU field is **not** present in ledger.js protocol
 
 ### Response
 
-???
+Generally the response looks like this:
+
+|field| response data| SW1 | SW2 |
+|-----|---|----|----|
+|**size (B)**| variable | 1 | 1 |
+
+where `SW1 SW2` represents return code.
+In general
+- 0x90 00 = OK
+- TBD
 
 
 
@@ -43,7 +52,6 @@ Could be called at any time
 | P1 | unused |
 | P2 | unused |
 | Lc | 0 |
-| Le | ? |
 
 **Response**
 
@@ -85,7 +93,6 @@ Could be called at any time. (TBD: potentially we could require user consent for
 | P1 | Display address after response. 0 - do not display, 1 - display|
 | P2 | unused |
 | Lc | variable |
-| Le | ? |
 
 **Data**
 
@@ -131,3 +138,118 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 - if `P1 == 1`
   - display public key to the user
   - do not perform APDU processing until user closes the public key screen
+
+## DeriveAddress
+
+Derive v2 address for a given BIP32 path, return and show it to the user for confirmation
+
+## GetTrustedInput
+
+**Description**
+
+When signing transactions, UTxOs given as transaction inputs are not to be trusted. This is because the current Cardano signing protocol does not check UTxO amount. This results in a possible class of attacks where attackers lie to Ledger about UTxO value, potentially leading it to assume there is less money on the input and thus forcing user to unknowingly "trash" coins as fee. (Note: instead of explicit attacker the threat model is also bad transaction parsing on the client side, especially in JavaScript). To avoid such issues, Ledger implementation of Cardano requires each transaction input to be verified before signing a transaction.
+
+**Command**
+
+|Field|Value|
+|-----|-----|
+| CLA | TBD |
+| INS | TBD |
+| P1 | frame |
+| P2 | unused |
+| Lc | variable |
+
+TODO: design streaming protocol for this call
+
+**Ledger responsibilities**
+
+**Ledger transaction parsing**
+
+```Python
+parseTransaction():
+  assert token == array(3)
+  consume token
+  {# 1
+    parseInputs()
+  }
+  {# 2
+    parseOutputs()
+  }
+  {# 3
+    parseMetadata()
+  }
+  assert EOF
+  
+parseInputs():
+  assert token == array(*)
+  consume token
+  {
+    while token == array(2)
+      parseInput()
+  }
+  assert token == end array(*)
+  consume token
+  
+
+parseInput():
+  assert token == array(2)
+  consume token
+  {# type
+    assert token == unsigned(0)
+    consume token
+  }
+  { # encoded address
+    assert token == tag(24)
+    consume token
+    { # address. WARNING: We do not parse & verify address
+      assert token = bytes (len)
+      consume token
+      consume len
+    }
+  }
+  
+parseOutputs()
+  assert token == array(*)
+  consume token
+  {
+    while token == array(2):
+      parseOutput()
+  }
+  assert token == end array(*)
+  consume token
+  
+
+parseRawAddress()
+  assert token == array(2)
+  consume token
+  { # address
+    assert token == tag(24)
+    consume token
+    { # address. WARNING: We do not parse & verify address
+      assert token == bytes (len)
+      consume token
+      consume len
+    }
+  }
+  { # checksum
+    assert token = unsigned(var-len)
+    consume token-var-len
+  }
+  
+parseOutput()
+  assert token == array(2)
+  consume token
+  { #base58-decoded (i.e. raw) address
+    parseRawAddress()
+  }
+  { # coins
+    assert token == unsigned(var-len)
+    consume token-var-len
+  }
+```  
+
+
+## SignTransaction
+
+Given trusted transaction inputs and transaction outputs (addresses + amounts), construct and sign transaction.
+TODO: design streaming protocol for this call
