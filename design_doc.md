@@ -14,12 +14,20 @@ Each "logical" call consists of a series of APDU exchanges where APDU is in the 
 
 
 Where
-- `CLA` is ????
+- `CLA` is ❓
 - `INS` is the instruction number
 - `P1` and `P2` are instruction parameters
 - `Lc` is length of the data body. Note: unlike standard APDU, `ledger.js` produces `Lc` of exactly 1 byte (even for empty data). Data of length >= 256 are not supported
 - Data is binary data
 - `Le` is max length of response. This APDU field is **not** present in ledger.js protocol
+
+**Ledger responsibilities**
+
+Upon receiving general APDU, Ledger should check
+- `rx` size >= 5 (have all required APDU fields)
+- `CLA` is CLA of cardano app
+- `INS` is known instruction
+- `Lc` is consistent with `rx`, i.e. `Lc + 5 == rx`
 
 ### Response
 
@@ -31,8 +39,8 @@ Generally the response looks like this:
 
 where `SW1 SW2` represents return code.
 In general
-- 0x90 00 = OK
-- TBD
+- 0x9000 = OK
+- ❓ other codes
 
 
 
@@ -47,8 +55,8 @@ Could be called at any time
 
 |Field|Value|
 |-----|-----|
-| CLA | TBD |
-| INS | TBD |
+| CLA | ❓ |
+| INS | ❓ |
 | P1 | unused |
 | P2 | unused |
 | Lc | 0 |
@@ -66,7 +74,7 @@ Tuple [`major`, `minor`, `patch`] represents app version.
 
 **Error codes**
 - 0x9000 OK
-- TBD
+- ❓ other codes
 
 
 **Ledger responsibilities**
@@ -81,16 +89,18 @@ Tuple [`major`, `minor`, `patch`] represents app version.
 ## GetExtendedPublicKey call
 
 **Description**
-Get public key for a BIP path
-Could be called at any time. (TBD: potentially we could require user consent for this operation. This would result in reduced UX though)
+
+Get public key for a BIP path.
+
+Could be called at any time. 
 
 **Command**
 
 |Field|Value|
 |-----|-----|
-| CLA | TBD |
-| INS | TBD |
-| P1 | Display address after response. 0 - do not display, 1 - display|
+| CLA | ❓ |
+| INS | ❓ |
+| P1 | unused |
 | P2 | unused |
 | Lc | variable |
 
@@ -117,7 +127,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 **Errors (SW codes)**
 
 - 0x9000 OK
-- TBD
+- ❓ other codes
 
 **Ledger responsibilities**
 
@@ -130,18 +140,22 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
     - `Lc >= 1` (we have path_len)
     - `path_len * 4 == Lc`
   - check derivatoin path is valid
-    - `path_len >= 2`
+    - `path_len >= 3`
     - `path[0] == 44'` (' means hardened)
     - `path[1] == 1815'`
+    - `path[2] is hardened` (`path[2]` is account number)
 - calculate public key
 - respond with public key
 - if `P1 == 1`
   - display public key to the user
   - do not perform APDU processing until user closes the public key screen
+- TBD: ❓Should we also support token validation?
+- TBD: ❓Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host?
+- TBD: ❓Should there be an option to show the public key on display? Is it useful in any way?
 
 ## DeriveAddress
 
-Derive v2 address for a given BIP32 path, return and show it to the user for confirmation
+Derive v2 address for a given BIP32 path, return and show it to the user for confirmation. TODO: ❓spec
 
 ## GetTrustedInput
 
@@ -157,8 +171,8 @@ When signing transactions, UTxOs given as transaction inputs are not to be trust
 
 |Field|Value|
 |-----|-----|
-| CLA | TBD |
-| INS | TBD |
+| CLA | ❓ |
+| INS | ❓ |
 | P1 | frame |
 | P2 | unused |
 | Lc | variable |
@@ -166,6 +180,20 @@ When signing transactions, UTxOs given as transaction inputs are not to be trust
 TODO: design streaming protocol for this call
 
 **Ledger responsibilities**
+
+- Validate transaction while parsing it
+- Check that transaction contains given input number
+- Extract amount of given input
+- Sign (using app session key generated at app start) tuple `(TxHash, InputNumber, Amount)` and return the tuple together with the signature
+
+**Ledger transaction parsing compatibility**
+
+For security reasons, we decided that transaction parsing should *not* be future-compatible. This stems from 2 practical considerations:
+
+1) It is easier to audit code that asserts certain rigid parts of the transaction structure instead of code which would be able to transparently "skip" unknown parts
+2) While very unlikely, it might be possible that transaction metadata in the future would change the meaning of parsed amount. An extreme example would be metadata changing amount unit from lovelace to ADA but subtler semantic changes are also possible.
+
+For these two reasons, we believe it is safer for Ledger to reject unknown version of transaction encoding and force user to upgrade the App version to one which also implements the new schema.
 
 **Ledger transaction parsing (pseudocode)**
 
