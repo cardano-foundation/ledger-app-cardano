@@ -14,4 +14,9 @@
 
 #define SW_ASSERT         0x4700
 
+
+#define SW_MALFORMED_REQUEST  0x6E01
+#define SW_BAD_CLA            0x6E02
+#define SW_UNKNOWN_INS        0x6E03
+
 #endif
