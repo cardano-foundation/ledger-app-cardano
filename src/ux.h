@@ -1,3 +1,6 @@
+#ifndef H_CARDANO_APP_UX
+#define H_CARDANO_APP_UX
+
 #include <stdint.h>
 #include "getVersion.h"
 
@@ -26,8 +29,4 @@ extern ux_state_t ux;
 // when they finish.
 void ui_idle(void);
 
-// io_exchange_with_code is a helper function for sending APDUs, primarily
-// from button handlers. It appends code to G_io_apdu_buffer and calls
-// io_exchange with the IO_RETURN_AFTER_TX flag. tx is the current offset
-// within G_io_apdu_buffer (before the code is appended).
-void io_exchange_with_code(uint16_t code, uint16_t tx);
+#endif
