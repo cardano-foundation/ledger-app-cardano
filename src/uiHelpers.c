@@ -44,9 +44,6 @@ void update_display_content()
 	        "memory corruption"
 	);
 	checkOrFail(
-	        displayState.scrollIndex >= 0,
-	        "bad scroll index");
-	checkOrFail(
 	        displayState.scrollIndex + DISPLAY_TEXT_LEN < sizeof(displayState.fullText),
 	        "bad scroll index");
 	os_memmove(displayState.currentText, displayState.fullText + displayState.scrollIndex, DISPLAY_TEXT_LEN);

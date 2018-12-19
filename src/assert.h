@@ -11,4 +11,6 @@
 // naming conflicts with assert
 extern void checkOrFail(int cond, const char* msg);
 
+#define CHECK_OR_FAIL(cond, msg) checkOrFail(cond, msg)
+
 #endif
