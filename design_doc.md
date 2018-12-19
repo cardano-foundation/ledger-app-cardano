@@ -147,7 +147,11 @@ Derive v2 address for a given BIP32 path, return and show it to the user for con
 
 **Description**
 
-When signing transactions, UTxOs given as transaction inputs are not to be trusted. This is because the current Cardano signing protocol does not check UTxO amount. This results in a possible class of attacks where attackers lie to Ledger about UTxO value, potentially leading it to assume there is less money on the input and thus forcing user to unknowingly "trash" coins as fee. (Note: instead of explicit attacker the threat model is also bad transaction parsing on the client side, especially in JavaScript). To avoid such issues, Ledger implementation of Cardano requires each transaction input to be verified before signing a transaction.
+The purpose of this call is to return and attest amount for a given UTxO.
+
+**Background**
+
+When signing transactions, UTxOs given as transaction inputs are not to be trusted. This is because the current Cardano signing protocol does not check the UTxO amount. This results in a possible class of attacks where attackers lie to Ledger about UTxO value, potentially leading it to assume there is less money on the input and thus forcing user to unknowingly "trash" coins as fee. (Note: instead of an explicit attacker this threat model also includes bad transaction parsing on the client side, especially in JavaScript where `ADA_MAX_SUPPLY` does not fit into native `number` type). To avoid such issues, Ledger implementation of Cardano requires each transaction input to be verified before signing a transaction.
 
 **Command**
 
@@ -165,8 +169,8 @@ TODO: design streaming protocol for this call
 
 **Ledger transaction parsing (pseudocode)**
 
-- token refers to CBOR token under the cursor. Note that token is variable-length in CBOR and therefore the application should wait for more date if it cannot fully determine the current token
-- consume token moves cursor to the next token
+- token refers to CBOR token under the cursor. Note that token is variable-length in CBOR and therefore the application should wait for more data if it cannot fully determine the current token
+- consume token moves cursor to the next token. Note that a special care must be done with consuming long byte-streams as we might need to consume several data frames
 - parse functions parse data structure and move cursor to the next token after the data structure
 
 ```Python
