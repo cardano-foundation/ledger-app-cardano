@@ -1,10 +1,10 @@
-#ifndef H_STATE
-#define H_STATE
+#ifndef H_CARDANO_APP_STATE
+#define H_CARDANO_APP_STATE
 
 #include "getVersion.h"
 
 typedef union {
-	showAboutState_t showAboutState;
+	// Here should go states of all instructions
 } instructionState_t;
 
 typedef struct {

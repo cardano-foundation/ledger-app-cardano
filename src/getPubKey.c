@@ -1,9 +1,11 @@
-#define MAX_BIP32_PATH 10
+#include <os_io_seproxyhal.h>
 #include <stdint.h>
-#include "util.h"
+
+#include "assert.h"
 #include "os.h"
 #include "errors.h"
-#include <os_io_seproxyhal.h>
+
+#define MAX_BIP32_PATH 10
 uint32_t bip32Path[MAX_BIP32_PATH];
 uint8_t pathLength;
 uint8_t privateKeyData[32];
