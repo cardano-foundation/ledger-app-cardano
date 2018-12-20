@@ -157,7 +157,8 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 
 Derive v2 address for a given BIP32 path, return and show it to the user for confirmation. TODO: ❓spec
 
-## GetTrustedInput
+
+## AttestTransactionInput
 
 **Description**
 
@@ -165,7 +166,14 @@ The purpose of this call is to return and attest amount for a given UTxO.
 
 **Background**
 
-When signing transactions, UTxOs given as transaction inputs are not to be trusted. This is because the current Cardano signing protocol does not check the UTxO amount. This results in a possible class of attacks where attackers lie to Ledger about UTxO value, potentially leading it to assume there is less money on the input and thus forcing user to unknowingly "trash" coins as fee. (Note: instead of an explicit attacker this threat model also includes bad transaction parsing on the client side, especially in JavaScript where `ADA_MAX_SUPPLY` does not fit into native `number` type). To avoid such issues, Ledger implementation of Cardano requires each transaction input to be verified before signing a transaction.
+This relates to bullet 2 of Motivation section in the following BIP [https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki].
+
+When signing transactions, UTxOs given as transaction inputs *do not* contain UTxO amount which is needed by Ledger to correctly calculate and display transaction fee. Ledger therefore must learn these amounts through some other way.
+
+A naive implementation would be to send UTxO amounts to Ledger without any verification. This however leads to a possible class of attacks where attackers lie to Ledger about UTxO value, potentially leading it to assume there is less money on the input and thus forcing user to unknowingly "trash" coins as fee. (Note: instead of an explicit attacker this threat model also includes bad transaction parsing on the client side, especially in JavaScript where `ADA_MAX_SUPPLY` does not fit into native `number` type).
+
+To address such issues, Ledger implementation of Cardano requires each transaction input to be "verified" before signing a transaction.
+
 
 **Command**
 
