@@ -2,31 +2,6 @@
 
 Cardano Ledger App for Ledger Nano S
 
-* Ledger ed25519 derivation and keys (Not Cardano implementation)
-* CBOR decode transactions
-* Blake2b hashing of Tx for signing
-
-Please read the [current issues](https://github.com/HiddenField/ledger-cardano-app/wiki) on the wiki.
-
-## Companion APIs
-
-This app is compatible with [this fork](https://github.com/HiddenField/cardano-ledger-node-js-api) of the **cardano-ledger-node-js-api** client.
-
-## Current Instruction Set
-
-Instruction | APDU | Build | Description
---- | --- | --- | ---
-INS_GET_PUBLIC_KEY | 0x01 | PROD | Get Public Key for a given derivation index
-INS_SET_TX | 0x02 | PROD | Set the transaction to be signed
-INS_SIGN_TX | 0x03 | PROD | Sign transaction with a given index
-INS_APP_INFO | 0x04 | PROD | Returns the app version numbering
-INS_BLAKE2B_TEST | 0x07 | TEST | Hash a given value
-INS_BASE58_ENCODE_TEST | 0x08 | TEST | Base58 encode a given value
-INS_CBOR_DECODE_TEST | 0x09 | TEST | Decode a given transaction
-
-## Detailed APDU Breakdown
-
-See [doc/cardanoapp.asc](doc/cardanoapp.asc)
 
 ## Building
 
