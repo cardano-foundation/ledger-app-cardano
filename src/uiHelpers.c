@@ -6,30 +6,44 @@
 #include "assert.h"
 #include "io.h"
 
-displayState_t displayState;
+static displayState_t displayState;
+
+// WARNING(ppershing): Following two references MUST be declared `static`
+// otherwise the Ledger will crash. I am really not sure why is this
+// but it might be related to position-independent-code compilation.
+static scrollingState_t* scrollingState = &(displayState.scrolling);
+static confirmState_t* confirmState = &(displayState.confirm);
 
 #define ID_UNSPECIFIED 0x00
 #define ID_BTN_LEFT 0x01
-#define ID_BNT_RIGHT 0x02
+#define ID_BTN_RIGHT 0x02
 
+STATIC_ASSERT(sizeof(uint8_t) == sizeof(char), __wrong_char_size);
+
+// {{{ scrollingText
 static const bagl_element_t ui_scrollingText[] = {
 	UI_BACKGROUND(),
 	UI_ICON_LEFT(ID_BTN_LEFT, BAGL_GLYPH_ICON_LEFT),
-	UI_ICON_RIGHT(ID_BNT_RIGHT, BAGL_GLYPH_ICON_RIGHT),
+	UI_ICON_RIGHT(ID_BTN_RIGHT, BAGL_GLYPH_ICON_RIGHT),
 
 	// TODO(ppershing): what are the following magical numbers?
 
-	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, &displayState.header),
-	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, &displayState.currentText),
+	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, &displayState.scrolling.header),
+	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, &displayState.scrolling.currentText),
 };
 
 static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *element)
 {
 	switch (element->component.userid) {
 	case ID_BTN_LEFT:
-		return (displayState.scrollIndex == 0) ? NULL : element;
-	case ID_BNT_RIGHT:
-		return (displayState.scrollIndex + DISPLAY_TEXT_LEN >= strlen(displayState.fullText)) ? NULL : element;
+		return (scrollingState->scrollIndex == 0)
+		       ? NULL
+		       : element;
+	case ID_BTN_RIGHT:
+		return (scrollingState->scrollIndex + DISPLAY_TEXT_LEN
+		        >= strlen(scrollingState->fullText))
+		       ? NULL
+		       : element;
 	default:
 		// Always display all other elements.
 		return element;
@@ -39,80 +53,169 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 
 void update_display_content()
 {
-	checkOrFail(
-	        displayState.currentText[DISPLAY_TEXT_LEN] == '\0',
+	ASSERT(
+	        scrollingState->currentText[DISPLAY_TEXT_LEN] == '\0',
 	        "memory corruption"
 	);
-	checkOrFail(
-	        displayState.scrollIndex + DISPLAY_TEXT_LEN < sizeof(displayState.fullText),
-	        "bad scroll index");
-	os_memmove(displayState.currentText, displayState.fullText + displayState.scrollIndex, DISPLAY_TEXT_LEN);
+	ASSERT(
+	        scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText),
+	        "bad scroll index"
+	);
+	os_memmove(
+	        scrollingState->currentText,
+	        scrollingState->fullText + scrollingState->scrollIndex,
+	        DISPLAY_TEXT_LEN
+	);
 	UX_REDISPLAY();
 }
 
 void scroll_left()
 {
-	if (displayState.scrollIndex > 0) {
-		displayState.scrollIndex--;
+	if (scrollingState->scrollIndex > 0) {
+		scrollingState->scrollIndex--;
 	}
 	update_display_content();
 }
 
 void scroll_right()
 {
-	if (displayState.scrollIndex < strlen(displayState.fullText) - DISPLAY_TEXT_LEN) {
-		displayState.scrollIndex++;
+	if (scrollingState->scrollIndex
+	    < strlen(scrollingState->fullText) - DISPLAY_TEXT_LEN) {
+		scrollingState->scrollIndex++;
 	}
 	update_display_content();
 }
 
 static unsigned int ui_scrollingText_button(unsigned int button_mask, unsigned int button_mask_counter)
 {
-	switch (button_mask) {
-	case BUTTON_LEFT:
-	case BUTTON_EVT_FAST | BUTTON_LEFT: // SEEK LEFT
-		scroll_left();
-		break;
+	BEGIN_TRY {
+		TRY {
+			switch (button_mask)
+			{
+			case BUTTON_LEFT:
+			case BUTTON_EVT_FAST | BUTTON_LEFT: // SEEK LEFT
+				scroll_left();
+				break;
 
-	case BUTTON_RIGHT:
-	case BUTTON_EVT_FAST | BUTTON_RIGHT: // SEEK RIGHT
-		scroll_right();
-		break;
+			case BUTTON_RIGHT:
+			case BUTTON_EVT_FAST | BUTTON_RIGHT: // SEEK RIGHT
+				scroll_right();
+				break;
 
-	case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: // PROCEED
-		displayState.callback();
-		break;
+			case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: // PROCEED
+				scrollingState->callback();
+				break;
+			}
+		}
+		FINALLY {
+		}
 	}
-	// (The return value of a button handler is irrelevant; it is never
-	// checked.)
+	END_TRY;
 	return 0;
 }
 
 
 void displayScrollingText(
-        char* header, uint16_t header_len,
-        char* text, uint16_t text_len,
-        confirm_cb_t* callback)
+        const char* header,
+        const char* text,
+        callback_t* callback)
 {
+	int header_len = strlen(header);
+	int text_len = strlen(text);
 	// sanity checks
-	checkOrFail(header_len < sizeof(displayState.header), "too long header");
-	checkOrFail(text_len < sizeof(displayState.fullText), "too long text");
+	ASSERT(header_len < sizeof(scrollingState->header), "too long header");
+	ASSERT(text_len < sizeof(scrollingState->fullText), "too long text");
 
 	// clear all memory
 	os_memset(&displayState, 0, sizeof(displayState));
 
 	// Copy data
-	os_memmove(displayState.header, header, header_len);
-	os_memmove(displayState.fullText, text, text_len);
-	STATIC_ASSERT(DISPLAY_TEXT_LEN < sizeof(displayState.currentText), overflow_check);
+	os_memmove(scrollingState->header, header, header_len);
+	os_memmove(scrollingState->fullText, text, text_len);
+	STATIC_ASSERT(DISPLAY_TEXT_LEN < sizeof(scrollingState->currentText), overflow_check);
 
 	// Note(ppershing): due to previous clearing of memory
 	// this also works with cases where
 	// strlen(fullText) < DISPLAY_TEXT_LEN
 
-	checkOrFail(displayState.scrollIndex + DISPLAY_TEXT_LEN < sizeof(displayState.fullText), "buffer overflow");
-	os_memmove(displayState.currentText, displayState.fullText + displayState.scrollIndex, DISPLAY_TEXT_LEN);
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText), "buffer overflow");
+	os_memmove(scrollingState->currentText, scrollingState->fullText + scrollingState->scrollIndex, DISPLAY_TEXT_LEN);
 
-	displayState.callback = callback;
+	scrollingState->callback = callback;
 	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
+}
+
+// }}}
+
+
+static const bagl_element_t ui_confirm[] = {
+	UI_BACKGROUND(),
+	UI_ICON_LEFT(ID_BTN_LEFT, BAGL_GLYPH_ICON_CROSS),
+	UI_ICON_RIGHT(ID_BTN_LEFT, BAGL_GLYPH_ICON_CHECK),
+	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, displayState.confirm.header),
+	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, displayState.confirm.text),
+};
+
+static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
+{
+	switch (element->component.userid) {
+	case ID_BTN_LEFT:
+		return (confirmState->reject == NULL) ? NULL : element;
+	case ID_BTN_RIGHT:
+		return (confirmState->confirm == NULL) ? NULL : element;
+	default:
+		// Always display all other elements.
+		return element;
+	}
+}
+
+static unsigned int ui_confirm_button(unsigned int button_mask, unsigned int button_mask_counter)
+{
+	BEGIN_TRY {
+		TRY {
+			switch (button_mask)
+			{
+			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT
+				if (confirmState->reject) confirmState->reject();
+				break;
+
+			case BUTTON_EVT_RELEASED | BUTTON_RIGHT: // APPROVE
+				if (confirmState->confirm) confirmState->confirm();
+				break;
+			}
+		}
+		FINALLY {
+		}
+	}
+	END_TRY;
+	return 0;
+}
+
+void displayConfirm(
+        const char* header,
+        const char* text,
+        callback_t* confirm,
+        callback_t* reject)
+{
+	int header_len = strlen(header);
+	int text_len = strlen(text);
+	// sanity checks, keep 1 byte for null terminator
+	ASSERT(
+	        header_len < sizeof(confirmState->header),
+	        "too long header"
+	);
+	ASSERT(
+	        text_len < sizeof(confirmState->text),
+	        "too long text"
+	);
+
+	// clear all memory
+	os_memset(&displayState, 0, sizeof(displayState));
+
+	// Copy data
+	os_memmove(confirmState->header, header, header_len);
+	os_memmove(confirmState->text, text, text_len);
+	confirmState->confirm = confirm;
+	confirmState->reject = reject;
+	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
 }

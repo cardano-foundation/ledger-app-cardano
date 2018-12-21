@@ -6,11 +6,10 @@
 
 #define STATIC_ASSERT(COND,MSG) typedef char static_assert__##MSG[(COND)?1:-1] __attribute__((unused))
 
+extern void assert(int cond, const char* msg);
 
-// use different name to avoid potential
-// naming conflicts with assert
-extern void checkOrFail(int cond, const char* msg);
-
-#define CHECK_OR_FAIL(cond, msg) checkOrFail(cond, msg)
+// Note(ppershing): I like macro-like uppercase version better
+// because it captures reader's attention.
+#define ASSERT(cond, msg) assert(cond, msg)
 
 #endif
