@@ -179,7 +179,10 @@ static void cardano_main(void)
 			TRY {
 				rx = tx;
 				tx = 0; // ensure no race in CATCH_OTHER if io_exchange throws an error
-				CHECK_OR_FAIL((unsigned int) rx < sizeof(G_io_apdu_buffer), "response overflow");
+				ASSERT(
+				        (unsigned int) rx < sizeof(G_io_apdu_buffer),
+				        "response overflow"
+				);
 				rx = io_exchange(CHANNEL_APDU | flags, rx);
 				flags = 0;
 
@@ -209,15 +212,22 @@ static void cardano_main(void)
 				{
 					THROW(SW_UNKNOWN_INS);
 				}
+				// Note: handlerFn is responsible for calling io_send
+				// either during its call or subsequent UI actions
 				handlerFn(G_io_apdu_buffer[OFFSET_P1],
 				          G_io_apdu_buffer[OFFSET_P2],
 				          G_io_apdu_buffer + OFFSET_CDATA,
-				          G_io_apdu_buffer[OFFSET_LC],
-				          &flags, &tx);
+				          G_io_apdu_buffer[OFFSET_LC]
+				         );
+				flags = IO_ASYNCH_REPLY;
 			}
 			CATCH(EXCEPTION_IO_RESET)
 			{
 				THROW(EXCEPTION_IO_RESET);
+			}
+			CATCH(SW_ASSERT)
+			{
+				// Note(ppershing): assertions should not auto-respond
 			}
 			CATCH_OTHER(e)
 			{
@@ -242,9 +252,9 @@ static void cardano_main(void)
 					sw = 0x6800 | (e & 0x7FF);
 					break;
 				}
-				CHECK_RESPONSE_SIZE(tx);
-				G_io_apdu_buffer[tx++] = sw >> 8;
-				G_io_apdu_buffer[tx++] = sw & 0xFF;
+
+				_io_send_G_io_apdu_buffer(sw, tx);
+				flags = IO_ASYNCH_REPLY;
 			}
 			FINALLY {
 			}
