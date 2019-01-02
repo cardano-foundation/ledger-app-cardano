@@ -7,7 +7,6 @@ Each "logical" call consists of a series of APDU exchanges where APDU is in the 
 
 ### Command
 
-
 |field   |CLA|INS|P1 |P2 |Lc |Data| Le |
 |--------|---|---|---|---|---|----|----|
 |**size (B)**| 1 | 1 | 1 | 1 | 1 |variable |  0 |
@@ -25,9 +24,10 @@ Where
 
 Upon receiving general APDU, Ledger should check
 - `rx` size >= 5 (have all required APDU fields)
-- `CLA` is CLA of cardano app
+- `CLA` is CLA of the Cardano app
 - `INS` is known instruction
 - `Lc` is consistent with `rx`, i.e. `Lc + 5 == rx`
+- `INS` is not changed in the middle of multi-APDU exchange
 
 ### Response
 
@@ -42,6 +42,9 @@ In general
 - 0x9000 = OK
 - ❓ other codes
 
+
+**Notes:**
+In order to ensure safe forward compatibility, sender **must** set any *unused* field to zero. When upgrading protocol, any unused field that is no longer unused **must** have values != 0. This will ensure that clients using old protocol will receive errors instead of an unexpected behavior.
 
 
 ## GetAppVersion call
@@ -133,7 +136,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 
 - Check:
   - check P1 is valid
-    - `P1 == 0 || P1 == 1`
+    - `P1 == 0`
   - check P2 is valid
     - `P2 == 0`
   - check data is valid:
