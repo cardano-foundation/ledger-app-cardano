@@ -149,12 +149,9 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
     - `path[2] is hardened` (`path[2]` is account number)
 - calculate public key
 - respond with public key
-- if `P1 == 1`
-  - display public key to the user
-  - do not perform APDU processing until user closes the public key screen
 - TBD: ❓Should we also support token validation?
 - TBD: ❓Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host?
-- TBD: ❓Should there be an option to show the public key on display? Is it useful in any way?
+- TBD: ❓Should there be an parameter to show the public key on display? Is it useful in any way?
 
 ## DeriveAddress
 
