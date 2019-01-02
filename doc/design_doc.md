@@ -203,94 +203,50 @@ For security reasons, we decided that transaction parsing should *not* be future
 
 For these two reasons, we believe it is safer for Ledger to reject unknown version of transaction encoding and force user to upgrade the App version to one which also implements the new schema.
 
-**Ledger transaction parsing (pseudocode)**
+**Ledger transaction parsing responsibility**
 
-- token refers to CBOR token under the cursor. Note that token is variable-length in CBOR and therefore the application should wait for more data if it cannot fully determine the current token
-- consume token moves cursor to the next token. Note that a special care must be done with consuming long byte-streams as we might need to consume several data frames
-- parse functions parse data structure and move cursor to the next token after the data structure
 
-```Python
-parseTransaction():
-  assert token == array(3)
-  consume token
-  {# 1
-    parseInputs()
-  }
-  {# 2
-    parseOutputs()
-  }
-  {# 3
-    parseMetadata()
-  }
-  assert EOF
-  
-parseInputs():
-  assert token == array(*)
-  consume token
-  {
-    while token == array(2)
-      parseInput()
-  }
-  assert token == end array(*)
-  consume token
-  
+```javascript
+Array(3)[
+ // 1 - inputs
+ Array(*)[
+   Array(2)[
+     // type. Note: Fixed to 0
+     Unsigned(0),
+     // encoded address
+     Tag(24)(
+        // address. WARNING: We do not parse & verify address
+        Bytes(??)
+     )
+ ],
+ // 2 - outputs
+ Array(*)[
+   Array(2)[
+    // raw (base58-decoded) address
+    Array(2)[
+      Tag(24){
+        // Warning: We do not parse & verify this
+        Bytes(??),
+      },
+      // checksum. WARNING: We do not verify checksum
+      Unsigned(??),
+    ],
+    // amount (in lovelace)
+    Unsigned(??)   
+   ]
+ ],
+ //3 - metadata
+ Map(0){} // Note: Fixed to be empty
+]
+```
 
-parseInput():
-  assert token == array(2)
-  consume token
-  {# type
-    assert token == unsigned(0)
-    consume token
-  }
-  { # encoded address
-    assert token == tag(24)
-    consume token
-    { # address. WARNING: We do not parse & verify address
-      assert token = bytes (len)
-      consume token
-      consume len
-    }
-  }
-  
-parseOutputs()
-  assert token == array(*)
-  consume token
-  {
-    while token == array(2):
-      parseOutput()
-  }
-  assert token == end array(*)
-  consume token
-  
-
-parseRawAddress()
-  assert token == array(2)
-  consume token
-  { # address
-    assert token == tag(24)
-    consume token
-    { # address. WARNING: We do not parse & verify address
-      assert token == bytes (len)
-      consume token
-      consume len
-    }
-  }
-  { # checksum
-    assert token = unsigned(var-len)
-    consume token-var-len
-  }
-  
-parseOutput()
-  assert token == array(2)
-  consume token
-  { #base58-decoded (i.e. raw) address
-    parseRawAddress()
-  }
-  { # coins
-    assert token == unsigned(var-len)
-    consume token-var-len
-  }
-```  
+Where 
+- `Array(x)` means array of length `x` or `*` for CBOR indefinite array.
+- `Map(x)` means map of length `x`
+- `Unsigned(x)` means unsigned iteger of value `x`
+- `Tag(x)` means tagged value with tag `x`
+- `Bytes(x)` means byte sequence containing `x`
+- `??` means we do not constrain this value
 
 
 ## SignTransaction
