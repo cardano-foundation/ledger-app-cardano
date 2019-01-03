@@ -10,22 +10,19 @@
 
 #define SW_USER_REJECTED 0x6985
 
-
-
-
 enum {
 	// Successfull responses
 	SUCCESS                 = 0x9000,
 
 	// Bad request
-	ERR_MALFORMED_REQUEST  = 0x6E01,
-	ERR_BAD_CLA            = 0x6E02,
-	ERR_UNKNOWN_INS        = 0x6E03,
-	ERR_STILL_IN_CALL      = 0x6901,
+	ERR_MALFORMED_REQUEST          = 0x6E01,
+	ERR_BAD_CLA                    = 0x6E02,
+	ERR_UNKNOWN_INS                = 0x6E03,
+	ERR_STILL_IN_CALL              = 0x6901,
+	ERR_INVALID_REQUEST_PARAMETERS = 0x6E04,
 
 	// Internal errors
 	ERR_ASSERT             = 0x4700,
-
 
 	// stream
 	ERR_NOT_ENOUGH_INPUT      = 0x4710,

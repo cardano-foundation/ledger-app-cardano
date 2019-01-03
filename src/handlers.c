@@ -5,7 +5,7 @@
 
 #include "handlers.h"
 #include "getVersion.h"
-#include "getPubKey.h"
+#include "getExtendedPublicKey.h"
 #include "runTests.h"
 
 #include "state.h"
@@ -50,7 +50,7 @@ handler_fn_t* lookupHandler(uint8_t ins)
 		return handleShowAbout;
 
 	case INS_GET_PUB_KEY:
-		return handleGetPubKey;
+		return handleGetExtendedPublicKey;
 
 // *INDENT-OFF* astyle has problems with #define inside switch
 #ifdef DEVEL

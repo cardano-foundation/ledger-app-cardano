@@ -5,7 +5,7 @@
 
 #include "uiHelpers.h"
 #include "getVersion.h"
-#include "getPubKey.h"
+#include "getExtendedPublicKey.h"
 #include "errors.h"
 #include "io.h"
 #include "assert.h"
