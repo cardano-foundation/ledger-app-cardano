@@ -7,7 +7,6 @@ Each "logical" call consists of a series of APDU exchanges where APDU is in the 
 
 ### Command
 
-
 |field   |CLA|INS|P1 |P2 |Lc |Data| Le |
 |--------|---|---|---|---|---|----|----|
 |**size (B)**| 1 | 1 | 1 | 1 | 1 |variable |  0 |
@@ -25,9 +24,10 @@ Where
 
 Upon receiving general APDU, Ledger should check
 - `rx` size >= 5 (have all required APDU fields)
-- `CLA` is CLA of cardano app
+- `CLA` is CLA of the Cardano app
 - `INS` is known instruction
 - `Lc` is consistent with `rx`, i.e. `Lc + 5 == rx`
+- `INS` is not changed in the middle of multi-APDU exchange
 
 ### Response
 
@@ -42,6 +42,9 @@ In general
 - 0x9000 = OK
 - ❓ other codes
 
+
+**Notes:**
+In order to ensure safe forward compatibility, sender **must** set any *unused* field to zero. When upgrading protocol, any unused field that is no longer unused **must** have values != 0. This will ensure that clients using old protocol will receive errors instead of an unexpected behavior.
 
 
 ## GetAppVersion call
@@ -133,7 +136,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 
 - Check:
   - check P1 is valid
-    - `P1 == 0 || P1 == 1`
+    - `P1 == 0`
   - check P2 is valid
     - `P2 == 0`
   - check data is valid:
@@ -146,14 +149,12 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
     - `path[2] is hardened` (`path[2]` is account number)
 - calculate public key
 - respond with public key
-- if `P1 == 1`
-  - display public key to the user
-  - do not perform APDU processing until user closes the public key screen
-  
+ 
 **TODOs**
-- ❓Should we also support BTC app like token validation? (Token validation is to prevent concurrent access to the Ledger by two different host apps which could confuse user into performing wrong actions)
-- ❓Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host? (Note: probably not in the first version of the app)
-- ❓Should there be an option to show the public key on display? Is it useful in any way? (Note: probably not)
+- TBD: ❓Should we also support BTC app like token validation? (Token validation is to prevent concurrent access to the Ledger by two different host apps which could confuse user into performing wrong actions)
+- TBD: ❓Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host? (Note: probably not in the first version of the app)
+- TBD: ❓Should there be an option to show the public key on display? Is it useful in any way? (Note: probably not)
+
 
 ## DeriveAddress
 
@@ -237,94 +238,50 @@ For security reasons, we decided that transaction parsing should *not* be future
 
 For these two reasons, we believe it is safer for Ledger to reject unknown version of transaction encoding and force user to upgrade the App version to one which also implements the new schema.
 
-**Ledger transaction parsing (pseudocode)**
+**Ledger transaction parsing responsibility**
 
-- token refers to CBOR token under the cursor. Note that token is variable-length in CBOR and therefore the application should wait for more data if it cannot fully determine the current token
-- consume token moves cursor to the next token. Note that a special care must be done with consuming long byte-streams as we might need to consume several data frames
-- parse functions parse data structure and move cursor to the next token after the data structure
 
-```Python
-parseTransaction():
-  assert token == array(3)
-  consume token
-  {# 1
-    parseInputs()
-  }
-  {# 2
-    parseOutputs()
-  }
-  {# 3
-    parseMetadata()
-  }
-  assert EOF
-  
-parseInputs():
-  assert token == array(*)
-  consume token
-  {
-    while token == array(2)
-      parseInput()
-  }
-  assert token == end array(*)
-  consume token
-  
+```javascript
+Array(3)[
+ // 1 - inputs
+ Array(*)[
+   Array(2)[
+     // type. Note: Fixed to 0
+     Unsigned(0),
+     // encoded address
+     Tag(24)(
+        // address. WARNING: We do not parse & verify address
+        Bytes(??)
+     )
+ ],
+ // 2 - outputs
+ Array(*)[
+   Array(2)[
+    // raw (base58-decoded) address
+    Array(2)[
+      Tag(24){
+        // Warning: We do not parse & verify this
+        Bytes(??),
+      },
+      // checksum. WARNING: We do not verify checksum
+      Unsigned(??),
+    ],
+    // amount (in lovelace)
+    Unsigned(??)   
+   ]
+ ],
+ //3 - metadata
+ Map(0){} // Note: Fixed to be empty
+]
+```
 
-parseInput():
-  assert token == array(2)
-  consume token
-  {# type
-    assert token == unsigned(0)
-    consume token
-  }
-  { # encoded address
-    assert token == tag(24)
-    consume token
-    { # address. WARNING: We do not parse & verify address
-      assert token = bytes (len)
-      consume token
-      consume len
-    }
-  }
-  
-parseOutputs()
-  assert token == array(*)
-  consume token
-  {
-    while token == array(2):
-      parseOutput()
-  }
-  assert token == end array(*)
-  consume token
-  
-
-parseRawAddress()
-  assert token == array(2)
-  consume token
-  { # address
-    assert token == tag(24)
-    consume token
-    { # address. WARNING: We do not parse & verify address
-      assert token == bytes (len)
-      consume token
-      consume len
-    }
-  }
-  { # checksum
-    assert token = unsigned(var-len)
-    consume token-var-len
-  }
-  
-parseOutput()
-  assert token == array(2)
-  consume token
-  { #base58-decoded (i.e. raw) address
-    parseRawAddress()
-  }
-  { # coins
-    assert token == unsigned(var-len)
-    consume token-var-len
-  }
-```  
+Where 
+- `Array(x)` means array of length `x` or `*` for CBOR indefinite array.
+- `Map(x)` means map of length `x`
+- `Unsigned(x)` means unsigned iteger of value `x`
+- `Tag(x)` means tagged value with tag `x`
+- `Bytes(x)` means byte sequence containing `x`
+- `??` means we do not constrain this value
 
 
 ## SignTransaction

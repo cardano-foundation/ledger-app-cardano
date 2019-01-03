@@ -10,10 +10,7 @@ typedef void handler_fn_t(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        uint16_t dataLength,
-        // out
-        volatile unsigned int *flags,
-        volatile unsigned int *tx
+        uint16_t dataLength
 );
 
 handler_fn_t* lookupHandler(uint8_t ins);

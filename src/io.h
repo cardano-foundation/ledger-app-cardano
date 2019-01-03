@@ -10,8 +10,9 @@
 // 'tx' is the conventional name for the size of the response APDU,
 // i.e. the write-offset within G_io_apdu_buffer.
 
-void io_send_code(uint16_t code, uint16_t tx);
+void _io_send_G_io_apdu_buffer(uint16_t code, uint16_t tx);
 
+// Normal code should use just this helper function
 void io_send_buf(uint16_t code, uint8_t* buffer, uint16_t len);
 
 // Asserts that the response fits into response buffer

@@ -4,26 +4,16 @@
 
 #include "assert.h"
 #include "io.h"
+#include "uiHelpers.h"
 
-// For debugging.
-// TODO(ppershing): PROD build
-// should mask this under a generic error
-
-void checkOrFail(int cond, const char* msg)
+// Note(ppershing): Right now suitable for debugging only.
+// We need to keep going because rendering on display
+// takes multiple SEPROXYHAL exchanges until it renders
+// the display
+void assert(int cond, const char* msg)
 {
 	if (cond) return; // everything holds
 
-	STATIC_ASSERT(sizeof(G_io_apdu_buffer) > 2, __bad_apdu_buffer_size);
-
-	// Note: we need to restrict len so that we don't get into
-	// an assert cycle (io_send_buf asserts on buf size)
-	size_t len = MIN(
-	                     sizeof(G_io_apdu_buffer) - 2,
-	                     strlen(msg)
-	             );
-
-	io_send_buf(SW_ASSERT, msg, len);
-	while (1) {
-		// halt
-	}
+	displayConfirm("Assertion failed", msg, NULL, NULL);
+	THROW(SW_ASSERT);
 }
