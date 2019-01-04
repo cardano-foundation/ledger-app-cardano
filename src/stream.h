@@ -26,7 +26,7 @@ void stream_advancePos(stream_t* stream, streamSize_t len);
 uint8_t stream_peekByte(const stream_t* stream);
 const uint8_t* stream_head(const stream_t* stream);
 streamSize_t stream_unusedBytes(const stream_t* stream);
-uint8_t stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len);
+void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len);
 
 // internal (declared for testing)
 void stream_shift(stream_t* stream);

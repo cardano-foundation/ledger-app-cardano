@@ -106,7 +106,7 @@ streamSize_t stream_unusedBytes(const stream_t* stream)
 }
 
 
-uint8_t stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
+void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
 {
 	stream_checkState(stream);
 	if (len > stream_unusedBytes(stream)) {
