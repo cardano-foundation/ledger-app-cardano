@@ -7,8 +7,7 @@ static stream_t s;
 
 void run_stream_test()
 {
-	os_memset(&s, 0, sizeof(s));
-
+	stream_init(&s);
 	// empty
 	{
 		EXPECT_EQ(stream_availableBytes(&s), 0);

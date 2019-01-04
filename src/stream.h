@@ -6,17 +6,20 @@
 typedef uint32_t streamSize_t;
 
 enum {
-	STREAM_BUFFER_SIZE = 300u
+	STREAM_BUFFER_SIZE = 300u,
+	STREAM_INIT_MAGIC = 4247,
 };
 
 typedef struct {
 	// TODO(ppershing): buffer size, int->?
 	uint8_t buffer[STREAM_BUFFER_SIZE]; // buffer
+	uint16_t isInitialized; // last defense against buffer overflow corruption
 	streamSize_t bufferPos; // position inside current buffer
 	streamSize_t bufferEnd; // position of current buffer end buffer[bufferEnd] is *behind* last data
 	streamSize_t streamPos; // position inside whole input stream
 } stream_t;
 
+void stream_init(stream_t* stream);
 streamSize_t stream_availableBytes(const stream_t* stream);
 void stream_ensureAvailableBytes(const stream_t* stream, streamSize_t len);
 void stream_advancePos(stream_t* stream, streamSize_t len);

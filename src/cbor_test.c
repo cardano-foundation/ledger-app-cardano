@@ -7,7 +7,7 @@
 
 #define INIT(str_) \
   stream_t s; \
-  os_memset(&s, 0, sizeof(s)); \
+  stream_init(&s); \
   uint8_t data[] = str_; \
   /* str_ is null-termanated so -1 */ \
   stream_appendData(&s, data, sizeof(data) - 1);
