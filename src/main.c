@@ -135,17 +135,20 @@ void ui_idle(void)
 	UX_MENU_DISPLAY(0, menu_main, NULL);
 }
 
+// TODO(ppershing): decide in which file we should keep this + convert to enum value
+#define CLA          0xD7
+
 // These are the offsets of various parts of a request APDU packet. INS
 // identifies the requested command (see above), and P1 and P2 are parameters
 // to the command.
-#define CLA          0x80
-
-#define OFFSET_CLA   0x00
-#define OFFSET_INS   0x01
-#define OFFSET_P1    0x02
-#define OFFSET_P2    0x03
-#define OFFSET_LC    0x04
-#define OFFSET_CDATA 0x05
+enum {
+	OFFSET_CLA   = 0x00,
+	OFFSET_INS   = 0x01,
+	OFFSET_P1    = 0x02,
+	OFFSET_P2    = 0x03,
+	OFFSET_LC    = 0x04,
+	OFFSET_CDATA = 0x05,
+};
 
 // This is the main loop that reads and writes APDUs. It receives request
 // APDUs from the computer, looks up the corresponding command handler, and
