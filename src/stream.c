@@ -5,9 +5,20 @@
 
 STATIC_ASSERT( STREAM_BUFFER_SIZE == sizeof(((stream_t*) 0)->buffer), __stream_buffer_bad_size);
 
+void stream_init(stream_t* stream)
+{
+	STATIC_ASSERT(sizeof(*stream) > STREAM_BUFFER_SIZE, __paranoia);
+	os_memset(stream, 0, sizeof(*stream));
+	stream->isInitialized = STREAM_INIT_MAGIC;
+}
+
 // Checks stream internal state consistency
 void stream_checkState(const stream_t* stream)
 {
+	ASSERT(
+	        stream->isInitialized == STREAM_INIT_MAGIC,
+	        "stream not initialized"
+	);
 	ASSERT(
 	        stream->bufferPos <= stream->bufferEnd,
 	        "Invalid buffer pos"
@@ -95,7 +106,7 @@ streamSize_t stream_unusedBytes(const stream_t* stream)
 }
 
 
-uint8_t stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
+void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
 {
 	stream_checkState(stream);
 	if (len > stream_unusedBytes(stream)) {

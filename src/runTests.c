@@ -5,6 +5,7 @@
 #include "cbor_test.h"
 #include "assert.h"
 #include "test_utils.h"
+#include "hex_utils.h"
 #include <stdbool.h>
 #include <os.h>
 
@@ -15,6 +16,7 @@ void handleRunTests(
         uint16_t dataLength)
 {
 	BEGIN_ASSERT_NOEXCEPT {
+		run_hex_test();
 		run_stream_test();
 		run_cbor_test();
 	} END_ASSERT_NOEXCEPT;
