@@ -59,6 +59,8 @@ void initializePath(uint8_t *dataBuffer)
 	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
 	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
 
+	VALIDATE_PARAM(data.pathLength >= 3 && data.pathLength <= 10);
+
 	VALIDATE_PARAM(data.bip32Path[0] ==  bip44);
 	VALIDATE_PARAM(data.bip32Path[1] ==  adaCoinType);
 	VALIDATE_PARAM(data.bip32Path[2] >= HARDENED_BIP32);
