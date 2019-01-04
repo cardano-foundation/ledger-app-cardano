@@ -83,13 +83,7 @@ build: DEFINES += INS_SIGN_TX_FUNC
 build: DEFINES += INS_SET_TX_FUNC
 build: DEFINES += INS_GET_PUBLIC_KEY_FUNC
 build: DEFINES += INS_APP_INFO_FUNC
-
-build-test: all
-build-test: DEFINES += INS_BLAKE2B_TEST_FUNC
-build-test: DEFINES += INS_BASE58_ENCODE_TEST_FUNC
-build-test: DEFINES += INS_CBOR_DECODE_TEST_FUNC
-
-headless: DEFINES += HEADLESS
+build: DEFINES += DEVEL
 
 sign:
 	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
@@ -100,11 +94,8 @@ deploy:
 load: build
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
 
-test: build-test
-	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
-
-headless: load
+#	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
+#	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
 
 
 delete:
@@ -112,6 +103,7 @@ delete:
 
 seed:
 	python -m ledgerblue.hostOnboard --id $(NANOS_ID) --words $(WORDS) --pin $(PIN)
+
 
 # import generic rules from the sdk
 include $(BOLOS_SDK)/Makefile.rules
