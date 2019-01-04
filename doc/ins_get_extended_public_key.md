@@ -50,7 +50,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
     - `P2 == 0`
   - check data is valid:
     - `Lc >= 1` (we have path_len)
-    - `path_len * 4 == Lc`
+    - `1 + path_len * 4 == Lc`
   - check derivatoin path is valid
     - `path_len >= 3`
     - `path[0] == 44'` (' means hardened)
