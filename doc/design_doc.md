@@ -16,9 +16,9 @@ Where
 - `CLA=0xD7` is APDU class number. As we do not adhere to the strict APDU protocol, we have somehow arbitrarily chosen a value beloning to "proprietary structure and coding of command/response" CLA range
 - `INS` is the instruction number
 - `P1` and `P2` are instruction parameters
-- `Lc` is length of the data body. Note: unlike standard APDU, `ledger.js` produces `Lc` of exactly 1 byte (even for empty data). Data of length >= 256 are not supported
+- `Lc` is length of the data body encoded as `uint8`. Note: unlike standard APDU, `ledger.js` produces `Lc` of exactly 1 byte (even for empty data). Data of length >= 256 are not supported
 - Data is binary data
-- `Le` is max length of response. This APDU field is **not** present in ledger.js protocol
+- `Le` is max length of response. This APDU field is **not** present in `ledger.js` protocol
 
 **Ledger responsibilities**
 
@@ -45,28 +45,28 @@ Known error codes are:
 
 ## Instructions
 
-We split instructions into several groups depending on their purpose.
+Instructions are split into several groups depending on their purpose.
 
-### `INS=0x` group
+### `INS=0x0*` group
 
 Instructions related to general app status
 - `0x01`: [Get app version](ins_get_app_version.md)
 
-### `INS=1x` group
+### `INS=0x1*` group
 
 Instructions related to public keys/addresses
 
 - `0x10` [Get extended public key](ins_get_extended_public_key.md)
 - `0x11` [Derive address](ins_derive_address.md)
 
-### `INS=2x` group
+### `INS=0x2*` group
 
 Instructions related to transaction signing
 
 - `0x20` [Attest UTxO](ins_attest_utxo.md)
 - `0x21` [Sign Transaction](ins_sign_tx.md)
 
-### `INS=Fx*` group
+### `INS=0xF*` group
 
 Instructions related to debug mode of the app. These instructions *must not* be available on the production build of the app
 
