@@ -6,6 +6,7 @@
 #include "handlers.h"
 #include "getVersion.h"
 #include "getPubKey.h"
+#include "runTests.h"
 
 #include "state.h"
 #include "errors.h"
@@ -14,16 +15,18 @@
 // which command should be executed. We'll use this code to dispatch on a
 // table of function pointers.
 
-#define INS_GET_VERSION    0x01
-#define INS_SHOW_ABOUT     0x02
-
-#define INS_GET_PUB_KEY    0x10
+enum {
+	INS_GET_VERSION   = 0x01,
+	INS_SHOW_ABOUT    = 0x02,
+	INS_RUN_TESTS     = 0x03,
+	INS_GET_PUB_KEY   = 0x10,
+};
 
 
 handler_fn_t* lookupHandler(uint8_t ins)
 {
 	if (global.currentInstruction && global.currentInstruction != ins) {
-		THROW(SW_STILL_IN_CALL);
+		THROW(ERR_STILL_IN_CALL);
 	}
 	if (!global.currentInstruction) {
 		global.currentInstruction = ins;
@@ -37,6 +40,8 @@ handler_fn_t* lookupHandler(uint8_t ins)
 		return handleShowAbout;
 	case INS_GET_PUB_KEY:
 		return handleGetPubKey;
+	case INS_RUN_TESTS:
+		return handleRunTests;
 	default:
 		return NULL;
 	}

@@ -194,23 +194,23 @@ static void cardano_main(void)
 				// We should have CLA INS P1 P2 Lc
 				if (rx < 5)
 				{
-					THROW(SW_MALFORMED_REQUEST);
+					THROW(ERR_MALFORMED_REQUEST);
 				}
 				if (G_io_apdu_buffer[OFFSET_CLA] != CLA)
 				{
-					THROW(SW_BAD_CLA);
+					THROW(ERR_BAD_CLA);
 				}
 				// Bad data size
 				if (G_io_apdu_buffer[OFFSET_LC] + 5 != rx)
 				{
-					THROW(SW_MALFORMED_REQUEST);
+					THROW(ERR_MALFORMED_REQUEST);
 
 				}
 				// Lookup and call the requested command handler.
 				handler_fn_t *handlerFn = lookupHandler(G_io_apdu_buffer[OFFSET_INS]);
 				if (!handlerFn)
 				{
-					THROW(SW_UNKNOWN_INS);
+					THROW(ERR_UNKNOWN_INS);
 				}
 				// Note: handlerFn is responsible for calling io_send
 				// either during its call or subsequent UI actions
@@ -225,7 +225,7 @@ static void cardano_main(void)
 			{
 				THROW(EXCEPTION_IO_RESET);
 			}
-			CATCH(SW_ASSERT)
+			CATCH(ERR_ASSERT)
 			{
 				// Note(ppershing): assertions should not auto-respond
 			}

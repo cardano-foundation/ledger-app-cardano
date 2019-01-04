@@ -15,5 +15,5 @@ void assert(int cond, const char* msg)
 	if (cond) return; // everything holds
 
 	displayConfirm("Assertion failed", msg, NULL, NULL);
-	THROW(SW_ASSERT);
+	THROW(ERR_ASSERT);
 }

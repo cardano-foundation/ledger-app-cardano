@@ -22,7 +22,7 @@ void handleGetVersion(
 	response[0] = APPVERSION[0] - '0';
 	response[1] = APPVERSION[2] - '0';
 	response[2] = APPVERSION[4] - '0';
-	io_send_buf(SW_OK, response, 3);
+	io_send_buf(SUCCESS, response, 3);
 }
 
 
@@ -30,7 +30,7 @@ void handleShowAboutConfirm()
 {
 	ASSERT(0, "demo assert");
 	// send response
-	io_send_buf(SW_OK, NULL, 0);
+	io_send_buf(SUCCESS, NULL, 0);
 	ui_idle();
 }
 

@@ -5,7 +5,7 @@
 
 typedef void callback_t();
 
-#define DISPLAY_TEXT_LEN 16
+#define DISPLAY_TEXT_LEN 32
 #define MAX_TEXT_LEN 200
 
 typedef struct {
