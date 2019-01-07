@@ -3,6 +3,7 @@
 #include "io.h"
 #include "stream.h"
 #include "cbor.h"
+#include "endian.h"
 #include "assert.h"
 #include "adaBase58.h"
 #include "test_utils.h"
@@ -17,6 +18,7 @@ void handleRunTests(
         uint16_t dataLength)
 {
 	BEGIN_ASSERT_NOEXCEPT {
+		run_endian_test();
 		run_hex_test();
 		run_stream_test();
 		run_cbor_test();
