@@ -63,7 +63,7 @@ unsigned char ada_encode_base58(unsigned char *in, unsigned char length,
 	}
 	length = 2 * length - j;
 
-	ASSERT(maxoutlen >= length);
+	ASSERT(length <= maxoutlen);
 
 	os_memmove(out, (buffer + j), length);
 	return length;
