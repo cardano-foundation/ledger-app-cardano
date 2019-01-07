@@ -6,8 +6,8 @@
 void CHECK_RESPONSE_SIZE(unsigned int tx)
 {
 	// Note(ppershing): we do both checks due to potential overflows
-	ASSERT(tx < sizeof(G_io_apdu_buffer), "response overflow");
-	ASSERT(tx + 2u < sizeof(G_io_apdu_buffer), "response overflow");
+	ASSERT(tx < sizeof(G_io_apdu_buffer));
+	ASSERT(tx + 2u < sizeof(G_io_apdu_buffer));
 }
 
 // io_exchange_with_code is a helper function for sending response APDUs from

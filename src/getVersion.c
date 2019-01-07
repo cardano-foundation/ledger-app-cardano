@@ -28,7 +28,7 @@ void handleGetVersion(
 
 void handleShowAboutConfirm()
 {
-	ASSERT(0, "demo assert");
+	ASSERT_WITH_MSG(0, "demo assert");
 	// send response
 	io_send_buf(SUCCESS, NULL, 0);
 	ui_idle();

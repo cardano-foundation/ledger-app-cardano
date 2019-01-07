@@ -3,7 +3,8 @@
 #include <os.h>
 #include <stdbool.h>
 
-STATIC_ASSERT( STREAM_BUFFER_SIZE == sizeof(((stream_t*) 0)->buffer), __stream_buffer_bad_size);
+// paranoia
+STATIC_ASSERT(STREAM_BUFFER_SIZE == sizeof(((stream_t*) 0)->buffer), __stream_buffer_bad_size);
 
 void stream_init(stream_t* stream)
 {
@@ -15,22 +16,14 @@ void stream_init(stream_t* stream)
 // Checks stream internal state consistency
 void stream_checkState(const stream_t* stream)
 {
-	ASSERT(
-	        stream->isInitialized == STREAM_INIT_MAGIC,
-	        "stream not initialized"
-	);
-	ASSERT(
-	        stream->bufferPos <= stream->bufferEnd,
-	        "Invalid buffer pos"
-	);
-	ASSERT(
-	        stream->bufferEnd <= STREAM_BUFFER_SIZE,
-	        "Invalid buffer end"
-	);
-	ASSERT(
-	        stream->streamPos >= stream->bufferPos,
-	        "Unexpected input pos"
-	);
+	// Should be initialized
+	ASSERT(stream->isInitialized == STREAM_INIT_MAGIC);
+	// Invalid buffer pos
+	ASSERT(stream->bufferPos <= stream->bufferEnd);
+	// Invalid buffer end
+	ASSERT(stream->bufferEnd <= STREAM_BUFFER_SIZE);
+	// Unexpected input pos
+	ASSERT(stream->streamPos >= stream->bufferPos);
 }
 
 // Returns number of bytes that can be read from the stream right now
@@ -53,11 +46,10 @@ void stream_ensureAvailableBytes(const stream_t* stream, streamSize_t len)
 void stream_advancePos(stream_t* stream, streamSize_t len)
 {
 	// just in case somebody changes to signed
-	ASSERT(len >= 0, "Bad length");
-	ASSERT(
-	        stream->streamPos + len > stream->streamPos,
-	        "Wraparound"
-	);
+	ASSERT(len >= 0);
+	// Wraparound
+	ASSERT(stream->streamPos + len > stream->streamPos);
+
 	stream_checkState(stream);
 	stream_ensureAvailableBytes(stream, len);
 	stream->bufferPos += len;
@@ -91,10 +83,8 @@ void stream_shift(stream_t* stream)
 	stream->bufferPos -= shift;
 	stream->bufferEnd -= shift;
 
-	ASSERT(
-	        len == stream_availableBytes(stream),
-	        "bad shift"
-	);
+	// Check shift consistency
+	ASSERT(len == stream_availableBytes(stream));
 	stream_checkState(stream);
 }
 
@@ -115,8 +105,8 @@ void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
 	// Prepare space
 	stream_shift(stream);
 
-	ASSERT(stream->bufferEnd + len <= STREAM_BUFFER_SIZE,
-	       "unexpected stream space");
+	// Check stream space
+	ASSERT(stream->bufferEnd + len <= STREAM_BUFFER_SIZE);
 	os_memmove(&stream->buffer[stream->bufferEnd], data, len);
 	stream->bufferEnd += len;
 	stream_checkState(stream);

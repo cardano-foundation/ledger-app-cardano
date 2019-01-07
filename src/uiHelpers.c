@@ -53,14 +53,8 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 
 void update_display_content()
 {
-	ASSERT(
-	        scrollingState->currentText[DISPLAY_TEXT_LEN] == '\0',
-	        "memory corruption"
-	);
-	ASSERT(
-	        scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText),
-	        "bad scroll index"
-	);
+	ASSERT(scrollingState->currentText[DISPLAY_TEXT_LEN] == '\0');
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
 	os_memmove(
 	        scrollingState->currentText,
 	        scrollingState->fullText + scrollingState->scrollIndex,
@@ -120,11 +114,11 @@ void displayScrollingText(
         const char* text,
         callback_t* callback)
 {
-	int header_len = strlen(header);
-	int text_len = strlen(text);
+	size_t header_len = strlen(header);
+	size_t text_len = strlen(text);
 	// sanity checks
-	ASSERT(header_len < sizeof(scrollingState->header), "too long header");
-	ASSERT(text_len < sizeof(scrollingState->fullText), "too long text");
+	ASSERT(header_len < sizeof(scrollingState->header));
+	ASSERT(text_len < sizeof(scrollingState->fullText));
 
 	// clear all memory
 	os_memset(&displayState, 0, sizeof(displayState));
@@ -138,7 +132,9 @@ void displayScrollingText(
 	// this also works with cases where
 	// strlen(fullText) < DISPLAY_TEXT_LEN
 
-	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText), "buffer overflow");
+
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
+
 	os_memmove(scrollingState->currentText, scrollingState->fullText + scrollingState->scrollIndex, DISPLAY_TEXT_LEN);
 
 	scrollingState->callback = callback;
@@ -200,14 +196,8 @@ void displayConfirm(
 	int header_len = strlen(header);
 	int text_len = strlen(text);
 	// sanity checks, keep 1 byte for null terminator
-	ASSERT(
-	        header_len < sizeof(confirmState->header),
-	        "too long header"
-	);
-	ASSERT(
-	        text_len < sizeof(confirmState->text),
-	        "too long text"
-	);
+	ASSERT(header_len < sizeof(confirmState->header));
+	ASSERT(text_len < sizeof(confirmState->text));
 
 	// clear all memory
 	os_memset(&displayState, 0, sizeof(displayState));
