@@ -4,6 +4,7 @@
 #include "stream.h"
 #include "cbor.h"
 #include "assert.h"
+#include "adaBase58.h"
 #include "test_utils.h"
 #include "hex_utils.h"
 #include <stdbool.h>
@@ -19,6 +20,7 @@ void handleRunTests(
 		run_hex_test();
 		run_stream_test();
 		run_cbor_test();
+		run_adaBase58_test();
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
