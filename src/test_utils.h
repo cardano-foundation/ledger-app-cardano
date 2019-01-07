@@ -42,7 +42,7 @@
         THROW(ERR_ASSERT); \
       } CATCH_OTHER (e) { \
           char msg[50]; \
-          snprintf(msg, sizeof(msg), "%s:%d 0x%x", __FILE__, __LINE__, e); \
+          snprintf(msg, sizeof(msg), "%s:%d x%x", __FILE__, __LINE__, e); \
           ASSERT_WITH_MSG(false, msg); \
       } FINALLY { \
       } \
