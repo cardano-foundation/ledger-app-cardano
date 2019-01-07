@@ -24,11 +24,11 @@ void derive_bip32_node_private_key()
 	        data.privateKeyData,
 	        data.chainCode);
 
-	cx_ecfp_init_private_key(
-	        CX_CURVE_Ed25519,
-	        data.privateKeyData,
-	        32,
-	        &data.privateKey);
+	// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
+	// should work with the new SDK
+	data.privateKey.curve = CX_CURVE_Ed25519;
+	data.privateKey.d_len = 64;
+	os_memmove(data.privateKey.d, data.privateKeyData, 64);
 }
 
 void ensureParametersAreCorrect(
@@ -78,10 +78,13 @@ void handleGetExtendedPublicKey(
 
 	derive_bip32_node_private_key();
 
-	cx_ecfp_generate_pair(
-	        CX_CURVE_Ed25519,
+	// We should do cx_ecfp_generate_pair here, but it does not work in SDK < 1.5.4,
+	// should work with the new SDK
+	cx_eddsa_get_public_key(
+	        &data.privateKey,
+	        CX_SHA512,
 	        &data.publicKey,
-	        &data.privateKey, 1);
+	        NULL, 0, NULL, 0);
 
 	os_memset(&data.privateKey, 0, sizeof(data.privateKey));
 	os_memset(data.privateKeyData, 0, sizeof(data.privateKeyData));
