@@ -3,14 +3,17 @@
 #include "assert.h"
 #include "errors.h"
 #include <os.h>
-
-#define U1BE(buf, off) ((uint8_t)(buf[off]))
-#define U8BE(buf, off) (((uint64_t)(U4BE(buf, off))     << 32) | ((uint64_t)(U4BE(buf, off + 4)) & 0xFFFFFFFF))
-
+#include <stdbool.h>
+#include "endian.h"
 
 // Note(ppershing): consume functions should either
 // a) *consume* expected value, or
 // b) *throw* but not consume anything from the stream
+
+static const uint64_t VALUE_MIN_W1 = 24;
+static const uint64_t VALUE_MIN_W2 = (uint64_t) 1 << 8;
+static const uint64_t VALUE_MIN_W4 = (uint64_t) 1 << 16;
+static const uint64_t VALUE_MIN_W8 = (uint64_t) 1 << 32;
 
 token_t cbor_peekToken(const stream_t* stream)
 {
@@ -47,7 +50,7 @@ token_t cbor_peekToken(const stream_t* stream)
 		return result;
 	}
 
-	const uint8_t* buf = stream_head(stream);
+	const uint8_t* buf = stream_head(stream) + 1;
 	// Holds minimum value for a given byte-width.
 	// Anything below this is not canonical CBOR as
 	// it could be represented by a shorter CBOR notation
@@ -56,26 +59,26 @@ token_t cbor_peekToken(const stream_t* stream)
 	case 24:
 		stream_ensureAvailableBytes(stream, 1 + 1);
 		result.width = 1;
-		result.value = U1BE(buf, 1);
-		limit_min = 24;
+		result.value = u1be_read(buf);
+		limit_min = VALUE_MIN_W1;
 		break;
 	case 25:
 		stream_ensureAvailableBytes(stream, 1 + 2);
 		result.width = 2;
-		result.value = U2BE(buf, 1);
-		limit_min = (uint64_t) 1 << 8;
+		result.value = u2be_read(buf);
+		limit_min = VALUE_MIN_W2;
 		break;
 	case 26:
 		stream_ensureAvailableBytes(stream, 1 + 4);
 		result.width = 4;
-		result.value = U4BE(buf, 1);
-		limit_min = (uint64_t) 1 << 16;
+		result.value = u4be_read(buf);
+		limit_min = VALUE_MIN_W4;
 		break;
 	case 27:
 		stream_ensureAvailableBytes(stream, 1 + 8);
 		result.width = 8;
-		result.value = U8BE(buf, 1);
-		limit_min = (uint64_t) 1 << 32;
+		result.value = u8be_read(buf);
+		limit_min = VALUE_MIN_W8;
 		break;
 	default:
 		// Values above 27 are not valid in CBOR.
