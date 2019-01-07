@@ -30,5 +30,5 @@ void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len);
 
 // internal (declared for testing)
 void stream_shift(stream_t* stream);
-
+void run_stream_test();
 #endif
