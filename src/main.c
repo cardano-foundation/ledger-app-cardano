@@ -182,10 +182,7 @@ static void cardano_main(void)
 			TRY {
 				rx = tx;
 				tx = 0; // ensure no race in CATCH_OTHER if io_exchange throws an error
-				ASSERT(
-				        (unsigned int) rx < sizeof(G_io_apdu_buffer),
-				        "response overflow"
-				);
+				ASSERT((unsigned int) rx < sizeof(G_io_apdu_buffer));
 				rx = io_exchange(CHANNEL_APDU | flags, rx);
 				flags = 0;
 
