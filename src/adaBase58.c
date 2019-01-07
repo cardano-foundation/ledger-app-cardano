@@ -16,54 +16,55 @@
 ********************************************************************************/
 
 #include "adaBase58.h"
+#include "assert.h"
+
+static const uint8_t MAX_BUFFER_SIZE = 124;
 
 static const unsigned char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 unsigned char ada_encode_base58(unsigned char *in, unsigned char length,
-                                unsigned char *out, unsigned char maxoutlen) {
-    unsigned char tmp[124];
-    unsigned char buffer[248];
-    unsigned char j;
-    unsigned char startAt;
-    unsigned char zeroCount = 0;
-    if (length > sizeof(tmp)) {
-        THROW(5802);
-    }
+                                unsigned char *out, unsigned char maxoutlen)
+{
+	unsigned char tmp[MAX_BUFFER_SIZE];
+	unsigned char buffer[MAX_BUFFER_SIZE * 2];
+	unsigned char j;
+	unsigned char startAt;
+	unsigned char zeroCount = 0;
 
-    os_memmove(tmp, in, length);
+	ASSERT(length <= MAX_BUFFER_SIZE);
 
-    while ((zeroCount < length) && (tmp[zeroCount] == 0)) {
-        ++zeroCount;
-    }
-    j = 2 * length;
-    startAt = zeroCount;
+	os_memmove(tmp, in, length);
 
-    //THROW(0x6600 | startAt);
+	while ((zeroCount < length) && (tmp[zeroCount] == 0)) {
+		++zeroCount;
+	}
+	j = 2 * length;
+	startAt = zeroCount;
 
-    while (startAt < length) {
-        unsigned short remainder = 0;
-        unsigned char divLoop;
-        for (divLoop = startAt; divLoop < length; divLoop++) {
-            unsigned short digit256 = (unsigned short)(tmp[divLoop] & 0xff);
-            unsigned short tmpDiv = remainder * 256 + digit256;
-            tmp[divLoop] = (unsigned char)(tmpDiv / 58);
-            remainder = (tmpDiv % 58);
-        }
-        if (tmp[startAt] == 0) {
-            ++startAt;
-        }
-        buffer[--j] = BASE58ALPHABET[remainder];
-    }
-    while ((j < (2 * length)) && (buffer[j] == BASE58ALPHABET[0])) {
-        ++j;
-    }
-    while (zeroCount-- > 0) {
-        buffer[--j] = BASE58ALPHABET[0];
-    }
-    length = 2 * length - j;
-    if (maxoutlen < length) {
-        THROW(5803);
-    }
-    os_memmove(out, (buffer + j), length);
-    return length;
+	while (startAt < length) {
+		unsigned short remainder = 0;
+		unsigned char divLoop;
+		for (divLoop = startAt; divLoop < length; divLoop++) {
+			unsigned short digit256 = (unsigned short)(tmp[divLoop] & 0xff);
+			unsigned short tmpDiv = remainder * 256 + digit256;
+			tmp[divLoop] = (unsigned char)(tmpDiv / 58);
+			remainder = (tmpDiv % 58);
+		}
+		if (tmp[startAt] == 0) {
+			++startAt;
+		}
+		buffer[--j] = BASE58ALPHABET[remainder];
+	}
+	while ((j < (2 * length)) && (buffer[j] == BASE58ALPHABET[0])) {
+		++j;
+	}
+	while (zeroCount-- > 0) {
+		buffer[--j] = BASE58ALPHABET[0];
+	}
+	length = 2 * length - j;
+
+	ASSERT(maxoutlen >= length);
+
+	os_memmove(out, (buffer + j), length);
+	return length;
 }
