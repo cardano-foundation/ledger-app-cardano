@@ -1,4 +1,4 @@
-# Sign Transaction
+# Sign Transaction (TBD: update after we get feedback from Vincent)
 
 **Description**
 
