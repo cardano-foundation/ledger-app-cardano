@@ -10,6 +10,7 @@
 #include "hex_utils.h"
 #include "blake2b_test.h"
 #include "attestUtxo.h"
+#include "keyDerivation.h"
 #include <stdbool.h>
 #include <os.h>
 
@@ -27,6 +28,7 @@ void handleRunTests(
 		run_base58_test();
 		run_blake2b_test();
 		run_test_attestUtxo();
+		key_derivation_test();
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
