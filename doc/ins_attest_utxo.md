@@ -14,22 +14,51 @@ A naive implementation would be to send UTxO amounts to Ledger without any verif
 
 To address such issues, Ledger implementation of Cardano requires each transaction input to be "verified" before signing a transaction.
 
-
-**Command**
+**General command fields**
 
 |Field|Value|
 |-----|-----|
 | CLA | `0xD7` |
 | INS | `0x20` |
-| P1 | frame |
+| P1 | is first/subsequent frame |
 | P2 | unused |
 | Lc | variable |
+| Data | variable |
 
-TODO: design streaming protocol for this call
+**Command structure**
+
+`P1=0` (first frame)
+
+|Data field|Width (B)|Comment|
+|----------|---------|-------|
+| outNum   |  4 (Big-endian)     | UTxO output number, indexed by 0|
+| TxChunk | variable | First chunk of Tx |
+
+❓(VL): Should we include Tx length? Pros: Ledger can strictly check if it received exactly all data. Cons: More checks that cen get out of sync + it isn't strictly necessary
+
+`P1=1` (subsequent frames)
+
+|Data Field|Width (B)|
+|----------|---------|
+| txChunk | variable |
+
+**Response**
+
+While Tx is not finished, the response is empty.
+
+Uppon receiving last txChunk the response is
+
+|Response data|Width (B)|Comment|
+|----------|---------|-------|
+| txHash   | 32 | |
+| outNum | 4 (Big-endian) | same as in initial command|
+| amount | 8 (Big-endian) | Output amount, in Lovelace|
+| attestation | ?? | HMAC(txHash, outNum, amount, session key)|
+
 
 **Ledger responsibilities**
 
-- Validate that transaction parses correctly
+- Validate that transaction parses correctly (for details see below)
 - Check that transaction contains given output number
 - Extract amount of the given output
 - Sign (using app session key generated at app start) tuple `(TxHash, OutputNumber, Amount)` and return the tuple together with the signature
@@ -51,9 +80,10 @@ Ledger *must* check and correctly recognize following CBOR-encoded transaction s
 ```javascript
 Array(3)[
  // 1 - inputs
- Array(*)[
+ Array(*)[ 
+   // Next array represents single input
    Array(2)[
-     // addrType. Note: Fixed to 0 (public key addresses) for now
+     // addrType. Note: We support only 0 (public key addresses) for now
      Unsigned(0),
      // encoded address
      Tag(24)(
@@ -63,11 +93,12 @@ Array(3)[
  ],
  // 2 - outputs
  Array(*)[
+   // Next array represents single output
    Array(2)[
     // raw (base58-decoded) address
     Array(2)[
       Tag(24){
-        // Warning: We do not parse & verify this
+        // address. WARNING: We do not parse & verify address
         Bytes[??],
       },
       // checksum. WARNING: We do not verify checksum
@@ -90,26 +121,28 @@ Where
 - `Bytes[x]` means byte sequence containing `x`
 - `??` means we do not constrain this value
 
-# TODO: ❓Following section needs to be reviewed by IOHK!
+# ❓ TODO: Following section needs to be reviewed by IOHK!
 
 **Checks that Ledger App *does not* implement:**
 
 There are certain transaction validity checks that Ledger app will not (or cannot) check.
 First of all, the App cannot check whether the referred UTxO transaction is actually included in the blockchain.
 On top of that, Ledger relaxes following checks:
-- Transaction length check. 
- - TBD: ❓maybe we should include this check
+- Transaction max-length check (i.e., that the transaction is shorter than 64KB). 
+  - ❓(VL,IOHK): should we include this check?
 - Address checks. The app treats `Tag(24)` encoded addresses or their checksums as opaque and *does not* check their validity.
 - Amount checks. The app *does not* check whether supplied amounts (and their sum) are valid or not.
-  - TBD: ❓maybe we should include at least MAX_ADA check)
+  - ❓(VL, IOHK): should we do at least MAX_ADA check for each amount? Or amount under attestation?
 - Fee checks. The app *does not* verify that there is enough transaction fee.
+- ❓(VL, IOHK): should we do at least check that sum(inputs) > sum(outputs) ?
 
-We believe these checks *are not necessary* to attest UTxO as the attestation's sole purpose is to **bind** together UTxO (i.e., transaction hash + output number) and amount. This can be done whenever main transaction CBOR structure parses correctly. If the attacker supplies wrong transaction data, either
+We believe these skipped checks *are not necessary* in order to attest UTxO as the attestation's sole purpose is to **bind** together UTxO (i.e., transaction hash + output number) and amount. This can be done whenever main transaction CBOR structure parses correctly. If the attacker supplies wrong transaction data, either
 1) the Ledger app will show (from the user-perspective) unexpected amounts and the user would not confirm the transaction, or
-2) the Ledger app would show (from the user-perspective) correct amounts but the UTxO has been meddled with. UTxO is, however, referred by transaction hash in the signed output transaction and as such, even if Ledger signs such transaction,  *Cardano blockchain nodes* will reject it.
+2) the Ledger app would show (from the user-perspective) correct amounts but the UTxO has been meddled with. UTxO is, however, referred to by the hash in the transaction under signing and as such, even if Ledger signs such transaction,  *Cardano blockchain nodes* will reject it.
 
-**Signature specification (maybe question to IOHK)**
-TBD: ❓. some sort of HMAC. It is unclear what should be used
+**Attestation signature specification**
+❓(IOHK): Some sort of HMAC. Any preferences on implementation?
 
-**TBD:❓ (question to IOHK?)**
-If this instruction is *not* limited by the user interaction, we have a signing oracle. Given that Ledger signs this *not* by it's public key but by a random *session* key, there does not seem to be any disadvantage in allowing this without user confirmation.
+**Signing oracle**
+❓(IOHK): Check if this isn't an issue.
+This instruction is *not* limited by the user interaction => we have a (relatively fast) signing oracle. Given that Ledger signs this *not* by it's public key but by a random ephemeral *session* key, there does not seem to be any disadvantage in allowing this call without user confirmation.
