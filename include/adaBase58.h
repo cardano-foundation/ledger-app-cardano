@@ -18,5 +18,5 @@
 #include "os.h"
 #include "cx.h"
 
-unsigned char ada_encode_base58(unsigned char *in, unsigned char length,
-                                unsigned char *out, unsigned char maxoutlen);
+unsigned char encode_base58(unsigned char *in, unsigned char length,
+                            unsigned char *out, unsigned char maxoutlen);

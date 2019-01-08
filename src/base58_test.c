@@ -3,10 +3,10 @@
 #include "assert.h"
 #include "test_utils.h"
 #include "hex_utils.h"
-#include "adaBase58.h"
+#include "base58.h"
 #include "stream.h"
 
-void run_adaBase58_test()
+void run_base58_test()
 {
 #define TESTCASE(input_, expected_) \
 	{ \
@@ -16,7 +16,7 @@ void run_adaBase58_test()
 		uint8_t* inputBuffer = stream_head(&si); \
 		uint8_t inputBufferSize = stream_availableBytes(&si); \
 		uint8_t output[248]; \
-		uint8_t outputLength = ada_encode_base58(inputBuffer, inputBufferSize, output, sizeof(output)); \
+		uint8_t outputLength = encode_base58(inputBuffer, inputBufferSize, output, sizeof(output)); \
 		EXPECT_EQ(outputLength, strlen(expected_)); \
 		EXPECT_EQ_BYTES(expected_, output, outputLength); \
 	}

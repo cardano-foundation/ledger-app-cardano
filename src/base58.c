@@ -15,15 +15,17 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include "adaBase58.h"
+// This code is slightly modified version of Ripple's code
+
+#include "base58.h"
 #include "assert.h"
 
 static const uint8_t MAX_BUFFER_SIZE = 124;
 
 static const unsigned char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-unsigned char ada_encode_base58(unsigned char *in, unsigned char length,
-                                unsigned char *out, unsigned char maxoutlen)
+unsigned char encode_base58(const unsigned char *in, unsigned char length,
+                            unsigned char *out, unsigned char maxoutlen)
 {
 	unsigned char tmp[MAX_BUFFER_SIZE];
 	unsigned char buffer[MAX_BUFFER_SIZE * 2];
