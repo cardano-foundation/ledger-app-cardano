@@ -2,9 +2,15 @@
 
 **Description**
 
-Get public key for a BIP path.
+Get extended public key (i.e., public key + chain code) for a given BIP32 path.
 
-Could be called at any time. 
+Note: Unlike BTC app, this call does not return nor display addresses. See [](ins_derive_address.md) for details.
+
+❓(IOHK):Check if the restriction makes sense.
+This call restricts BIP32 path to start with `44'/1815'/account'`, i.e. it only returns public key for accounts and descendants. Currently there is no reason for a client to ask for any other path prefix. 
+
+❓(IOHK):Check if the restriction makes sense.
+This call restricts path length to be 10. Length 10 should be enough for all known application purposes.
 
 **Command**
 
@@ -39,7 +45,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 **Errors (SW codes)**
 
 - 0x9000 OK
-- ❓ other codes
+- ❓(VL): describe error codes
 
 **Ledger responsibilities**
 
@@ -53,7 +59,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
     - `1 + path_len * 4 == Lc`
   - check derivatoin path is valid and within Cardano BIP32 space
     - `path_len >= 3`
-    - `path_len <= 10` ❓ is this enough, or do we need longer paths
+    - `path_len <= 10`
     - `path[0] == 44'` (' means hardened)
     - `path[1] == 1815'`
     - `path[2] is hardened` (`path[2]` is account number)
@@ -61,7 +67,7 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 - respond with public key
  
 **TODOs**
-- TBD: ❓Should we also support BTC app like token validation? (Token validation is to prevent concurrent access to the Ledger by two different host apps which could confuse user into performing wrong actions)
-- TBD: ❓Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host? (Note: probably not in the first version of the app)
-- TBD: ❓Should there be an option to show the public key on display? Is it useful in any way? (Note: probably not)
+- ❓(IOHK): Should we also support BTC app like token validation? (Note: Token validation is to prevent concurrent access to the Ledger by two different host apps which could confuse user into performing wrong actions)
+- ❓(IOHK): Should we support permanent app setting where Ledger forces user to acknowledge public key retrieval before sending it to host? (Note: probably not in the first version of the app)
+- ❓(IOHK): Should there be an option to show the public key on display? Is it useful in any way? (Note: probably not)
 
