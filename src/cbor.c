@@ -102,3 +102,57 @@ void cbor_advanceToken(stream_t* stream)
 	token_t token = cbor_peekToken(stream);
 	stream_advancePos(stream, 1 + token.width);
 }
+
+void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
+{
+	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
+	uint8_t bufLen = 0;
+	if (type == TYPE_ARRAY_INDEF || type == TYPE_INDEF_END) {
+		buf[0] = type;
+		stream_appendData(stream, buf, 1);
+		return;
+	}
+
+	if (type & VALUE_MASK) {
+		// type should not have any value
+		THROW(ERR_UNEXPECTED_TOKEN);
+	}
+
+	// Check sanity
+	switch (type) {
+	case TYPE_UNSIGNED:
+	case TYPE_BYTES:
+	case TYPE_ARRAY:
+	case TYPE_MAP:
+	case TYPE_TAG:
+		break;
+	default:
+		// not supported
+		THROW(ERR_UNEXPECTED_TOKEN);
+	}
+
+	// Warning(ppershing): It might be tempting but we don't want to call stream_appendData() twice
+	// Instead we have to construct the whole buffer at once to make append operation atomic.
+
+	if (value < VALUE_MIN_W1) {
+		u1be_write(buf, type | value);
+		bufLen = 1;
+	} else if (value < VALUE_MIN_W2) {
+		u1be_write(buf, type | 24);
+		u1be_write(buf + 1, value);
+		bufLen = 1 + 1;
+	} else if (value < VALUE_MIN_W4) {
+		u1be_write(buf, type | 25);
+		u2be_write(buf + 1, value);
+		bufLen = 1 + 2;
+	} else if (value < VALUE_MIN_W8) {
+		u1be_write(buf, type | 26);
+		u4be_write(buf + 1, value);
+		bufLen = 1 + 4;
+	} else {
+		buf[0] = type | 27;
+		u8be_write(buf + 1, value);
+		bufLen = 1 + 8;
+	}
+	stream_appendData(stream, buf, bufLen);
+}
