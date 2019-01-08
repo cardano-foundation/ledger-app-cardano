@@ -9,6 +9,7 @@
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "blake2b_test.h"
+#include "attestUtxo.h"
 #include <stdbool.h>
 #include <os.h>
 
@@ -25,7 +26,7 @@ void handleRunTests(
 		run_cbor_test();
 		run_base58_test();
 		run_blake2b_test();
-
+		run_test_attestUtxo();
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
