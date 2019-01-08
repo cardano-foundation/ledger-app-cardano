@@ -36,6 +36,7 @@ token_t cbor_peekToken(const stream_t* stream)
 	case TYPE_BYTES:
 	case TYPE_ARRAY:
 	case TYPE_MAP:
+	case TYPE_TAG:
 		break;
 	default:
 		// We don't know how to parse others

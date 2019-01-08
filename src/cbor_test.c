@@ -50,6 +50,8 @@ void test_peek_token()
 		TESTCASE("a0", TYPE_MAP, 0, 0);
 		TESTCASE("a1", TYPE_MAP, 0, 1);
 	} {
+		TESTCASE("d818", TYPE_TAG, 1, 24);
+	} {
 		TESTCASE("ff", TYPE_INDEF_END, 0, 0);
 	}
 #undef TESTCASE
