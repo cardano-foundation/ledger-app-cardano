@@ -82,8 +82,61 @@ void test_noncanonical()
 #undef TESTCASE
 }
 
+void test_serialization()
+{
+#define TESTCASE(str_, type_, value_) \
+	{ \
+	    stream_t s1; \
+	    stream_t s2; \
+	    stream_init(&s1); \
+	    stream_init(&s2); \
+	    stream_appendFromHexString(&s1, str_); \
+	    cbor_appendToken(&s2, type_, value_); \
+	    EXPECT_EQ_STREAM(&s1, &s2); \
+	}
+
+	{
+		TESTCASE("00", TYPE_UNSIGNED, 0);
+		TESTCASE("01", TYPE_UNSIGNED, 1);
+		TESTCASE("0a", TYPE_UNSIGNED, 10);
+		TESTCASE("17", TYPE_UNSIGNED, 23);
+
+		TESTCASE("1818", TYPE_UNSIGNED, 24);
+
+		TESTCASE("1903e8", TYPE_UNSIGNED, 1000);
+
+		TESTCASE("1a000f4240", TYPE_UNSIGNED, 1000000);
+
+		TESTCASE("1b000000e8d4a51000", TYPE_UNSIGNED, 1000000000000);
+		TESTCASE("1bffFFffFFffFFffFF", TYPE_UNSIGNED, 18446744073709551615u);
+	} {
+		TESTCASE("40", TYPE_BYTES, 0);
+		TESTCASE("44", TYPE_BYTES, 4);
+	} {
+		TESTCASE("80", TYPE_ARRAY, 0);
+		TESTCASE("83", TYPE_ARRAY, 3);
+		TESTCASE("9819", TYPE_ARRAY, 25);
+
+		TESTCASE("9f", TYPE_ARRAY_INDEF, 0);
+	} {
+		TESTCASE("a0", TYPE_MAP, 0);
+		TESTCASE("a1", TYPE_MAP, 1);
+	} {
+		TESTCASE("ff", TYPE_INDEF_END, 0);
+	}
+#undef TESTCASE
+
+	{
+		// Check invalid type
+		stream_t s1;
+		stream_init(&s1);
+		EXPECT_THROWS(cbor_appendToken(&s1, 47, 0), ERR_UNEXPECTED_TOKEN);
+	}
+}
+
 void run_cbor_test()
 {
 	test_peek_token();
 	test_noncanonical();
+	test_serialization();
 }

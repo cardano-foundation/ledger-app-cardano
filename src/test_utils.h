@@ -27,7 +27,18 @@
 // Assert that expression returns correct result
 #define EXPECT_EQ(expr, result) ASSERT(expr == result)
 
+// Assert that first len bytes are same
 #define EXPECT_EQ_BYTES(ptr1, ptr2, len) ASSERT(os_memcmp(ptr1, ptr2, len) == 0);
+
+// Assert that streams have have available content
+#define EXPECT_EQ_STREAM(s1_ptr, s2_ptr) \
+    { \
+	size_t l1 = stream_availableBytes(s1_ptr); \
+	size_t l2 = stream_availableBytes(s2_ptr); \
+	EXPECT_EQ(l1, l2); \
+	EXPECT_EQ_BYTES(stream_head(s1_ptr), stream_head(s2_ptr), l1); \
+    }
+
 
 // Assert that expression does not throw (except for another assert)
 #define BEGIN_ASSERT_NOEXCEPT \
@@ -48,4 +59,6 @@
       } \
     } END_TRY; \
   }
+
+
 #endif

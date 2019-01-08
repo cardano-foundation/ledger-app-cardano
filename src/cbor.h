@@ -46,5 +46,7 @@ typedef struct {
 token_t cbor_peekToken(const stream_t* s);
 void cbor_advanceToken(stream_t* s);
 
+void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value);
+
 void run_cbor_test();
 #endif
