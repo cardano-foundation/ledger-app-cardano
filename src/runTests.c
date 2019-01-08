@@ -8,6 +8,7 @@
 #include "base58.h"
 #include "test_utils.h"
 #include "hex_utils.h"
+#include "blake2b_test.h"
 #include <stdbool.h>
 #include <os.h>
 
@@ -23,6 +24,8 @@ void handleRunTests(
 		run_stream_test();
 		run_cbor_test();
 		run_base58_test();
+		run_blake2b_test();
+
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
