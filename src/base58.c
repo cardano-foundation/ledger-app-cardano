@@ -19,6 +19,7 @@
 
 #include "base58.h"
 #include "assert.h"
+#include <os.h>
 
 static const uint8_t MAX_BUFFER_SIZE = 124;
 

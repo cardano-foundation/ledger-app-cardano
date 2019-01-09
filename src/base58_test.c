@@ -5,6 +5,7 @@
 #include "hex_utils.h"
 #include "base58.h"
 #include "stream.h"
+#include <string.h>
 
 void run_base58_test()
 {
@@ -13,7 +14,7 @@ void run_base58_test()
 	    stream_t si; \
 	    stream_init(&si); \
 	    stream_appendFromHexString(&si, input_); \
-		uint8_t* inputBuffer = stream_head(&si); \
+		const uint8_t* inputBuffer = stream_head(&si); \
 		uint8_t inputBufferSize = stream_availableBytes(&si); \
 		uint8_t output[248]; \
 		uint8_t outputLength = encode_base58(inputBuffer, inputBufferSize, output, sizeof(output)); \

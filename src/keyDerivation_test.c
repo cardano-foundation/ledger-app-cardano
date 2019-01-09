@@ -25,6 +25,8 @@ void testPrivateKeyDerivation()
 		char* expected1 = "5878bdf06af259f1419324680c4d4ce05b4343895b697144d874749925e69d41"
 		                  "648e7e50061809207f81dac36b73cd8fab2325d49d26bc65ebbb696ea59c45b8";
 
+		// Note: Failing tests here? Did you load testing mnemonic
+		// "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"?
 		TESTCASE(path1, expected1);
 
 		uint32_t path2[] = { HARDENED_BIP32 + 44, HARDENED_BIP32 + 1815, HARDENED_BIP32 + 1, HARDENED_BIP32 + 55 };
@@ -52,10 +54,10 @@ void testPrivateKeyDerivation()
 		EXPECT_THROWS(derivePrivateKey(tooShortPath, ARRAY_LEN(tooShortPath), &chainCode, &privateKey), ERR_INVALID_REQUEST_PARAMETERS);
 
 		uint32_t invalidPath1[] = { HARDENED_BIP32 + 44, 1815, HARDENED_BIP32 + 1 };
-		EXPECT_THROWS(derivePrivateKey(invalidPath1, ARRAY_LEN(tooShortPath), &chainCode, &privateKey), ERR_INVALID_REQUEST_PARAMETERS);
+		EXPECT_THROWS(derivePrivateKey(invalidPath1, ARRAY_LEN(invalidPath1), &chainCode, &privateKey), ERR_INVALID_REQUEST_PARAMETERS);
 
 		uint32_t invalidPath2[] = { HARDENED_BIP32 + 44, HARDENED_BIP32 + 33, HARDENED_BIP32 + 1 };
-		EXPECT_THROWS(derivePrivateKey(invalidPath2, ARRAY_LEN(tooShortPath), &chainCode, &privateKey), ERR_INVALID_REQUEST_PARAMETERS);
+		EXPECT_THROWS(derivePrivateKey(invalidPath2, ARRAY_LEN(invalidPath2), &chainCode, &privateKey), ERR_INVALID_REQUEST_PARAMETERS);
 	}
 #undef TESTCASE
 }

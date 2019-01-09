@@ -25,7 +25,7 @@ void run_blake2b_test()
 		uint8_t pos = 0; \
 		for (unsigned i = 0; i < chunksLength_; i++) { \
 			unsigned len = inputChunks_[i]; \
-			blake2b256_append(&ctx, inputBuffer+pos, len); \
+			blake2b512_append(&ctx, inputBuffer+pos, len); \
 			pos += len; \
 		} \
 		blake2b512_finalize(&ctx, output, 64); \
