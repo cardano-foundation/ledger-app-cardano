@@ -5,11 +5,10 @@
 #include "io.h"
 #include "test_utils.h"
 #include "endian.h"
+#include "utils.h"
 
 // Note(ppershing): this needs to be declared static.
-// Probably som PIC reason.
-
-
+// Probably some PIC reason.
 
 // https://cardanoexplorer.com/tx/f33b1f56240c9f4afc9dd9a9141737b2937b6cd856dd67fda81cc794d2670580
 static const char* txChunks[] = {
@@ -31,7 +30,6 @@ static const char* txChunks[] = {
 };
 
 
-#define ARRAY_LEN(x) (sizeof(x) / sizeof(x[0]))
 
 #define TESTCASE(outputIndex, expectedAmount) \
 	{ \
