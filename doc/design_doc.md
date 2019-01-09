@@ -72,7 +72,8 @@ Instructions related to debug mode of the app. These instructions *must not* be 
 
 - `0xF0` Run unit tests
 - `0xF1` Set "headless" mode button responses for the next INS call
-
+- `0xF2` Attest get session secret (return key used by AttestUTxO HMAC)
+- `0xF3` Attest set sessoin secret (set key used by AttestUTxO HMAC)
 ## Protocol upgrade considerations:
 
 In order to ensure safe forward compatibility, sender *must* set any *unused* field to zero. When upgrading protocol, any unused field that is no longer unused *must* define only values != 0. This will ensure that clients using old protocol will receive errors instead of an unexpected behavior.
