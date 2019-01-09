@@ -16,7 +16,7 @@
 	    UNSAFE_ARRAY_LEN(x); \
 	})
 
-#define UNSAFE_ARRAY_LEN(x) (sizof(x) / sizeof((x)[0]))
+#define UNSAFE_ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
 
 // Given that memset is root of many problems, a bit of paranoia is good.
 // If you don't believe, just check out https://www.viva64.com/en/b/0360/
