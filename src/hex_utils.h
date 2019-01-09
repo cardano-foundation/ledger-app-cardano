@@ -9,5 +9,7 @@ uint8_t hex_parseNibblePair(const char* str);
 
 void stream_appendFromHexString(stream_t* s, const char* str);
 
+void stream_initFromHexString(stream_t* s, const char* str);
+
 void run_hex_test();
 #endif

@@ -17,19 +17,19 @@ Note: Derive address rejects any path that is not at least an "address" -- curre
 
 **Command**
 
-|Field|Value|
-|-----|-----|
-| CLA | `0xD7` |
-| INS | `0x11` |
-| P1 | unused❓ (see TBD above) |
-| P2 | unused |
-| Lc | variable |
+| Field | Value                   |
+| ----- | ----------------------- |
+| CLA   | `0xD7`                  |
+| INS   | `0x11`                  |
+| P1    | unused❓ (see TBD above) |
+| P2    | unused                  |
+| Lc    | variable                |
 
 **Response**
 
-|Field| Length |
-|-----|--------|
-|address| variable |
+| Field   | Length   |
+| ------- | -------- |
+| address | variable |
 
 Where `address` is encoded in ❓(VL) TBD: our choices are either raw bytes (byte-efficient) or base58-encoded (1:1 corresponsence with what the user sees. We need to decide which one is better for the protocol.
 
@@ -39,6 +39,6 @@ Where `address` is encoded in ❓(VL) TBD: our choices are either raw bytes (byt
 - For checking the input, Ledger has the same responsibilities as in `GetPublicKey`.
 - On top of that, the address *cannot* be that of an account, or of external/internal address chain root, i.e. it needs to have 
   - `path_len >= 5`,
-  - `path[2] == 0` (account), and
+  - `path[2] == 0'` (account), and
   - ❓(see above): `path[3] in [0,1]` (internal/external chain)
 - If the address needs to be verified, Ledger should show it *after* it responds to the host. Note that until user confirms the address, Ledger should not process any subsequent instruction call.

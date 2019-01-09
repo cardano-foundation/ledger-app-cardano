@@ -7,11 +7,13 @@
 static const uint32_t BIP_44 = 44;
 static const uint32_t ADA_COIN_TYPE = 1815;
 static const uint32_t HARDENED_BIP32 = ((uint32_t) 1 << 31);
+static const uint32_t PUBLIC_KEY_SIZE =  32;
+static const uint32_t CHAIN_CODE_SIZE =  32;
 
 typedef cx_ecfp_256_extended_private_key_t privateKey_t;
 
 typedef struct {
-	uint8_t code[32];
+	uint8_t code[CHAIN_CODE_SIZE];
 } chain_code_t;
 
 void derivePrivateKey(

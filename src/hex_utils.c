@@ -32,6 +32,12 @@ void stream_appendFromHexString(stream_t* s, const char* str)
 	}
 }
 
+void stream_initFromHexString(stream_t* s, const char* str)
+{
+	stream_init(s);
+	stream_appendFromHexString(s, str);
+}
+
 void test_hex_nibble_parsing()
 {
 #define TESTCASE(digit, value) EXPECT_EQ(hex_parseNibble(digit), value)
