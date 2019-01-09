@@ -4,6 +4,7 @@
 #include "stream.h"
 #include <os.h>
 #include <string.h>
+#include "blake2b.h"
 
 void run_blake2b_test()
 {
@@ -18,31 +19,16 @@ void run_blake2b_test()
 		stream_init(&se); \
 		stream_appendFromHexString(&se, expected_); \
 		const uint8_t* expectedBuffer = stream_head(&se); \
-		cx_blake2b_t hash; \
-		cx_blake2b_init( \
-			&hash, \
-			64 * 8 /* output size in BITS */\
-		); \
+		blake2b512_context_t ctx; \
+		blake2b512_init(&ctx); \
 		uint8_t output[64]; \
 		uint8_t pos = 0; \
 		for (unsigned i = 0; i < chunksLength_; i++) { \
-			cx_hash( \
-				&hash.header, \
-				0, /* Do not output the hash, yet */ \
-				inputBuffer + pos, \
-				inputChunks_[i], /* Input length */ \
-				NULL, 0 \
-			); \
-			pos += inputChunks_[i]; \
+			unsigned len = inputChunks_[i]; \
+			blake2b256_append(&ctx, inputBuffer+pos, len); \
+			pos += len; \
 		} \
-		cx_hash( \
-			&hash.header, \
-			CX_LAST, /* Output the hash */ \
-			NULL, \
-			0, \
-			output, \
-			64 /* output length */ \
-		); \
+		blake2b512_finalize(&ctx, output, 64); \
 		EXPECT_EQ_BYTES(expectedBuffer, output, 64); \
 	}
 
