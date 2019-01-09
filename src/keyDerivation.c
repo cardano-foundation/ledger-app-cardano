@@ -29,11 +29,12 @@ void derivePrivateKey(
 
 	uint8_t privateKeyRaw[64];
 
-	STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
-	os_memset(chainCode->code, 0, 32);
+	STATIC_ASSERT(sizeof(chainCode->code) == 32, __bad_length);
+	os_memset(chainCode->code, 0, sizeof(chainCode->code));
 
 	BEGIN_TRY {
 		TRY {
+			STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
 			        bip32Path,

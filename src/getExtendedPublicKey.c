@@ -74,18 +74,17 @@ void io_exchange_address()
 {
 	uint32_t tx = 0;
 
-	G_io_apdu_buffer[tx++] = 32;
+	G_io_apdu_buffer[tx++] = PUBLIC_KEY_SIZE;
 
-	uint8_t rawPublicKey[32];
+	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
 	extractRawPublicKey(&data.publicKey, rawPublicKey);
-	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, 32);
-	os_memset(rawPublicKey, 0, 32);
+	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, PUBLIC_KEY_SIZE);
 
-	tx += 32;
+	tx += PUBLIC_KEY_SIZE;
 
-	os_memmove(G_io_apdu_buffer + tx, data.chainCode.code, ARRAY_LEN(data.chainCode.code));
+	os_memmove(G_io_apdu_buffer + tx, data.chainCode.code, CHAIN_CODE_SIZE);
 
-	tx += ARRAY_LEN(data.chainCode.code);
+	tx += CHAIN_CODE_SIZE;
 
 	G_io_apdu_buffer[tx++] = 0x90;
 	G_io_apdu_buffer[tx++] = 0x00;
