@@ -14,12 +14,18 @@ enum {
 	// Successfull responses
 	SUCCESS                 = 0x9000,
 
-	// Bad request
+	// Bad request header
 	ERR_MALFORMED_REQUEST          = 0x6E01,
+	// Unknown CLA
 	ERR_BAD_CLA                    = 0x6E02,
+	// Unknown INS
 	ERR_UNKNOWN_INS                = 0x6E03,
-	ERR_STILL_IN_CALL              = 0x6901,
-	ERR_INVALID_REQUEST_PARAMETERS = 0x6E04,
+	// TODO(should we move this to ERR_INVALID_STATE) ?
+	ERR_STILL_IN_CALL              = 0x6E04,
+	// P1, P2 or payload is invalid
+	ERR_INVALID_REQUEST_PARAMETERS = 0x6E05,
+	// Request is not valid in the context of previous calls
+	ERR_INVALID_STATE	       = 0x6E06,
 
 	// Internal errors
 	ERR_ASSERT             = 0x4700,

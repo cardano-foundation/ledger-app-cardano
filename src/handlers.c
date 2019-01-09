@@ -7,7 +7,7 @@
 #include "getVersion.h"
 #include "getExtendedPublicKey.h"
 #include "runTests.h"
-
+#include "attestUtxo.h"
 #include "state.h"
 #include "errors.h"
 
@@ -24,6 +24,7 @@ enum {
 	INS_GET_PUB_KEY   = 0x10,
 
 	// 0x2* - signing-transaction related
+	INS_ATTEST_UTXO = 0x20,
 
 	#ifdef DEVEL
 	// 0xF* - debug_mode related
@@ -52,12 +53,17 @@ handler_fn_t* lookupHandler(uint8_t ins)
 	case INS_GET_PUB_KEY:
 		return handleGetExtendedPublicKey;
 
+
+	case INS_ATTEST_UTXO:
+		return handle_attestUtxo;
+
 // *INDENT-OFF* astyle has problems with #define inside switch
 #ifdef DEVEL
 	case INS_RUN_TESTS:
 		return handleRunTests;
 #endif
 // *INDENT-ON*
+
 	default:
 		return NULL;
 	}

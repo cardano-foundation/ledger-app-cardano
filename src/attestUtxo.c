@@ -3,7 +3,11 @@
 #include <os.h>
 #include "cbor.h"
 #include "test_utils.h"
+#include "endian.h"
+#include "io.h"
+#include "ux.h"
 #include "utils.h"
+#include "blake2b.h"
 
 // Expect & consume CBOR token with specific type and value
 void takeCborTokenWithValue(stream_t* stream, uint8_t expectedType, uint64_t expectedValue)
@@ -273,6 +277,8 @@ void initAttestUtxo(
 	state->outputAmount = LOVELACE_INVALID;
 	state->attestedOutputIndex = outputIndex;
 	stream_init(& state->stream);
+	state->isInitialized = ATTEST_INIT_MAGIC;
+	blake2b256_init(& state->txHashCtx);
 }
 
 // TODO(ppershing): revisit these conditions
@@ -284,10 +290,92 @@ uint64_t getAttestedAmount(attestUtxoState_t* state)
 	return state->outputAmount;
 }
 
+bool isInitialized(attestUtxoState_t* state)
+{
+	return state->isInitialized == ATTEST_INIT_MAGIC;
+}
+
 // throws ERR_NOT_ENOUGH_INPUT when cannot proceed further
 void keepParsing(attestUtxoState_t* state)
 {
+	ASSERT(isInitialized(state));
+
 	while(state -> mainState != MAIN_FINISHED) {
 		advanceMainState(state);
 	}
+}
+
+
+// TODO: move this to the global state union
+attestUtxoState_t global_state;
+
+enum {
+	P1_INITIAL = 0x01,
+	P1_CONTINUE = 0x02,
+};
+
+
+void handle_attestUtxo(
+        uint8_t p1,
+        uint8_t p2,
+        uint8_t* dataBuffer,
+        uint16_t dataLength
+)
+{
+	attestUtxoState_t* state = &global_state;
+
+	VALIDATE_REQUEST_PARAM(p1 == P1_INITIAL || p1 == P1_CONTINUE);
+
+	if (p1 == P1_INITIAL) {
+		VALIDATE_REQUEST_PARAM(p2 == 0);
+		VALIDATE_REQUEST_PARAM(dataLength >= 4);
+		uint32_t outputIndex = u4be_read(dataBuffer);
+		initAttestUtxo(state, outputIndex);
+		// Skip outputIndex
+		dataBuffer += 4;
+		dataLength -= 4;
+	} else {
+		if (!isInitialized(state)) {
+			THROW(ERR_INVALID_STATE);
+		}
+	}
+
+	BEGIN_TRY {
+		TRY {
+			stream_appendData(&state->stream, dataBuffer, dataLength);
+			blake2b256_append(& state->txHashCtx, dataBuffer, dataLength);
+			keepParsing(state);
+			if (state->mainState == MAIN_FINISHED)
+			{
+				// Response is (txHash, outputNumber, outputAmount, HMAC)
+				uint8_t response[32 + 8 + 8 + 0];
+				unsigned pos = 0;
+
+
+				blake2b256_finalize(&state ->txHashCtx, response + pos, 32);
+				pos += 32;
+
+
+				uint64_t outputNumber = state->attestedOutputIndex;
+				u8be_write(response + pos, outputNumber);
+				pos += 8;
+
+
+				// TODO(error handling)
+				uint64_t amount = getAttestedAmount(state);
+				u8be_write(response + pos, amount);
+				pos += 8;
+
+				ASSERT(pos == sizeof(response));
+				io_send_buf(SUCCESS, response, pos);
+				ui_idle();
+			}
+		} CATCH(ERR_NOT_ENOUGH_INPUT)
+		{
+			// Respond that we need more data
+			io_send_buf(SUCCESS, NULL, 0);
+		}
+		FINALLY {
+		}
+	} END_TRY;
 }
