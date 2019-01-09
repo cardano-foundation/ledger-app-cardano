@@ -5,6 +5,7 @@
 #include "errors.h"
 #include "getExtendedPublicKey.h"
 #include "keyDerivation.h"
+#include "utils.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
@@ -48,16 +49,21 @@ void handleGetExtendedPublicKey(
 
 	initializePath(dataBuffer);
 
-	derivePrivateKey(
-	        data.bip32Path,
-	        data.pathLength,
-	        data.chainCode,
-	        &data.privateKey
-	);
+	BEGIN_TRY {
+		TRY {
+			derivePrivateKey(
+			        data.bip32Path,
+			        data.pathLength,
+			        &data.chainCode,
+			        &data.privateKey
+			);
 
-	derivePublicKey(&data.privateKey, &data.publicKey);
-
-	os_memset(&data.privateKey, 0, sizeof(data.privateKey));
+			derivePublicKey(&data.privateKey, &data.publicKey);
+		}
+		FINALLY {
+			os_memset(&data.privateKey, 0, sizeof(data.privateKey));
+		}
+	} END_TRY;
 
 	io_exchange_address();
 }
@@ -70,13 +76,16 @@ void io_exchange_address()
 
 	G_io_apdu_buffer[tx++] = 32;
 
-	getRawPublicKey(&data.publicKey, G_io_apdu_buffer + tx);
+	uint8_t rawPublicKey[32];
+	extractRawPublicKey(&data.publicKey, rawPublicKey);
+	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, 32);
+	os_memset(rawPublicKey, 0, 32);
 
 	tx += 32;
 
-	os_memmove(G_io_apdu_buffer + tx, data.chainCode, sizeof(data.chainCode));
+	os_memmove(G_io_apdu_buffer + tx, data.chainCode.code, ARRAY_LEN(data.chainCode.code));
 
-	tx += sizeof(data.chainCode);
+	tx += ARRAY_LEN(data.chainCode.code);
 
 	G_io_apdu_buffer[tx++] = 0x90;
 	G_io_apdu_buffer[tx++] = 0x00;

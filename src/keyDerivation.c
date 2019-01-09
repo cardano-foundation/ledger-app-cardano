@@ -21,8 +21,8 @@ void validatePath(uint32_t* path, uint32_t pathLength)
 
 void derivePrivateKey(
         uint32_t* bip32Path, uint32_t pathLength,
-        uint8_t* chainCode,
-        cx_ecfp_256_extended_private_key_t* privateKey
+        chain_code_t* chainCode,
+        privateKey_t* privateKey
 )
 {
 	validatePath(bip32Path, pathLength);
@@ -30,26 +30,31 @@ void derivePrivateKey(
 	uint8_t privateKeyRaw[64];
 
 	STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
-	os_memset(chainCode, 0, 32);
+	os_memset(chainCode->code, 0, 32);
 
-	os_perso_derive_node_bip32(
-	        CX_CURVE_Ed25519,
-	        bip32Path,
-	        pathLength,
-	        privateKeyRaw,
-	        chainCode);
+	BEGIN_TRY {
+		TRY {
+			os_perso_derive_node_bip32(
+			        CX_CURVE_Ed25519,
+			        bip32Path,
+			        pathLength,
+			        privateKeyRaw,
+			        chainCode->code);
 
-	// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
-	// should work with the new SDK
-	privateKey->curve = CX_CURVE_Ed25519;
-	privateKey->d_len = 64;
-	os_memmove(privateKey->d, privateKeyRaw, 64);
-
-	os_memset(privateKeyRaw, 0, sizeof(privateKeyRaw));
+			// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
+			// should work with the new SDK
+			privateKey->curve = CX_CURVE_Ed25519;
+			privateKey->d_len = 64;
+			os_memmove(privateKey->d, privateKeyRaw, 64);
+		}
+		FINALLY {
+			os_memset(privateKeyRaw, 0, sizeof(privateKeyRaw));
+		}
+	} END_TRY;
 }
 
 
-void derivePublicKey(cx_ecfp_256_extended_private_key_t* privateKey,
+void derivePublicKey(privateKey_t* privateKey,
                      cx_ecfp_public_key_t* publicKey)
 {
 	// We should do cx_ecfp_generate_pair here, but it does not work in SDK < 1.5.4,
@@ -61,7 +66,7 @@ void derivePublicKey(cx_ecfp_256_extended_private_key_t* privateKey,
 	        NULL, 0, NULL, 0);
 }
 
-void getRawPublicKey(cx_ecfp_public_key_t* publicKey, uint8_t* rawPublicKey)
+void extractRawPublicKey(cx_ecfp_public_key_t* publicKey, uint8_t* rawPublicKey)
 {
 	// copy public key little endian to big endian
 	uint8_t i;
