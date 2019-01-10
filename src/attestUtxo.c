@@ -9,33 +9,7 @@
 #include "utils.h"
 #include "blake2b.h"
 
-// Expect & consume CBOR token with specific type and value
-void takeCborTokenWithValue(stream_t* stream, uint8_t expectedType, uint64_t expectedValue)
-{
-	const token_t token = cbor_peekToken(stream);
-	if (token.type != expectedType || token.value != expectedValue) {
-		THROW(ERR_UNEXPECTED_TOKEN);
-	}
-	cbor_advanceToken(stream);
-}
-
-// Expect & consume CBOR token with specific type, return value
-uint64_t takeCborToken(stream_t* stream, uint8_t expectedType)
-{
-	const token_t token = cbor_peekToken(stream);
-	if (token.type != expectedType) {
-		THROW(ERR_UNEXPECTED_TOKEN);
-	}
-	cbor_advanceToken(stream);
-	return token.value;
-}
-
-// Is next CBOR token indefinite array/map end?
-bool nextIsIndefEnd(stream_t* stream)
-{
-	token_t head = cbor_peekToken(stream);
-	return (head.type == TYPE_INDEF_END);
-}
+const uint64_t CARDANO_ADDRESS_TYPE_PUBKEY = 0;
 
 // We do not parse addresses, just keep streaming over then
 void skipThroughAddressBytes(attestUtxoState_t* state)
@@ -61,18 +35,17 @@ void advanceInputState(attestUtxoState_t* state)
 		break;
 
 	case INPUT_EXPECT_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY, 2);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
 		state->inputState = INPUT_EXPECT_TYPE;
 		break;
 
 	case INPUT_EXPECT_TYPE:
-		// type 0 == privkey address
-		takeCborTokenWithValue(stream, TYPE_UNSIGNED, 0);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
 		state->inputState = INPUT_EXPECT_TAG;
 		break;
 
 	case INPUT_EXPECT_TAG:
-		takeCborTokenWithValue(stream, TYPE_TAG, 24);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, 24);
 		state->inputState = INPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
 		break;
 
@@ -80,7 +53,7 @@ void advanceInputState(attestUtxoState_t* state)
 
 		// Warning: Following two lines have to happen
 		// exactly in this order as takeCborBytesPreamble might throw
-		state->addressDataRemainingBytes = takeCborToken(stream, TYPE_BYTES);
+		state->addressDataRemainingBytes = cbor_takeToken(stream, CBOR_TYPE_BYTES);
 
 		state->inputState = INPUT_IN_ADDRESS_DATA;
 		break;
@@ -115,24 +88,24 @@ void advanceOutputState(attestUtxoState_t* state)
 		break;
 
 	case OUTPUT_EXPECT_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY, 2);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
 		state->outputState = OUTPUT_EXPECT_ADDRESS_PREAMBLE;
 		break;
 
 	case OUTPUT_EXPECT_ADDRESS_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY, 2);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
 		state->outputState = OUTPUT_EXPECT_ADDRESS_TAG;
 		break;
 
 	case OUTPUT_EXPECT_ADDRESS_TAG:
-		takeCborTokenWithValue(stream, TYPE_TAG, 24);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, 24);
 		state->outputState = OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
 		break;
 
 	case OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE:
 		// Warning: Following two lines have to happen
 		// exactly in this order as takeCborBytesPreamble might throw
-		state->addressDataRemainingBytes = takeCborToken(stream, TYPE_BYTES);
+		state->addressDataRemainingBytes = cbor_takeToken(stream, CBOR_TYPE_BYTES);
 
 		state->outputState = OUTPUT_IN_ADDRESS_DATA;
 		break;
@@ -147,14 +120,14 @@ void advanceOutputState(attestUtxoState_t* state)
 
 	case OUTPUT_EXPECT_ADDRESS_CHECKSUM:
 		// Note: we do not check checksum
-		takeCborToken(stream, TYPE_UNSIGNED);
+		cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
 		state->outputState = OUTPUT_EXPECT_AMOUNT;
 		break;
 
 	case OUTPUT_EXPECT_AMOUNT:
 		;
 		{
-			uint64_t value = takeCborToken(stream, TYPE_UNSIGNED);
+			uint64_t value = cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
 			if (state->currentOutputIndex == state->attestedOutputIndex) {
 				state->outputAmount = value;
 			}
@@ -199,18 +172,18 @@ void advanceMainState(attestUtxoState_t *state)
 		break;
 
 	case MAIN_EXPECT_TX_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY, 3);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 3);
 		state->mainState = MAIN_EXPECT_INPUTS_PREAMBLE;
 		break;
 
 	case MAIN_EXPECT_INPUTS_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY_INDEF, 0);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY_INDEF, 0);
 		state->mainState = MAIN_EXPECT_END_OR_INPUT;
 		break;
 
 	case MAIN_EXPECT_END_OR_INPUT:
-		if (nextIsIndefEnd(stream)) {
-			takeCborTokenWithValue(stream, TYPE_INDEF_END, 0);
+		if (cbor_peekNextIsIndefEnd(stream)) {
+			cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
 			state->mainState = MAIN_EXPECT_OUTPUTS_PREAMBLE;
 		} else {
 			initInputParser(state);
@@ -227,14 +200,14 @@ void advanceMainState(attestUtxoState_t *state)
 		break;
 
 	case MAIN_EXPECT_OUTPUTS_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_ARRAY_INDEF, 0);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY_INDEF, 0);
 		state->mainState = MAIN_EXPECT_END_OR_OUTPUT;
 		state->currentOutputIndex = 0;
 		break;
 
 	case MAIN_EXPECT_END_OR_OUTPUT:
-		if (nextIsIndefEnd(stream)) {
-			takeCborTokenWithValue(stream, TYPE_INDEF_END, 0);
+		if (cbor_peekNextIsIndefEnd(stream)) {
+			cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
 			state->mainState = MAIN_EXPECT_METADATA_PREAMBLE;
 		} else {
 			state->mainState = MAIN_IN_OUTPUT;
@@ -252,7 +225,7 @@ void advanceMainState(attestUtxoState_t *state)
 		break;
 
 	case MAIN_EXPECT_METADATA_PREAMBLE:
-		takeCborTokenWithValue(stream, TYPE_MAP, 0);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_MAP, 0);
 		state->mainState = MAIN_FINISHED;
 		break;
 
