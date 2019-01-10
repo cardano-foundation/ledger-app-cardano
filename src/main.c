@@ -195,7 +195,7 @@ static void cardano_main(void)
 				// We should have CLA INS P1 P2 Lc
 				if (rx < 5)
 				{
-					THROW(ERR_MALFORMED_REQUEST);
+					THROW(ERR_MALFORMED_REQUEST_HEADER);
 				}
 				if (G_io_apdu_buffer[OFFSET_CLA] != CLA)
 				{
@@ -204,7 +204,7 @@ static void cardano_main(void)
 				// Bad data size
 				if (G_io_apdu_buffer[OFFSET_LC] + 5 != rx)
 				{
-					THROW(ERR_MALFORMED_REQUEST);
+					THROW(ERR_MALFORMED_REQUEST_HEADER);
 
 				}
 				// Lookup and call the requested command handler.
@@ -232,30 +232,18 @@ static void cardano_main(void)
 			}
 			CATCH_OTHER(e)
 			{
-				// Convert the exception to a response code. All error codes
-				// start with 6, except for 0x9000, which is a special
-				// "success" code. Every APDU payload should end with such a
-				// code, even if no other data is sent. For example, when
-				// calcTxnHash is processing packets of txn data, it replies
-				// with just 0x9000 to indicate that it is ready to receive
-				// more data.
-				//
-				// If the first byte is not a 6, mask it with 0x6800 to
-				// convert it to a proper error code. I'm not totally sure why
-				// this is done; perhaps to handle single-byte exception
-				// codes?
-				switch (e & 0xF000) {
-				case 0x6000:
-				case 0x9000:
-					sw = e;
-					break;
-				default:
-					sw = 0x6800 | (e & 0x7FF);
-					break;
-				}
+				if (e >= _ERR_AUTORESPOND_START && e <= _ERR_AUTORESPOND_END) {
+					io_send_buf(e, NULL, 0);
+					flags = IO_ASYNCH_REPLY;
+					ui_idle();
+				} else {
+					// Note(ppershing): remaining errors should
+					// stop the execution
 
-				_io_send_G_io_apdu_buffer(sw, tx);
-				flags = IO_ASYNCH_REPLY;
+					// TODO(ppershing): test if this really stops
+					// responding to APDUs
+					flags = IO_ASYNCH_REPLY;
+				}
 			}
 			FINALLY {
 			}
