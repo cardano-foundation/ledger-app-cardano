@@ -68,10 +68,10 @@ handler_fn_t* lookupHandler(uint8_t ins)
 	case INS_RUN_TESTS:
 		return handleRunTests;
 
-	case INS_GET_SESSION_KEY:
+	case INS_GET_ATTEST_KEY:
 		return handleGetAttestKey;
 
-	case INS_SET_SESSION_KEY:
+	case INS_SET_ATTEST_KEY:
 		return handleSetAttestKey;
 #endif
 // *INDENT-ON*
