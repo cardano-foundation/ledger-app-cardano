@@ -8,6 +8,7 @@
 #include "getExtendedPublicKey.h"
 #include "runTests.h"
 #include "attestUtxo.h"
+#include "attestKey.h"
 #include "state.h"
 #include "errors.h"
 
@@ -29,6 +30,11 @@ enum {
 	#ifdef DEVEL
 	// 0xF* - debug_mode related
 	INS_RUN_TESTS     = 0xF0,
+	// 0xF1 reserved for INS_SET_HEADLESS_INTERACTION
+	// session key used for attestation
+	INS_GET_ATTEST_KEY = 0xF2,
+	INS_SET_ATTEST_KEY = 0xF3,
+
 	#endif
 };
 
@@ -61,6 +67,12 @@ handler_fn_t* lookupHandler(uint8_t ins)
 #ifdef DEVEL
 	case INS_RUN_TESTS:
 		return handleRunTests;
+
+	case INS_GET_SESSION_KEY:
+		return handleGetAttestKey;
+
+	case INS_SET_SESSION_KEY:
+		return handleSetAttestKey;
 #endif
 // *INDENT-ON*
 
