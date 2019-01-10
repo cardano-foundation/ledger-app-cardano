@@ -14,6 +14,7 @@
 #include "crc32.h"
 #include <stdbool.h>
 #include <os.h>
+#include "hmac.h"
 
 void handleRunTests(
         uint8_t p1,
@@ -31,6 +32,7 @@ void handleRunTests(
 		run_test_attestUtxo();
 		key_derivation_test();
 		run_crc32_test();
+		run_hmac_test();
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
