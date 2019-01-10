@@ -108,7 +108,7 @@
 #include "ux.h"
 
 #include "getVersion.h"
-#include "sessionKey.h"
+#include "attestKey.h"
 #include "handlers.h"
 #include "state.h"
 #include "errors.h"
@@ -298,7 +298,7 @@ __attribute__((section(".boot"))) int main(void)
 				USB_power(0);
 				USB_power(1);
 				ui_idle();
-				sessionKey_initialize();
+				attestKey_initialize();
 				cardano_main();
 			}
 			CATCH(EXCEPTION_IO_RESET)
