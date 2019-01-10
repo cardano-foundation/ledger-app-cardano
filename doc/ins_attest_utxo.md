@@ -27,16 +27,14 @@ To address such issues, Ledger implementation of Cardano requires each transacti
 
 **Command structure**
 
-`P1=0` (first frame)
+`P1=0x01` (first frame)
 
 |Data field|Width (B)|Comment|
 |----------|---------|-------|
 | outNum   |  4 (Big-endian)     | UTxO output number, indexed by 0|
 | TxChunk | variable | First chunk of Tx |
 
-❓(VL): Should we include Tx length? Pros: Ledger can strictly check if it received exactly all data. Cons: More checks that cen get out of sync + it isn't strictly necessary
-
-`P1=1` (subsequent frames)
+`P1=0x02` (subsequent frames)
 
 |Data Field|Width (B)|
 |----------|---------|
@@ -46,14 +44,14 @@ To address such issues, Ledger implementation of Cardano requires each transacti
 
 While Tx is not finished, the response is empty.
 
-Uppon receiving last txChunk the response is
+Upon receiving last txChunk (as determined by the transaction parsing) the response is
 
 |Response data|Width (B)|Comment|
 |----------|---------|-------|
 | txHash   | 32 | |
 | outNum | 4 (Big-endian) | same as in initial command|
 | amount | 8 (Big-endian) | Output amount, in Lovelace|
-| attestation | ?? | HMAC(txHash, outNum, amount, session key)|
+| attestation | 16 | HMAC(txHash, outNum, amount, session key)|
 
 
 **Ledger responsibilities**
@@ -61,7 +59,9 @@ Uppon receiving last txChunk the response is
 - Validate that transaction parses correctly (for details see below)
 - Check that transaction contains given output number
 - Extract amount of the given output
-- Sign (using app session key generated at app start) tuple `(TxHash, OutputNumber, Amount)` and return the tuple together with the signature
+- Sign (using app session key generated at app start) tuple `(TxHash, OutputNumber, Amount)` and return the tuple together with the signature. 
+
+Note on HMAC: We use `HMAC_SHA256(key=32 byte session key, message=(txHash,outNum,amount))` to compute the signature digest and return first 16 bytes of it. This should be resilient enough to birthday paradox and other attacks as the key is just per session and we Ledger's signing speed is slow. ❓(IOHK): Is this enough? 
 
 **Ledger transaction parsing compatibility**
 
@@ -140,8 +140,6 @@ We believe these skipped checks *are not necessary* in order to attest UTxO as t
 1) the Ledger app will show (from the user-perspective) unexpected amounts and the user would not confirm the transaction, or
 2) the Ledger app would show (from the user-perspective) correct amounts but the UTxO has been meddled with. UTxO is, however, referred to by the hash in the transaction under signing and as such, even if Ledger signs such transaction,  *Cardano blockchain nodes* will reject it.
 
-**Attestation signature specification**
-❓(IOHK): Some sort of HMAC. Any preferences on implementation?
 
 **Signing oracle**
 ❓(IOHK): Check if this isn't an issue.
