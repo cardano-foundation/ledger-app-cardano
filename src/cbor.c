@@ -22,29 +22,29 @@ token_t cbor_peekToken(const stream_t* stream)
 	token_t result;
 
 	// tag extensions first
-	if (tag == TYPE_ARRAY_INDEF || tag == TYPE_INDEF_END) {
+	if (tag == CBOR_TYPE_ARRAY_INDEF || tag == CBOR_TYPE_INDEF_END) {
 		result.type = tag;
 		result.width = 0;
 		result.value = 0;
 		return result;
 	}
 
-	result.type = tag & TYPE_MASK;
+	result.type = tag & CBOR_TYPE_MASK;
 
 	switch (result.type) {
-	case TYPE_UNSIGNED:
-	case TYPE_BYTES:
-	case TYPE_ARRAY:
-	case TYPE_MAP:
-	case TYPE_TAG:
+	case CBOR_TYPE_UNSIGNED:
+	case CBOR_TYPE_BYTES:
+	case CBOR_TYPE_ARRAY:
+	case CBOR_TYPE_MAP:
+	case CBOR_TYPE_TAG:
 		break;
 	default:
 		// We don't know how to parse others
-		// (particularly TYPE_PRIMITIVES)
+		// (particularly CBOR_TYPE_PRIMITIVES)
 		THROW(ERR_UNEXPECTED_TOKEN);
 	}
 
-	const uint8_t val = (tag & VALUE_MASK);
+	const uint8_t val = (tag & CBOR_VALUE_MASK);
 	if (val < 24) {
 		result.width = 0;
 		result.value = val;
@@ -96,7 +96,7 @@ token_t cbor_peekToken(const stream_t* stream)
 	return result;
 }
 
-// TODO(ppershing): this naming is confusing for TYPE_BYTES!
+// TODO(ppershing): this naming is confusing for CBOR_TYPE_BYTES!
 void cbor_advanceToken(stream_t* stream)
 {
 	token_t token = cbor_peekToken(stream);
@@ -107,24 +107,24 @@ void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 {
 	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
 	uint8_t bufLen = 0;
-	if (type == TYPE_ARRAY_INDEF || type == TYPE_INDEF_END) {
+	if (type == CBOR_TYPE_ARRAY_INDEF || type == CBOR_TYPE_INDEF_END) {
 		buf[0] = type;
 		stream_appendData(stream, buf, 1);
 		return;
 	}
 
-	if (type & VALUE_MASK) {
+	if (type & CBOR_VALUE_MASK) {
 		// type should not have any value
 		THROW(ERR_UNEXPECTED_TOKEN);
 	}
 
 	// Check sanity
 	switch (type) {
-	case TYPE_UNSIGNED:
-	case TYPE_BYTES:
-	case TYPE_ARRAY:
-	case TYPE_MAP:
-	case TYPE_TAG:
+	case CBOR_TYPE_UNSIGNED:
+	case CBOR_TYPE_BYTES:
+	case CBOR_TYPE_ARRAY:
+	case CBOR_TYPE_MAP:
+	case CBOR_TYPE_TAG:
 		break;
 	default:
 		// not supported
@@ -155,4 +155,32 @@ void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 		bufLen = 1 + 8;
 	}
 	stream_appendData(stream, buf, bufLen);
+}
+
+// Expect & consume CBOR token with specific type and value
+void cbor_takeTokenWithValue(stream_t* stream, uint8_t expectedType, uint64_t expectedValue)
+{
+	const token_t token = cbor_peekToken(stream);
+	if (token.type != expectedType || token.value != expectedValue) {
+		THROW(ERR_UNEXPECTED_TOKEN);
+	}
+	cbor_advanceToken(stream);
+}
+
+// Expect & consume CBOR token with specific type, return value
+uint64_t cbor_takeToken(stream_t* stream, uint8_t expectedType)
+{
+	const token_t token = cbor_peekToken(stream);
+	if (token.type != expectedType) {
+		THROW(ERR_UNEXPECTED_TOKEN);
+	}
+	cbor_advanceToken(stream);
+	return token.value;
+}
+
+// Is next CBOR token indefinite array/map end?
+bool cbor_peekNextIsIndefEnd(stream_t* stream)
+{
+	token_t head = cbor_peekToken(stream);
+	return (head.type == CBOR_TYPE_INDEF_END);
 }
