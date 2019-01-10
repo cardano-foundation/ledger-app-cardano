@@ -8,6 +8,8 @@
 #include "ux.h"
 #include "utils.h"
 #include "blake2b.h"
+#include "hmac.h"
+#include "attestKey.h"
 
 const uint64_t CARDANO_ADDRESS_TYPE_PUBKEY = 0;
 
@@ -288,6 +290,43 @@ enum {
 };
 
 
+void attestUtxo_sendResponse(attestUtxoState_t* state)
+{
+	// Response is (txHash, outputNumber, outputAmount, HMAC)
+	uint8_t response[32 + 4 + 8 + 16]; // Note: we have short HMAC
+	uint8_t hmac[32]; // Full HMAC
+
+	size_t pos = 0;
+
+	// txHash
+	blake2b256_finalize(&state ->txHashCtx, response + pos, 32);
+	pos += 32;
+
+	// outputNumber
+	u4be_write(response + pos, state->attestedOutputIndex);
+	pos += 4;
+
+	// outputAmount
+	uint64_t amount = getAttestedAmount(state);
+	if (amount == LOVELACE_INVALID) {
+		THROW(ERR_INVALID_DATA);
+	}
+	u8be_write(response + pos, amount);
+	pos += 8;
+
+	// HMAC
+	hmac_sha256(
+	        attestKeyData.key, sizeof(attestKeyData.key),
+	        response, pos, // all of response so far
+	        hmac, 32
+	);
+	os_memmove(response + pos, hmac, 16);
+	pos += 16;
+
+	ASSERT(pos == sizeof(response));
+	io_send_buf(SUCCESS, response, pos);
+}
+
 void handle_attestUtxo(
         uint8_t p1,
         uint8_t p2,
@@ -318,35 +357,21 @@ void handle_attestUtxo(
 			stream_appendData(&state->stream, dataBuffer, dataLength);
 			blake2b256_append(& state->txHashCtx, dataBuffer, dataLength);
 			keepParsing(state);
-			if (state->mainState == MAIN_FINISHED)
-			{
-				// Response is (txHash, outputNumber, outputAmount, HMAC)
-				uint8_t response[32 + 8 + 8 + 0];
-				unsigned pos = 0;
-
-
-				blake2b256_finalize(&state ->txHashCtx, response + pos, 32);
-				pos += 32;
-
-
-				uint64_t outputNumber = state->attestedOutputIndex;
-				u8be_write(response + pos, outputNumber);
-				pos += 8;
-
-
-				// TODO(error handling)
-				uint64_t amount = getAttestedAmount(state);
-				u8be_write(response + pos, amount);
-				pos += 8;
-
-				ASSERT(pos == sizeof(response));
-				io_send_buf(SUCCESS, response, pos);
-				ui_idle();
-			}
-		} CATCH(ERR_NOT_ENOUGH_INPUT)
+			ASSERT(state->mainState == MAIN_FINISHED);
+			attestUtxo_sendResponse(state);
+			ui_idle();
+		}
+		CATCH(ERR_NOT_ENOUGH_INPUT)
 		{
 			// Respond that we need more data
 			io_send_buf(SUCCESS, NULL, 0);
+			// Note(ppershing): no ui_idle() as we continue exchange...
+		}
+		CATCH(ERR_UNEXPECTED_TOKEN)
+		{
+			// Convert to ERR_INVALID_DATA
+			// which is handled at the main() level
+			THROW(ERR_INVALID_DATA);
 		}
 		FINALLY {
 		}

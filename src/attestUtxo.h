@@ -73,17 +73,18 @@ STATIC_ASSERT(LOVELACE_MAX_SUPPLY < LOVELACE_INVALID, __paranoia);
 // Note(ppershing): This structure
 typedef struct {
 	uint16_t isInitialized;
+	// parser state
 	txMainDecoderState_t mainState;
 	txInputDecoderState_t inputState;
 	txOutputDecoderState_t outputState;
 	uint64_t addressDataRemainingBytes;
+
 	stream_t stream;
-	// TODO: hash context
-	uint8_t currentOutputIndex;
-	uint8_t attestedOutputIndex; // TODO(what is the type of output index?)
+	// bookkeeping data
+	uint32_t currentOutputIndex;
+	uint32_t attestedOutputIndex;
 	uint64_t outputAmount;
 	blake2b256_context_t txHashCtx;
-	uint8_t txHash[32];
 } attestUtxoState_t;
 
 void advanceMainState(attestUtxoState_t *state);
