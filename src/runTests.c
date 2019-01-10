@@ -34,4 +34,5 @@ void handleRunTests(
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
+	ui_idle();
 }

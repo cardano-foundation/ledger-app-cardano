@@ -36,4 +36,7 @@
     os_memset(ptr, 0, sizeof(expected_type)); \
 }
 
+// Helper function to check APDU request parameters
+#define VALIDATE_REQUEST_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
+
 #endif

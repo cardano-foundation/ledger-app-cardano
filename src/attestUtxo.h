@@ -1,9 +1,11 @@
 #ifndef H_CARDANO_APP_ATTEST_UTXO
 #define H_CARDANO_APP_ATTEST_UTXO
+#include <os.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "stream.h"
 #include "assert.h"
+#include "blake2b.h"
 
 // Note: For the safety concerns, we start enums
 // at non-overlapping ranges
@@ -64,11 +66,13 @@ typedef enum {
 static const uint64_t LOVELACE_MAX_SUPPLY = __LOVELACE_MAX_SUPPLY;
 static const uint64_t LOVELACE_INVALID = __LOVELACE_INVALID;
 
+static const uint16_t ATTEST_INIT_MAGIC = 4547;
 
 STATIC_ASSERT(LOVELACE_MAX_SUPPLY < LOVELACE_INVALID, __paranoia);
 
 // Note(ppershing): This structure
 typedef struct {
+	uint16_t isInitialized;
 	txMainDecoderState_t mainState;
 	txInputDecoderState_t inputState;
 	txOutputDecoderState_t outputState;
@@ -78,6 +82,8 @@ typedef struct {
 	uint8_t currentOutputIndex;
 	uint8_t attestedOutputIndex; // TODO(what is the type of output index?)
 	uint64_t outputAmount;
+	blake2b256_context_t txHashCtx;
+	uint8_t txHash[32];
 } attestUtxoState_t;
 
 void advanceMainState(attestUtxoState_t *state);
@@ -85,6 +91,13 @@ void keepParsing(attestUtxoState_t *state);
 void initAttestUtxo(attestUtxoState_t *state, int outputIndex);
 
 uint64_t getAttestedAmount(attestUtxoState_t* state);
+
+void handle_attestUtxo(
+        uint8_t p1,
+        uint8_t p2,
+        uint8_t* dataBuffer,
+        uint16_t dataLength
+);
 
 void run_test_attestUtxo();
 
