@@ -32,6 +32,27 @@ void stream_appendFromHexString(stream_t* s, const char* str)
 	}
 }
 
+size_t parseHexString(const char* str, uint8_t* buf, size_t maxLen)
+{
+
+	size_t len = strlen(str);
+	if (len % 2) THROW(ERR_UNEXPECTED_TOKEN);
+
+	size_t outLen = len / 2;
+	if (outLen > maxLen) {
+		THROW(ERR_DATA_TOO_LARGE);
+	}
+
+	while (len >= 2) {
+		*buf = hex_parseNibblePair(str);
+		len -= 2;
+		str += 2;
+		buf += 1;
+	}
+	return outLen;
+}
+
+
 void stream_initFromHexString(stream_t* s, const char* str)
 {
 	stream_init(s);
