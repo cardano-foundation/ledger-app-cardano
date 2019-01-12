@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <os.h>
 #include "hmac.h"
+#include "ux.h"
 
 void handleRunTests(
         uint8_t p1,
