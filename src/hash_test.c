@@ -4,7 +4,7 @@
 #include "stream.h"
 #include <os.h>
 #include <string.h>
-#include "blake2b.h"
+#include "hash.h"
 #include "utils.h"
 
 void run_blake2b_test()
