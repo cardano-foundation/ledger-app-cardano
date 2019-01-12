@@ -5,6 +5,7 @@
 #include "ux.h"
 #include "assert.h"
 #include "io.h"
+#include "utils.h"
 
 static displayState_t displayState;
 
@@ -193,11 +194,11 @@ void displayConfirm(
         callback_t* confirm,
         callback_t* reject)
 {
-	int header_len = strlen(header);
-	int text_len = strlen(text);
+	size_t header_len = strlen(header);
+	size_t text_len = strlen(text);
 	// sanity checks, keep 1 byte for null terminator
-	ASSERT(header_len < sizeof(confirmState->header));
-	ASSERT(text_len < sizeof(confirmState->text));
+	ASSERT(header_len < SIZEOF(confirmState->header));
+	ASSERT(text_len < SIZEOF(confirmState->text));
 
 	// clear all memory
 	os_memset(&displayState, 0, sizeof(displayState));
