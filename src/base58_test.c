@@ -6,21 +6,22 @@
 #include "base58.h"
 #include "stream.h"
 #include <string.h>
+#include "utils.h"
+
+void testcase_base58(const char* inputHex, const char* expected)
+{
+	uint8_t input[100];
+	uint8_t inputSize;
+	inputSize = parseHexString(inputHex, input, SIZEOF(input));
+	uint8_t output[100];
+	uint8_t outputLength = encode_base58(input, inputSize, output, SIZEOF(output));
+	EXPECT_EQ(outputLength, strlen(expected));
+	EXPECT_EQ_BYTES(expected, output, outputLength);
+}
 
 void run_base58_test()
 {
-#define TESTCASE(input_, expected_) \
-	{ \
-	    stream_t si; \
-	    stream_init(&si); \
-	    stream_appendFromHexString(&si, input_); \
-		const uint8_t* inputBuffer = stream_head(&si); \
-		uint8_t inputBufferSize = stream_availableBytes(&si); \
-		uint8_t output[248]; \
-		uint8_t outputLength = encode_base58(inputBuffer, inputBufferSize, output, sizeof(output)); \
-		EXPECT_EQ(outputLength, strlen(expected_)); \
-		EXPECT_EQ_BYTES(expected_, output, outputLength); \
-	}
+#define TESTCASE testcase_base58
 
 	{
 		TESTCASE("", "");
