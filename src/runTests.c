@@ -30,7 +30,7 @@ void handleRunTests(
 		run_stream_test();
 		run_cbor_test();
 		run_base58_test();
-		run_blake2b_test();
+		run_hash_test();
 		run_test_attestUtxo();
 		key_derivation_test();
 		run_crc32_test();

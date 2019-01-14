@@ -253,7 +253,7 @@ void initAttestUtxo(
 	state->attestedOutputIndex = outputIndex;
 	stream_init(& state->stream);
 	state->isInitialized = ATTEST_INIT_MAGIC;
-	blake2b256_init(& state->txHashCtx);
+	blake2b_256_init(& state->txHashCtx);
 }
 
 // TODO(ppershing): revisit these conditions
@@ -299,7 +299,7 @@ void attestUtxo_sendResponse(attestUtxoState_t* state)
 	size_t pos = 0;
 
 	// txHash
-	blake2b256_finalize(&state ->txHashCtx, response + pos, 32);
+	blake2b_256_finalize(&state ->txHashCtx, response + pos, 32);
 	pos += 32;
 
 	// outputNumber
@@ -355,7 +355,7 @@ void handle_attestUtxo(
 	BEGIN_TRY {
 		TRY {
 			stream_appendData(&state->stream, dataBuffer, dataLength);
-			blake2b256_append(& state->txHashCtx, dataBuffer, dataLength);
+			blake2b_256_append(& state->txHashCtx, dataBuffer, dataLength);
 			keepParsing(state);
 			ASSERT(state->mainState == MAIN_FINISHED);
 			attestUtxo_sendResponse(state);
