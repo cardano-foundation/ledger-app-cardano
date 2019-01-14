@@ -9,16 +9,16 @@ typedef void callback_t();
 #define MAX_TEXT_LEN 200
 
 typedef struct {
-	uint8_t header[DISPLAY_TEXT_LEN + 1];
-	uint8_t currentText[DISPLAY_TEXT_LEN + 1];
-	uint8_t fullText[MAX_TEXT_LEN];
+	char header[DISPLAY_TEXT_LEN + 1];
+	char currentText[DISPLAY_TEXT_LEN + 1];
+	char fullText[MAX_TEXT_LEN + 1];
 	uint16_t scrollIndex;
 	callback_t *callback;
 } scrollingState_t;
 
 typedef struct {
-	uint8_t header[DISPLAY_TEXT_LEN + 1];
-	uint8_t text[DISPLAY_TEXT_LEN + 1];
+	char header[DISPLAY_TEXT_LEN + 1];
+	char text[DISPLAY_TEXT_LEN + 1];
 	callback_t *confirm;
 	callback_t *reject;
 } confirmState_t;
