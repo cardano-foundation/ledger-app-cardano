@@ -103,14 +103,16 @@ void cbor_advanceToken(stream_t* stream)
 	stream_advancePos(stream, 1 + token.width);
 }
 
-void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
+
+size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t *buf, size_t bufSize)
 {
-	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
-	uint8_t bufLen = 0;
+	ASSERT(bufSize < 1024); // paranoia sanity check
+
+#define CHECK_BUF_LEN(requiredSize) if (requiredSize > bufSize) THROW(ERR_DATA_TOO_LARGE);
 	if (type == CBOR_TYPE_ARRAY_INDEF || type == CBOR_TYPE_INDEF_END) {
+		CHECK_BUF_LEN(1);
 		buf[0] = type;
-		stream_appendData(stream, buf, 1);
-		return;
+		return 1;
 	}
 
 	if (type & CBOR_VALUE_MASK) {
@@ -135,25 +137,37 @@ void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 	// Instead we have to construct the whole buffer at once to make append operation atomic.
 
 	if (value < VALUE_MIN_W1) {
+		CHECK_BUF_LEN(1);
 		u1be_write(buf, type | value);
-		bufLen = 1;
+		return 1;
 	} else if (value < VALUE_MIN_W2) {
+		CHECK_BUF_LEN(1 + 1);
 		u1be_write(buf, type | 24);
 		u1be_write(buf + 1, value);
-		bufLen = 1 + 1;
+		return 1 + 1;
 	} else if (value < VALUE_MIN_W4) {
+		CHECK_BUF_LEN(1 + 2);
 		u1be_write(buf, type | 25);
 		u2be_write(buf + 1, value);
-		bufLen = 1 + 2;
+		return 1 + 2;
 	} else if (value < VALUE_MIN_W8) {
+		CHECK_BUF_LEN(1 + 4);
 		u1be_write(buf, type | 26);
 		u4be_write(buf + 1, value);
-		bufLen = 1 + 4;
+		return 1 + 4;
 	} else {
+		CHECK_BUF_LEN(1 + 8);
 		buf[0] = type | 27;
 		u8be_write(buf + 1, value);
-		bufLen = 1 + 8;
+		return 1 + 8;
 	}
+#undef CHECK_BUF_LEN
+}
+
+void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
+{
+	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
+	size_t bufLen = cbor_writeToken(type, value, buf, 9);
 	stream_appendData(stream, buf, bufLen);
 }
 
