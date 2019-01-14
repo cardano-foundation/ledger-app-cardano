@@ -3,20 +3,29 @@
 
 #include "assert.h"
 
-// Safe array length, does not compile if you take ARRAY_LEN of ptr
-// Note: this is also "safe" for function arguments i.e.
-// `void fn(int z[100]) { ARRAY_LEN(z); }` fails to compile because
-// C silently converts `int z[100]` -> `int* z` in this case
-// Note: could yield false positives. In that case, use judiciously UNSAFE_ARRAY_LEN
-#define ARRAY_LEN(x) \
-	/* Note: this macro uses gcc extension: */ \
-	/* https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html */ \
-	({ \
-	    STATIC_ASSERT(sizeof(x) != sizeof(void *), __possibly_array_len_of_ptr); \
-	    UNSAFE_ARRAY_LEN(x); \
-	})
 
-#define UNSAFE_ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
+// Does not compile if x is pointer of some kind
+// See http://zubplot.blogspot.com/2015/01/gcc-is-wonderful-better-arraysize-macro.html
+#define ARRAY_NOT_A_PTR(x) \
+     (sizeof(__typeof__(int[1 - 2 * \
+           !!__builtin_types_compatible_p(__typeof__(x), \
+                 __typeof__(&x[0]))])) * 0)
+
+
+// Safe array length, does not compile if you accidentally supply a pointer
+#define ARRAY_LEN(arr) \
+    (sizeof(arr) / sizeof((arr)[0]) + ARRAY_NOT_A_PTR(arr))
+
+// Does not compile if x *might* be a pointer of some kind
+// Might produce false positives on small structs...
+// Note: ARRAY_NOT_A_PTR does not compile if arg is a struct so this is a workaround
+#define SIZEOF_NOT_A_PTR(var) \
+    (sizeof(__typeof(int[0 - (sizeof(var) == sizeof((void *)0))])) * 0)
+
+// Safe version of SIZEOF, does not compile if you accidentally supply a pointer
+#define SIZEOF(var) \
+    (sizeof(var) + SIZEOF_NOT_A_PTR(var))
+
 
 // Given that memset is root of many problems, a bit of paranoia is good.
 // If you don't believe, just check out https://www.viva64.com/en/b/0360/
