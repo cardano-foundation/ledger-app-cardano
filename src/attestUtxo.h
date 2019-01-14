@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "stream.h"
 #include "assert.h"
-#include "blake2b.h"
+#include "hash.h"
 
 // Note: For the safety concerns, we start enums
 // at non-overlapping ranges

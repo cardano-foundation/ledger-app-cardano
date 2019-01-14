@@ -7,7 +7,7 @@
 #include "io.h"
 #include "ux.h"
 #include "utils.h"
-#include "blake2b.h"
+#include "hash.h"
 #include "hmac.h"
 #include "attestKey.h"
 
