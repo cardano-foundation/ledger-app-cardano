@@ -1,4 +1,23 @@
-# Sign Transaction (TBD: update after we get feedback from Vincent)
+**TODO:❓IOHK needs to decide which way we should go.**
+
+The main issue we are trying to address with the respect of fee calculation is that Ledger cannot assume fee sent over the wire from the client is correct. As such, we are adding a new call which, given `(transaction, output number)` returns "attested UTxO" `(tx hash, output number, amount, per-session signature)`. With these verified inputs, Ledger can now securely compute transaction fee. Unfortunately, the implication is that transaction signing now needs to be supplied with complementary data which cannot be encoded in the raw transaction data. Here are our possible options
+
+ a) "Encode" supplementary data within transaction's CBOR. I list this just for reference only as 1) it is a bad idea, upgrade of protocol could collide with the ad-hoc encoding and could lead to security vulnerabilities 2) There is no point in this anyway as both client and Ledger would need to compute hash of original transaction, not this supplementary data
+
+ b) At this point, we can just use some custom data encoding between ledgerjs and Nano S which is geared towards easier parsing on the Nano S side. The Nano S would be responsible for transaction serialization and will return assembled transaction back to the ledgerjs. The main advantage of this method is that serialization is less error-prone than parsing (bad serialization code usually leads to rejected transactions, bad parsing code might lead to security vulnerabilities)
+
+ c) Taking b) to ad extremum, Nano S does not need to return serialized transaction. Instead, Sending app would be responsible for both 1) giving inputs/outputs 2) for-own-use serialization; Nano S would serialize transaction *internally* and sign correct hash. The main advantage of this method is that it provides additional layer of security -- if the implementations do not agree on the serialization, the tx will be rejected by nodes (ledger signatures would not match txHash of client). Disadvantage is that the implementations would need to be kept on sync which could get tricky with transaction encoding upgrades.
+
+ d) An alternative would be to send both "attested UTxOs" and normally encoded transaction to the Nano S for signing. Given the small memory, this would limit the number of transaction inputs that can be processed by the ledger.
+
+ e) We can extend the attest UTxO digest to contain sum + session signature over multiple UTXos. This would add implementation complexity but would remove the memory constraint of d)
+
+I was trying to think this out multiple times and I think b) is the best choice for now. e) would work but it is needlessly complicated and we are still left with a similar problem for the outputs (In order to get decent UX, NanoS should skip the change output from confirmations. This however means that Nano S must be able to somehow verify this change output is indeed its change. Easiest way is to either 1) supply also the derivation path and verify they match 2) extending 1) just don't bother to send the address, just a derivation path) (edited) 
+
+
+# TODO(VL): rest of the document needs to be updated after we get feedback on the previous section
+
+# Sign Transaction
 
 **Description**
 
