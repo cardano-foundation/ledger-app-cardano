@@ -45,7 +45,7 @@ void run_blake2b_test()
 		TESTCASE(
 		        "52",
 		        chunks1,
-		        UNSAFE_ARRAY_LEN(chunks1),
+		        ARRAY_LEN(chunks1),
 		        "329a583d5c11e03e3e1df966dbb28beea395e013bbcc752e9fdec40ab661dd1e"
 		        "5e5e4ed0cff7b4125d64b3bc7da4762415296d3b5e964d780fe842a4cfca71b0"
 		);
@@ -64,7 +64,7 @@ void run_blake2b_test()
 		TESTCASE(
 		        "5231ab4652eaeaea25369217",
 		        chunks0,
-		        UNSAFE_ARRAY_LEN(chunks0),
+		        ARRAY_LEN(chunks0),
 		        "f9c3aa38dd69d2692f24584da906014a08d8c75cc764477e46476074ea96bf18"
 		        "1bb1d705ce2c4cd901c8f0f38ef03c47971a275c1a9a58495060d6aea5c72481"
 		);
