@@ -84,7 +84,7 @@ typedef struct {
 	uint32_t currentOutputIndex;
 	uint32_t attestedOutputIndex;
 	uint64_t outputAmount;
-	blake2b256_context_t txHashCtx;
+	blake2b_256_context_t txHashCtx;
 } attestUtxoState_t;
 
 void advanceMainState(attestUtxoState_t *state);

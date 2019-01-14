@@ -9,29 +9,31 @@
 // Note: We would like to make this static const but
 // it does not play well with inline functions
 enum {
-	BLAKE2B224_SIZE = 28,
-	BLAKE2B256_SIZE = 32,
-	BLAKE2B512_SIZE = 64,
+	BLAKE2B_224_SIZE = 28,
+	BLAKE2B_256_SIZE = 32,
+	BLAKE2B_512_SIZE = 64,
+
+	SHA3_256_SIZE = 32,
 };
 
-#define __BLAKE_DECLARE(bits) \
+#define __CIPHER_DECLARE(CIPHER, cipher, bits) \
 	typedef struct { \
-		cx_blake2b_t cx_ctx; \
-	} blake2b##bits##_context_t;\
+		cx_##cipher##_t cx_ctx; \
+	} cipher##_##bits##_context_t;\
 	\
-	inline void blake2b##bits##_init( \
-		blake2b##bits##_context_t* ctx \
+	inline void cipher##_##bits##_init( \
+		cipher##_##bits##_context_t* ctx \
 	) \
 	{ \
-		STATIC_ASSERT( bits == BLAKE2B##bits##_SIZE * 8, __inconsistent_size); \
-		cx_blake2b_init( \
+		STATIC_ASSERT( bits == CIPHER##_##bits##_SIZE * 8, __inconsistent_size); \
+		cx_##cipher##_init( \
 			& ctx->cx_ctx, \
-		BLAKE2B##bits##_SIZE * 8 \
+		CIPHER##_##bits##_SIZE * 8 \
 		);\
 	} \
 	\
-	inline void blake2b##bits##_append( \
-		blake2b##bits##_context_t* ctx, \
+	inline void cipher##_##bits##_append( \
+		cipher##_##bits##_context_t* ctx, \
 		const uint8_t* data, size_t dataLen \
 	) { \
 		cx_hash( \
@@ -43,37 +45,40 @@ enum {
 		); \
 	} \
 	\
-	inline void blake2b##bits##_finalize( \
-		blake2b##bits##_context_t* ctx, \
+	inline void cipher##_##bits##_finalize( \
+		cipher##_##bits##_context_t* ctx, \
 		uint8_t* output, size_t outputLen \
 	) { \
-		ASSERT(outputLen == BLAKE2B##bits##_SIZE); \
+		ASSERT(outputLen == CIPHER##_##bits##_SIZE); \
 		cx_hash( \
 			& ctx->cx_ctx.header, \
 			CX_LAST, /* Output the hash */ \
 			NULL, \
 			0, \
 			output, \
-			BLAKE2B##bits##_SIZE \
+			CIPHER##_##bits##_SIZE \
 		); \
 	} \
 	/* Convenience function to make all in one step */ \
-	inline void blake2b##bits##_hash( \
+	inline void cipher##_##bits##_hash( \
 		const uint8_t* input, size_t inputLen, \
 		uint8_t* output, size_t outputLen \
 	) { \
-	    ASSERT(outputLen == BLAKE2B##bits##_SIZE); \
-	    blake2b##bits##_context_t ctx; \
-	    blake2b##bits##_init(&ctx); \
+	    ASSERT(outputLen == CIPHER##_##bits##_SIZE); \
+	    cipher##_##bits##_context_t ctx; \
+	    cipher##_##bits##_init(&ctx); \
 	    /* Note: This could be done by single cx_hash call */ \
 	    /* But we don't really care */ \
-	    blake2b##bits##_append(&ctx, input, inputLen); \
-	    blake2b##bits##_finalize(&ctx, output, outputLen); \
+	    cipher##_##bits##_append(&ctx, input, inputLen); \
+	    cipher##_##bits##_finalize(&ctx, output, outputLen); \
 	}
 
-__BLAKE_DECLARE(224)
-__BLAKE_DECLARE(256)
-__BLAKE_DECLARE(512)
+__CIPHER_DECLARE(BLAKE2B, blake2b, 224)
+__CIPHER_DECLARE(BLAKE2B, blake2b, 256)
+__CIPHER_DECLARE(BLAKE2B, blake2b, 512)
+
+__CIPHER_DECLARE(SHA3, sha3, 256)
+
 
 void run_hash_test();
 #endif
