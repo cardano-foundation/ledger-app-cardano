@@ -4,6 +4,12 @@
 #include "assert.h"
 #include "errors.h"
 #include "keyDerivation.h"
+#include "stream.h"
+#include "cbor.h"
+#include "hash.h"
+#include "crc32.h"
+#include "base58.h"
+#include "utils.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
@@ -29,8 +35,8 @@ void derivePrivateKey(
 
 	uint8_t privateKeyRaw[64];
 
-	STATIC_ASSERT(sizeof(chainCode->code) == 32, __bad_length);
-	os_memset(chainCode->code, 0, sizeof(chainCode->code));
+	STATIC_ASSERT(SIZEOF(chainCode->code) == 32, __bad_length);
+	os_memset(chainCode->code, 0, SIZEOF(chainCode->code));
 
 	BEGIN_TRY {
 		TRY {
@@ -49,7 +55,7 @@ void derivePrivateKey(
 			os_memmove(privateKey->d, privateKeyRaw, 64);
 		}
 		FINALLY {
-			os_memset(privateKeyRaw, 0, sizeof(privateKeyRaw));
+			os_memset(privateKeyRaw, 0, SIZEOF(privateKeyRaw));
 		}
 	} END_TRY;
 }
@@ -88,3 +94,178 @@ void extractRawPublicKey(
 	}
 }
 
+static void validatePathForAddressDerivation(const uint32_t* bip32Path, uint32_t pathLength)
+{
+	// other checks are when deriving private key
+	VALIDATE_PARAM(pathLength >= 5);
+	VALIDATE_PARAM(bip32Path[3] == 0 || bip32Path[3] == 1);
+}
+
+
+// pub_key + chain_code
+void deriveExtendedPublicKey(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* out, size_t outputSize
+)
+{
+	cx_ecfp_public_key_t publicKey;
+	privateKey_t privateKey;
+	chain_code_t chainCode;
+
+	BEGIN_TRY {
+		TRY {
+			derivePrivateKey(
+			        bip32Path,
+			        pathLength,
+			        &chainCode,
+			        &privateKey
+			);
+
+			deriveRawPublicKey(&privateKey, &publicKey);
+		}
+		FINALLY {
+			os_memset(&privateKey, 0, SIZEOF(privateKey));
+		}
+	} END_TRY;
+
+
+	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
+	extractRawPublicKey(&publicKey, rawPublicKey, SIZEOF(rawPublicKey));
+
+
+	ASSERT(outputSize = CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE);
+	os_memmove(out, rawPublicKey, CHAIN_CODE_SIZE);
+	os_memmove(out + CHAIN_CODE_SIZE, chainCode.code, PUBLIC_KEY_SIZE);
+}
+
+void addressRootFromExtPubKey(
+        const uint8_t* extPubKey, size_t extPubKeySize,
+        uint8_t* addressRoot, size_t addressRootSize
+)
+{
+	ASSERT(extPubKeySize == EXTENDED_PUBKEY_SIZE);
+	ASSERT(addressRootSize == 28); //
+
+	uint8_t cborBuf[64 + 10];
+	uint8_t* ptr = cborBuf;
+	uint8_t* end = END(cborBuf);
+
+#define WRITE_TOKEN(type, value) \
+	{ \
+	    ptr += cbor_writeToken(type, value, ptr, end - ptr); \
+	}
+#define WRITE_DATA(buf, bufSize) \
+	{ \
+	    if (ptr + bufSize > end) THROW(ERR_DATA_TOO_LARGE); \
+	    os_memmove(ptr, buf, bufSize); \
+	    ptr += bufSize; \
+	}
+
+	// [0, [0, publicKey:chainCode], Map(0)]
+	// TODO(ppershing): what are the first two 0 constants?
+	WRITE_TOKEN(CBOR_TYPE_ARRAY, 3);
+	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0);
+
+	// enter inner array
+	WRITE_TOKEN(CBOR_TYPE_ARRAY, 2);
+	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(CBOR_TYPE_BYTES, extPubKeySize);
+	WRITE_DATA(extPubKey, extPubKeySize);
+	// exit inner array
+
+	WRITE_TOKEN(CBOR_TYPE_MAP, 0);
+
+#undef WRITE_TOKEN
+#undef WRITE_DATA
+
+	// cborBuf is hashed twice. First by sha3_256 and then by blake2b_224
+	uint8_t cborShaHash[32];
+	sha3_256_hash(
+	        cborBuf, ptr - cborBuf,
+	        cborShaHash, SIZEOF(cborShaHash)
+	);
+	blake2b_224_hash(
+	        cborShaHash, SIZEOF(cborShaHash),
+	        addressRoot, addressRootSize
+	);
+}
+
+uint32_t deriveAddress(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* address, size_t maxSize
+)
+{
+	validatePathForAddressDerivation(bip32Path, pathLength);
+
+	uint8_t addressRoot[28];
+	{
+		uint8_t extPubKey[EXTENDED_PUBKEY_SIZE];
+
+		deriveExtendedPublicKey(
+		        bip32Path, pathLength,
+		        extPubKey, SIZEOF(extPubKey)
+		);
+
+		addressRootFromExtPubKey(
+		        extPubKey, SIZEOF(extPubKey),
+		        addressRoot, SIZEOF(addressRoot)
+		);
+	}
+
+	uint8_t addressRaw[100];
+	uint8_t* ptr = BEGIN(addressRaw);
+	uint8_t* end = END(addressRaw);
+
+#define WRITE_TOKEN(type, value) \
+	{ \
+	    ptr += cbor_writeToken(type, value, ptr, end - ptr); \
+	}
+
+#define WRITE_DATA(buf, bufSize) \
+	{ \
+	    if (ptr + bufSize > end) THROW(ERR_DATA_TOO_LARGE); \
+	    os_memmove(ptr, buf, bufSize); \
+	    ptr += bufSize; \
+	}
+
+
+	// [tag(24), bytes(33 - { [bytes(28 - { rootAddress } ), map(0), 0] }), checksum]
+	// 1st level
+	WRITE_TOKEN(CBOR_TYPE_ARRAY, 2);
+	WRITE_TOKEN(CBOR_TYPE_TAG, 24);
+
+	const uint64_t INNER_SIZE= 33;
+	// Note(ppershing): here we expect we know the serialization
+	// length. For now it is constant and we save some stack space
+	// this way but in the future we might need to refactor this code
+	WRITE_TOKEN(CBOR_TYPE_BYTES, INNER_SIZE);
+
+	uint8_t* inner_begin = ptr;
+	{
+		// 2nd level
+		WRITE_TOKEN(CBOR_TYPE_ARRAY, 3);
+
+		WRITE_TOKEN(CBOR_TYPE_BYTES, SIZEOF(addressRoot));
+		WRITE_DATA(addressRoot, SIZEOF(addressRoot));
+
+		WRITE_TOKEN(CBOR_TYPE_MAP, 0);
+
+		WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0); // TODO(what does this zero stand for?)
+
+		// Note(ppershing): see note above
+		uint8_t* inner_end = ptr;
+		ASSERT(inner_end - inner_begin == INNER_SIZE);
+	}
+	uint32_t checksum = crc32(inner_begin, INNER_SIZE);
+
+	// back to 1st level
+	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, checksum);
+#undef WRITE_TOKEN
+#undef WRITE_DATA
+
+	uint32_t length = encode_base58(
+	                          addressRaw, ptr - addressRaw,
+	                          address, maxSize
+	                  );
+	return length;
+}

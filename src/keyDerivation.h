@@ -35,5 +35,15 @@ void extractRawPublicKey(
         uint8_t* rawPublicKey, size_t rawPublicKeySize
 );
 
+void derivePublicKey(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* output, size_t outputSize
+);
+
+uint32_t deriveAddress(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* output, size_t outputSize
+);
+
 void run_key_derivation_test();
 #endif
