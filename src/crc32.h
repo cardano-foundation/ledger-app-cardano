@@ -1,7 +1,7 @@
 #ifndef H_CARDANO_APP_CRC32
 #define H_CARDANO_APP_CRC32
 
-#include <os.h>
+#include <stdint.h>
 
 uint32_t crc32(const uint8_t *buffer, uint32_t length);
 
