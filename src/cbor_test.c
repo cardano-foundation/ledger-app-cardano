@@ -4,139 +4,157 @@
 #include "stream.h"
 #include <os.h>
 #include <string.h>
+#include "state.h"
+#include "utils.h"
 
+static testsGlobal_t* ctx = &(instructionState.testsGlobal);
 
 // Test vectors are taken from
 // https://tools.ietf.org/html/rfc7049#appendix-A
-void test_peek_token()
+static void test_cbor_peek_token()
 {
-#define TESTCASE(str_, type_, width_, value_) \
-	{ \
-	    stream_t s; \
-	    stream_init(&s); \
-	    stream_appendFromHexString(&s, str_); \
-	    token_t res = cbor_peekToken(&s); \
-	    EXPECT_EQ(res.type, type_); \
-	    EXPECT_EQ(res.width, width_); \
-	    EXPECT_EQ(res.value, value_); \
-	    cbor_advanceToken(&s); \
-	    EXPECT_EQ(stream_availableBytes(&s), 0); \
+	const struct {
+		const char* hex;
+		uint8_t type;
+		uint8_t width;
+		uint64_t value;
+	} testVectors[] = {
+		{"00", CBOR_TYPE_UNSIGNED, 0, 0},
+		{"01", CBOR_TYPE_UNSIGNED, 0, 1},
+		{"0a", CBOR_TYPE_UNSIGNED, 0, 10},
+		{"17", CBOR_TYPE_UNSIGNED, 0, 23},
+
+		{"1818", CBOR_TYPE_UNSIGNED, 1, 24},
+
+		{"1903e8", CBOR_TYPE_UNSIGNED, 2, 1000},
+
+		{"1a000f4240", CBOR_TYPE_UNSIGNED, 4, 1000000},
+
+		{"1b000000e8d4a51000", CBOR_TYPE_UNSIGNED, 8, 1000000000000},
+		{"1bffFFffFFffFFffFF", CBOR_TYPE_UNSIGNED, 8, 18446744073709551615u},
+
+		{"40", CBOR_TYPE_BYTES, 0, 0},
+		{"44", CBOR_TYPE_BYTES, 0, 4},
+
+		{"80", CBOR_TYPE_ARRAY, 0, 0},
+		{"83", CBOR_TYPE_ARRAY, 0, 3},
+		{"9819", CBOR_TYPE_ARRAY, 1, 25},
+
+		{"9f", CBOR_TYPE_ARRAY_INDEF, 0, 0},
+
+		{"a0", CBOR_TYPE_MAP, 0, 0},
+		{"a1", CBOR_TYPE_MAP, 0, 1},
+
+		{"d818", CBOR_TYPE_TAG, 1, 24},
+
+		{"ff", CBOR_TYPE_INDEF_END, 0, 0},
+	};
+	ITERATE(it, testVectors) {
+		PRINTF("test_cbor_peek_token %s\n", PTR_PIC(it->hex));
+		stream_init(& ctx->s);
+		stream_appendFromHexString(& ctx->s, PTR_PIC(it->hex));
+		token_t res = cbor_peekToken(& ctx->s);
+		EXPECT_EQ(res.type, it->type);
+		EXPECT_EQ(res.width, it->width);
+		EXPECT_EQ(res.value, it->value);
+		cbor_advanceToken(& ctx->s);
+		EXPECT_EQ(stream_availableBytes(& ctx->s), 0);
 	}
 
-	{
-		TESTCASE("00", CBOR_TYPE_UNSIGNED, 0, 0);
-		TESTCASE("01", CBOR_TYPE_UNSIGNED, 0, 1);
-		TESTCASE("0a", CBOR_TYPE_UNSIGNED, 0, 10);
-		TESTCASE("17", CBOR_TYPE_UNSIGNED, 0, 23);
-
-		TESTCASE("1818", CBOR_TYPE_UNSIGNED, 1, 24);
-
-		TESTCASE("1903e8", CBOR_TYPE_UNSIGNED, 2, 1000);
-
-		TESTCASE("1a000f4240", CBOR_TYPE_UNSIGNED, 4, 1000000);
-
-		TESTCASE("1b000000e8d4a51000", CBOR_TYPE_UNSIGNED, 8, 1000000000000);
-		TESTCASE("1bffFFffFFffFFffFF", CBOR_TYPE_UNSIGNED, 8, 18446744073709551615u);
-	} {
-		TESTCASE("40", CBOR_TYPE_BYTES, 0, 0);
-		TESTCASE("44", CBOR_TYPE_BYTES, 0, 4);
-	} {
-		TESTCASE("80", CBOR_TYPE_ARRAY, 0, 0);
-		TESTCASE("83", CBOR_TYPE_ARRAY, 0, 3);
-		TESTCASE("9819", CBOR_TYPE_ARRAY, 1, 25);
-
-		TESTCASE("9f", CBOR_TYPE_ARRAY_INDEF, 0, 0);
-	} {
-		TESTCASE("a0", CBOR_TYPE_MAP, 0, 0);
-		TESTCASE("a1", CBOR_TYPE_MAP, 0, 1);
-	} {
-		TESTCASE("d818", CBOR_TYPE_TAG, 1, 24);
-	} {
-		TESTCASE("ff", CBOR_TYPE_INDEF_END, 0, 0);
-	}
-#undef TESTCASE
 }
 
 // test whether we reject non-canonical serialization
-void test_noncanonical()
+static void test_cbor_parse_noncanonical()
 {
-#define TESTCASE(str_) \
-	{ \
-	    stream_t s; \
-	    stream_init(&s); \
-	    stream_appendFromHexString(&s, str_); \
-	    EXPECT_THROWS(cbor_peekToken(&s), ERR_UNEXPECTED_TOKEN); \
+	const struct {
+		const char* hex;
+	} testVectors[] = {
+		{"1800"},
+		{"1817"},
+
+		{"190000"},
+		{"1900ff"},
+
+		{"1a00000000"},
+		{"1a0000ffff"},
+
+		{"1b0000000000000000"},
+		{"1b00000000ffffffff"},
+	};
+
+	ITERATE(it, testVectors) {
+		PRINTF("test_cbor_parse_noncanonical %s\n", PTR_PIC(it->hex));
+		stream_init(& ctx->s);
+		stream_appendFromHexString(& ctx->s, PTR_PIC(it->hex));
+		EXPECT_THROWS(cbor_peekToken(& ctx->s), ERR_UNEXPECTED_TOKEN);
 	}
-
-	TESTCASE("1800");
-	TESTCASE("1817");
-
-	TESTCASE("190000");
-	TESTCASE("1900ff");
-
-	TESTCASE("1a00000000");
-	TESTCASE("1a0000ffff");
-
-	TESTCASE("1b0000000000000000");
-	TESTCASE("1b00000000ffffffff");
-#undef TESTCASE
 }
 
-void test_serialization()
+static void test_cbor_serialization()
 {
-#define TESTCASE(str_, type_, value_) \
-	{ \
-	    stream_t s1; \
-	    stream_t s2; \
-	    stream_init(&s1); \
-	    stream_init(&s2); \
-	    stream_appendFromHexString(&s1, str_); \
-	    cbor_appendToken(&s2, type_, value_); \
-	    EXPECT_EQ_STREAM(&s1, &s2); \
+	const struct {
+		const char* hex;
+		uint8_t type;
+		uint64_t value;
+	} testVectors[] = {
+		{"00", CBOR_TYPE_UNSIGNED, 0},
+		{"01", CBOR_TYPE_UNSIGNED, 1},
+		{"0a", CBOR_TYPE_UNSIGNED, 10},
+		{"17", CBOR_TYPE_UNSIGNED, 23},
+
+		{"1818", CBOR_TYPE_UNSIGNED, 24},
+
+		{"1903e8", CBOR_TYPE_UNSIGNED, 1000},
+
+		{"1a000f4240", CBOR_TYPE_UNSIGNED, 1000000},
+
+		{"1b000000e8d4a51000", CBOR_TYPE_UNSIGNED, 1000000000000},
+		{"1bffFFffFFffFFffFF", CBOR_TYPE_UNSIGNED, 18446744073709551615u},
+
+		{"40", CBOR_TYPE_BYTES, 0},
+		{"44", CBOR_TYPE_BYTES, 4},
+
+		{"80", CBOR_TYPE_ARRAY, 0},
+		{"83", CBOR_TYPE_ARRAY, 3},
+		{"9819", CBOR_TYPE_ARRAY, 25},
+
+		{"9f", CBOR_TYPE_ARRAY_INDEF, 0},
+
+		{"a0", CBOR_TYPE_MAP, 0},
+		{"a1", CBOR_TYPE_MAP, 1},
+
+		{"ff", CBOR_TYPE_INDEF_END, 0},
+	};
+
+	ITERATE(it, testVectors) {
+		PRINTF("test_cbor_serialization %s\n", PTR_PIC(it->hex));
+		stream_init(& ctx->s);
+		uint8_t buf[50];
+		size_t len = parseHexString(PTR_PIC(it->hex), buf, SIZEOF(buf));
+		cbor_appendToken(& ctx->s, it->type, it->value);
+		EXPECT_EQ(stream_availableBytes(& ctx->s), len);
+		EXPECT_EQ_BYTES(stream_head(& ctx->s), buf, len);
 	}
 
-	{
-		TESTCASE("00", CBOR_TYPE_UNSIGNED, 0);
-		TESTCASE("01", CBOR_TYPE_UNSIGNED, 1);
-		TESTCASE("0a", CBOR_TYPE_UNSIGNED, 10);
-		TESTCASE("17", CBOR_TYPE_UNSIGNED, 23);
 
-		TESTCASE("1818", CBOR_TYPE_UNSIGNED, 24);
+	// Check invalid type
+	const struct {
+		uint8_t type;
+	} invalidVectors[] = {
+		{1},
+		{2},
+		{47},
+	};
 
-		TESTCASE("1903e8", CBOR_TYPE_UNSIGNED, 1000);
-
-		TESTCASE("1a000f4240", CBOR_TYPE_UNSIGNED, 1000000);
-
-		TESTCASE("1b000000e8d4a51000", CBOR_TYPE_UNSIGNED, 1000000000000);
-		TESTCASE("1bffFFffFFffFFffFF", CBOR_TYPE_UNSIGNED, 18446744073709551615u);
-	} {
-		TESTCASE("40", CBOR_TYPE_BYTES, 0);
-		TESTCASE("44", CBOR_TYPE_BYTES, 4);
-	} {
-		TESTCASE("80", CBOR_TYPE_ARRAY, 0);
-		TESTCASE("83", CBOR_TYPE_ARRAY, 3);
-		TESTCASE("9819", CBOR_TYPE_ARRAY, 25);
-
-		TESTCASE("9f", CBOR_TYPE_ARRAY_INDEF, 0);
-	} {
-		TESTCASE("a0", CBOR_TYPE_MAP, 0);
-		TESTCASE("a1", CBOR_TYPE_MAP, 1);
-	} {
-		TESTCASE("ff", CBOR_TYPE_INDEF_END, 0);
-	}
-#undef TESTCASE
-
-	{
-		// Check invalid type
-		stream_t s1;
-		stream_init(&s1);
-		EXPECT_THROWS(cbor_appendToken(&s1, 47, 0), ERR_UNEXPECTED_TOKEN);
+	ITERATE(it, invalidVectors) {
+		stream_init(& ctx->s);
+		EXPECT_THROWS(cbor_appendToken(& ctx->s, 47, 0), ERR_UNEXPECTED_TOKEN);
 	}
 }
 
 void run_cbor_test()
 {
-	test_peek_token();
-	test_noncanonical();
-	test_serialization();
+	test_cbor_peek_token();
+	test_cbor_parse_noncanonical();
+	test_cbor_serialization();
 }
