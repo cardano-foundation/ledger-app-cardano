@@ -7,26 +7,32 @@
 
 #include "hmac.h"
 
+static void testcase_sha256(const char* key_, const char* input_, const char* expected_)
+{
+	uint8_t key[150];
+	size_t keyLen = parseHexString(key_, key, sizeof(key));
+
+	uint8_t input[150];
+	size_t inputLen = parseHexString(input_, input, sizeof(input));
+
+	uint8_t expected[32];
+	size_t expectedLen = parseHexString(expected_, expected, sizeof(expected));
+
+	uint8_t output[32];
+	hmac_sha256(
+	        key, keyLen,
+	        input, inputLen,
+	        output, 32
+	);
+	EXPECT_EQ_BYTES(output, expected, expectedLen);
+}
+
 void run_hmac_test()
 {
-#define TESTCASE(key_, input_, expected_) \
-	{ \
-		stream_t sk, si, se; \
-		stream_initFromHexString(&sk, key_); \
-		stream_initFromHexString(&si, input_); \
-		stream_initFromHexString(&se, expected_); \
-		uint8_t output[32]; \
-		hmac_sha256( \
-			stream_head(&sk), stream_availableBytes(&sk), \
-			stream_head(&si), stream_availableBytes(&si), \
-			output, 32 \
-		); \
-		EXPECT_EQ_BYTES(output, stream_head(&se), stream_availableBytes(&se)); \
-	}
 
 	// Test vectors taken from
 	// https://tools.ietf.org/html/rfc4231#section-4
-	TESTCASE(
+	testcase_sha256(
 	        "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"
 	        "0b0b0b0b",
 
@@ -36,7 +42,7 @@ void run_hmac_test()
 	        "881dc200c9833da726e9376c2e32cff7"
 	);
 
-	TESTCASE(
+	testcase_sha256(
 	        "4a656665",
 
 	        "7768617420646f2079612077616e7420"
@@ -47,7 +53,7 @@ void run_hmac_test()
 	);
 
 
-	TESTCASE(
+	testcase_sha256(
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	        "aaaaaaaa",
 
@@ -60,7 +66,7 @@ void run_hmac_test()
 	        "2959098b3ef8c122d9635514ced565fe"
 	);
 
-	TESTCASE(
+	testcase_sha256(
 	        "0102030405060708090a0b0c0d0e0f10"
 	        "111213141516171819",
 
@@ -77,7 +83,7 @@ void run_hmac_test()
 	// because it checks only first 128 bits of
 	// resulting hash.
 	// I am not sure why it is in the test vectors
-	TESTCASE(
+	testcase_sha256(
 	        "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
 	        "0c0c0c0c",
 
@@ -92,7 +98,7 @@ void run_hmac_test()
 	// long keys?
 
 	/*
-	TESTCASE(
+	testcase_sha256(
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -112,7 +118,7 @@ void run_hmac_test()
 	        "8e0bc6213728c5140546040f0ee37f54"
 	);
 
-	TESTCASE(
+	testcase_sha256(
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
