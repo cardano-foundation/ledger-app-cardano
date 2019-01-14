@@ -138,6 +138,21 @@ void deriveExtendedPublicKey(
 	os_memmove(out + CHAIN_CODE_SIZE, chainCode.code, PUBLIC_KEY_SIZE);
 }
 
+// Note(ppershing): updates ptr!
+#define WRITE_TOKEN(ptr, end, type, value) \
+	{ \
+	    ptr += cbor_writeToken(type, value, ptr, end - ptr); \
+	}
+
+// Note(ppershing): updates ptr!
+#define WRITE_DATA(ptr, end, buf, bufSize) \
+	{ \
+	    ASSERT(bufSize < BUFFER_SIZE_PARANOIA); \
+	    if (ptr + bufSize > end) THROW(ERR_DATA_TOO_LARGE); \
+	    os_memmove(ptr, buf, bufSize); \
+	    ptr += bufSize; \
+	}
+
 void addressRootFromExtPubKey(
         const uint8_t* extPubKey, size_t extPubKeySize,
         uint8_t* addressRoot, size_t addressRootSize
@@ -150,33 +165,20 @@ void addressRootFromExtPubKey(
 	uint8_t* ptr = cborBuf;
 	uint8_t* end = END(cborBuf);
 
-#define WRITE_TOKEN(type, value) \
-	{ \
-	    ptr += cbor_writeToken(type, value, ptr, end - ptr); \
-	}
-#define WRITE_DATA(buf, bufSize) \
-	{ \
-	    if (ptr + bufSize > end) THROW(ERR_DATA_TOO_LARGE); \
-	    os_memmove(ptr, buf, bufSize); \
-	    ptr += bufSize; \
-	}
 
 	// [0, [0, publicKey:chainCode], Map(0)]
 	// TODO(ppershing): what are the first two 0 constants?
-	WRITE_TOKEN(CBOR_TYPE_ARRAY, 3);
-	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 3);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
 
 	// enter inner array
-	WRITE_TOKEN(CBOR_TYPE_ARRAY, 2);
-	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0);
-	WRITE_TOKEN(CBOR_TYPE_BYTES, extPubKeySize);
-	WRITE_DATA(extPubKey, extPubKeySize);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 2);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, EXTENDED_PUBKEY_SIZE);
+	WRITE_DATA(ptr, end, extPubKey, EXTENDED_PUBKEY_SIZE);
 	// exit inner array
 
-	WRITE_TOKEN(CBOR_TYPE_MAP, 0);
-
-#undef WRITE_TOKEN
-#undef WRITE_DATA
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
 
 	// cborBuf is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
@@ -216,41 +218,28 @@ uint32_t deriveAddress(
 	uint8_t* ptr = BEGIN(addressRaw);
 	uint8_t* end = END(addressRaw);
 
-#define WRITE_TOKEN(type, value) \
-	{ \
-	    ptr += cbor_writeToken(type, value, ptr, end - ptr); \
-	}
-
-#define WRITE_DATA(buf, bufSize) \
-	{ \
-	    if (ptr + bufSize > end) THROW(ERR_DATA_TOO_LARGE); \
-	    os_memmove(ptr, buf, bufSize); \
-	    ptr += bufSize; \
-	}
-
-
 	// [tag(24), bytes(33 - { [bytes(28 - { rootAddress } ), map(0), 0] }), checksum]
 	// 1st level
-	WRITE_TOKEN(CBOR_TYPE_ARRAY, 2);
-	WRITE_TOKEN(CBOR_TYPE_TAG, 24);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 2);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_TAG, 24);
 
 	const uint64_t INNER_SIZE= 33;
 	// Note(ppershing): here we expect we know the serialization
 	// length. For now it is constant and we save some stack space
 	// this way but in the future we might need to refactor this code
-	WRITE_TOKEN(CBOR_TYPE_BYTES, INNER_SIZE);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, INNER_SIZE);
 
 	uint8_t* inner_begin = ptr;
 	{
 		// 2nd level
-		WRITE_TOKEN(CBOR_TYPE_ARRAY, 3);
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 3);
 
-		WRITE_TOKEN(CBOR_TYPE_BYTES, SIZEOF(addressRoot));
-		WRITE_DATA(addressRoot, SIZEOF(addressRoot));
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, SIZEOF(addressRoot));
+		WRITE_DATA(ptr, end, addressRoot, SIZEOF(addressRoot));
 
-		WRITE_TOKEN(CBOR_TYPE_MAP, 0);
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
 
-		WRITE_TOKEN(CBOR_TYPE_UNSIGNED, 0); // TODO(what does this zero stand for?)
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0); // TODO(what does this zero stand for?)
 
 		// Note(ppershing): see note above
 		uint8_t* inner_end = ptr;
@@ -259,9 +248,7 @@ uint32_t deriveAddress(
 	uint32_t checksum = crc32(inner_begin, INNER_SIZE);
 
 	// back to 1st level
-	WRITE_TOKEN(CBOR_TYPE_UNSIGNED, checksum);
-#undef WRITE_TOKEN
-#undef WRITE_DATA
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, checksum);
 
 	uint32_t length = encode_base58(
 	                          addressRaw, ptr - addressRaw,
