@@ -4,6 +4,7 @@
 #include "test_utils.h"
 #include "stream.h"
 #include <string.h>
+#include "utils.h"
 
 uint8_t hex_parseNibble(const char c)
 {
@@ -61,78 +62,81 @@ void stream_initFromHexString(stream_t* s, const char* str)
 
 void test_hex_nibble_parsing()
 {
-#define TESTCASE(digit, value) EXPECT_EQ(hex_parseNibble(digit), value)
+	struct {
+		char nibble;
+		int value;
+	} testVectors[] = {
+		{'0', 0},
+		{'1', 1},
+		{'2', 2},
+		{'3', 3},
+		{'4', 4},
+		{'5', 5},
+		{'6', 6},
+		{'7', 7},
+		{'8', 8},
+		{'9', 9},
 
-	TESTCASE('0', 0);
-	TESTCASE('1', 1);
-	TESTCASE('2', 2);
-	TESTCASE('3', 3);
-	TESTCASE('4', 4);
-	TESTCASE('5', 5);
-	TESTCASE('6', 6);
-	TESTCASE('7', 7);
-	TESTCASE('8', 8);
-	TESTCASE('9', 9);
+		{'a', 10},
+		{'b', 11},
+		{'c', 12},
+		{'d', 13},
+		{'e', 14},
+		{'f', 15},
 
-	TESTCASE('a', 10);
-	TESTCASE('b', 11);
-	TESTCASE('c', 12);
-	TESTCASE('d', 13);
-	TESTCASE('e', 14);
-	TESTCASE('f', 15);
+		{'A', 10},
+		{'B', 11},
+		{'C', 12},
+		{'D', 13},
+		{'E', 14},
+		{'F', 15},
+	};
+	PRINTF("test_hex_nibble\n");
 
-	TESTCASE('A', 10);
-	TESTCASE('B', 11);
-	TESTCASE('C', 12);
-	TESTCASE('D', 13);
-	TESTCASE('E', 14);
-	TESTCASE('F', 15);
-#undef TESTCASE
+	ITERATE(it, testVectors) {
+		EXPECT_EQ(hex_parseNibble(it->nibble), it->value);
+	}
 
-#define TESTCASE(digit) EXPECT_THROWS(hex_parseNibble(digit), ERR_UNEXPECTED_TOKEN)
-	TESTCASE('\x00');
-	TESTCASE('\x01');
-
-	TESTCASE('.');
-	TESTCASE('/');
-
-	TESTCASE(':');
-	TESTCASE(';');
-
-	TESTCASE('?');
-	TESTCASE('@');
-
-	TESTCASE('G');
-	TESTCASE('H');
-
-	TESTCASE('Z');
-	TESTCASE('[');
-	TESTCASE('\\');
-
-	TESTCASE('_');
-	TESTCASE('`');
-
-	TESTCASE('g');
-	TESTCASE('h');
-
-	TESTCASE('z');
-	TESTCASE('{');
-
-	TESTCASE(127);
-	TESTCASE(128u);
-
-	TESTCASE(255u);
-#undef TESTCASE
+	struct {
+		char nibble;
+	} invalidVectors[] = {
+		{'\x00'}, {'\x01'},
+		{'.'}, {'/'},
+		{':'}, {';'},
+		{'?'}, {'@'},
+		{'G'}, {'H'},
+		{'Z'}, {'['}, {'\\'},
+		{'_'}, {'`'},
+		{'g'}, {'h'},
+		{'z'}, {'{'},
+		{127}, {128u},
+		{255u},
+	};
+	PRINTF("test_hex_nibble invalid\n");
+	ITERATE(it, invalidVectors) {
+		EXPECT_THROWS(hex_parseNibble(it->nibble), ERR_UNEXPECTED_TOKEN);
+	}
 }
 
 void test_hex_parsing()
 {
-	const char* hex =       "ff    00    1a    2b    3c    4d    5f    98";
-	const uint8_t raw[] = {0xff, 0x00, 0x1a, 0x2b, 0x3c, 0x4d, 0x5f, 0x98};
+	struct {
+		char* hex;
+		uint8_t raw;
+	} testVectors[] = {
+		{"ff", 0xff},
+		{"00", 0x00},
+		{"1a", 0x1a},
+		{"2b", 0x2b},
+		{"3c", 0x3c},
+		{"4d", 0x4d},
+		{"5f", 0x5f},
+		{"98", 0x98},
+	};
 
-	for (unsigned i = 0; i < sizeof(raw); i++) {
-		unsigned pos = i*6;
-		EXPECT_EQ(hex_parseNibblePair(hex + pos), raw[i]);
+	PRINTF("test_hex_parsing\n");
+	ITERATE(it, testVectors) {
+		EXPECT_EQ(hex_parseNibblePair(PTR_PIC(it->hex)), it->raw);
 	}
 }
 

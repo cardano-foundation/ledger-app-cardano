@@ -75,4 +75,5 @@ __BLAKE_DECLARE(224)
 __BLAKE_DECLARE(256)
 __BLAKE_DECLARE(512)
 
+void run_hash_test();
 #endif
