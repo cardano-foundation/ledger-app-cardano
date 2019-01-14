@@ -27,14 +27,14 @@ void stream_checkState(const stream_t* stream)
 }
 
 // Returns number of bytes that can be read from the stream right now
-streamSize_t stream_availableBytes(const stream_t* stream)
+size_t stream_availableBytes(const stream_t* stream)
 {
 	stream_checkState(stream);
 	return stream->bufferEnd - stream->bufferPos;
 }
 
 // Ensures that stream has at least @len available bytes
-void stream_ensureAvailableBytes(const stream_t* stream, streamSize_t len)
+void stream_ensureAvailableBytes(const stream_t* stream, size_t len)
 {
 	if (stream_availableBytes(stream) < len) {
 		// Soft error -- wait for next APDU
@@ -43,7 +43,7 @@ void stream_ensureAvailableBytes(const stream_t* stream, streamSize_t len)
 }
 
 // Advances stream by @len
-void stream_advancePos(stream_t* stream, streamSize_t len)
+void stream_advancePos(stream_t* stream, size_t len)
 {
 	// just in case somebody changes to signed
 	ASSERT(len >= 0);
@@ -76,8 +76,8 @@ const uint8_t* stream_head(const stream_t* stream)
 void stream_shift(stream_t* stream)
 {
 	stream_checkState(stream);
-	streamSize_t len = stream_availableBytes(stream);
-	streamSize_t shift = stream->bufferPos;
+	size_t len = stream_availableBytes(stream);
+	size_t shift = stream->bufferPos;
 
 	os_memmove(stream->buffer, &stream->buffer[shift], len);
 	stream->bufferPos -= shift;
@@ -89,14 +89,14 @@ void stream_shift(stream_t* stream)
 }
 
 // Returns the number of bytes that can be appended right now to the stream
-streamSize_t stream_unusedBytes(const stream_t* stream)
+size_t stream_unusedBytes(const stream_t* stream)
 {
 	stream_checkState(stream);
 	return STREAM_BUFFER_SIZE - stream_availableBytes(stream);
 }
 
 
-void stream_appendData(stream_t* stream, const uint8_t* data, streamSize_t len)
+void stream_appendData(stream_t* stream, const uint8_t* data, size_t len)
 {
 	stream_checkState(stream);
 	if (len > stream_unusedBytes(stream)) {
