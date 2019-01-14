@@ -35,6 +35,7 @@ void handleRunTests(
 		run_key_derivation_test();
 		run_crc32_test();
 		run_hmac_test();
+		PRINTF("All tests done\n");
 	} END_ASSERT_NOEXCEPT;
 
 	io_send_buf(SUCCESS, NULL, 0);
