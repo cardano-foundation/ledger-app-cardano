@@ -7,7 +7,7 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-void validatePath(uint32_t* path, uint32_t pathLength)
+void validatePathForPrivateKeyDerivation(const uint32_t* path, uint32_t pathLength)
 {
 	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
 	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
@@ -20,12 +20,12 @@ void validatePath(uint32_t* path, uint32_t pathLength)
 }
 
 void derivePrivateKey(
-        uint32_t* bip32Path, uint32_t pathLength,
+        const uint32_t* bip32Path, uint32_t pathLength,
         chain_code_t* chainCode,
         privateKey_t* privateKey
 )
 {
-	validatePath(bip32Path, pathLength);
+	validatePathForPrivateKeyDerivation(bip32Path, pathLength);
 
 	uint8_t privateKeyRaw[64];
 
@@ -55,21 +55,29 @@ void derivePrivateKey(
 }
 
 
-void derivePublicKey(privateKey_t* privateKey,
-                     cx_ecfp_public_key_t* publicKey)
+void deriveRawPublicKey(
+        const privateKey_t* privateKey,
+        cx_ecfp_public_key_t* publicKey
+)
 {
 	// We should do cx_ecfp_generate_pair here, but it does not work in SDK < 1.5.4,
 	// should work with the new SDK
 	cx_eddsa_get_public_key(
-	        privateKey,
+	        // cx_eddsa has a special case struct for Cardano's private keys
+	        // but signature is standard
+	        (const struct cx_ecfp_256_private_key_s *) privateKey,
 	        CX_SHA512,
 	        publicKey,
 	        NULL, 0, NULL, 0);
 }
 
-void extractRawPublicKey(cx_ecfp_public_key_t* publicKey, uint8_t* rawPublicKey)
+void extractRawPublicKey(
+        const cx_ecfp_public_key_t* publicKey,
+        uint8_t* rawPublicKey, size_t rawPublicKeySize
+)
 {
 	// copy public key little endian to big endian
+	ASSERT(rawPublicKeySize == 32);
 	uint8_t i;
 	for (i = 0; i < 32; i++) {
 		rawPublicKey[i] = publicKey->W[64 - i];
@@ -79,3 +87,4 @@ void extractRawPublicKey(cx_ecfp_public_key_t* publicKey, uint8_t* rawPublicKey)
 		rawPublicKey[31] |= 0x80;
 	}
 }
+
