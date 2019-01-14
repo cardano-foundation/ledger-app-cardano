@@ -21,18 +21,20 @@
 #include "assert.h"
 #include <os.h>
 
-static const uint8_t MAX_BUFFER_SIZE = 124;
+static const uint32_t MAX_BUFFER_SIZE = 124;
 
-static const unsigned char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static const char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-unsigned char encode_base58(const unsigned char *in, unsigned char length,
-                            unsigned char *out, unsigned char maxoutlen)
+size_t encode_base58(
+        const uint8_t *in, size_t length,
+        uint8_t *out, size_t maxoutlen
+)
 {
-	unsigned char tmp[MAX_BUFFER_SIZE];
-	unsigned char buffer[MAX_BUFFER_SIZE * 2];
-	unsigned char j;
-	unsigned char startAt;
-	unsigned char zeroCount = 0;
+	uint8_t tmp[MAX_BUFFER_SIZE];
+	uint8_t buffer[MAX_BUFFER_SIZE * 2];
+	size_t j;
+	size_t startAt;
+	size_t zeroCount = 0;
 
 	ASSERT(length <= MAX_BUFFER_SIZE);
 
