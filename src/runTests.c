@@ -32,7 +32,7 @@ void handleRunTests(
 		run_base58_test();
 		run_hash_test();
 		run_test_attestUtxo();
-		key_derivation_test();
+		run_key_derivation_test();
 		run_crc32_test();
 		run_hmac_test();
 	} END_ASSERT_NOEXCEPT;

@@ -58,7 +58,7 @@ void handleGetExtendedPublicKey(
 			        &data.privateKey
 			);
 
-			derivePublicKey(&data.privateKey, &data.publicKey);
+			deriveRawPublicKey(&data.privateKey, &data.publicKey);
 		}
 		FINALLY {
 			os_memset(&data.privateKey, 0, sizeof(data.privateKey));
@@ -77,7 +77,7 @@ void io_exchange_address()
 	G_io_apdu_buffer[tx++] = PUBLIC_KEY_SIZE;
 
 	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
-	extractRawPublicKey(&data.publicKey, rawPublicKey);
+	extractRawPublicKey(&data.publicKey, rawPublicKey, SIZEOF(rawPublicKey));
 	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, PUBLIC_KEY_SIZE);
 
 	tx += PUBLIC_KEY_SIZE;
