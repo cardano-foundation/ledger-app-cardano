@@ -5,6 +5,7 @@
 #include <os.h>
 #include <stdbool.h>
 #include "endian.h"
+#include "utils.h"
 
 // Note(ppershing): consume functions should either
 // a) *consume* expected value, or
@@ -167,7 +168,7 @@ size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t *buf, size_t bufSiz
 void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 {
 	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
-	size_t bufLen = cbor_writeToken(type, value, buf, 9);
+	size_t bufLen = cbor_writeToken(type, value, buf, SIZEOF(buf));
 	stream_appendData(stream, buf, bufLen);
 }
 
