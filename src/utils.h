@@ -1,6 +1,7 @@
 #ifndef H_CARDANO_APP_UTILS
 #define H_CARDANO_APP_UTILS
 
+#include <os.h>
 #include "assert.h"
 
 
@@ -47,5 +48,16 @@
 
 // Helper function to check APDU request parameters
 #define VALIDATE_REQUEST_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
+
+// Helper functions for ranges
+// TODO(ppershing): make more type safe?
+#define BEGIN(buf) buf
+// Note: SIZEOF would not work if buf is not uin8_t*
+#define END(buf) (buf + ARRAY_LEN(buf))
+// Any buffer longer than this is a bug (we anyway have only 4KB of memory)
+
+#define PTR_PIC(ptr) ((__typeof__(ptr)) PIC(ptr))
+
+#define ITERATE(it, arr) for (__typeof__(&(arr[0])) it = BEGIN(arr); it < END(arr); it++)
 
 #endif

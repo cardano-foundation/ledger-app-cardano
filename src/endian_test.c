@@ -1,9 +1,11 @@
 #include "endian.h"
 #include "assert.h"
 #include "test_utils.h"
+#include <os.h>
 
 void run_endian_test()
 {
+	PRINTF("run_endian_test\n");
 	const uint8_t* buf = (uint8_t* )"\x47\x11\x22\x33\x44\x55\x66\x77\x88\x47";
 	EXPECT_EQ(u1be_read(buf), 0x47);
 	EXPECT_EQ(u1be_read(buf + 1), 0x11);

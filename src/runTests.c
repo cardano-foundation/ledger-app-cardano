@@ -8,7 +8,7 @@
 #include "base58.h"
 #include "test_utils.h"
 #include "hex_utils.h"
-#include "blake2b_test.h"
+#include "hash.h"
 #include "attestUtxo.h"
 #include "keyDerivation.h"
 #include "crc32.h"
@@ -24,6 +24,7 @@ void handleRunTests(
         uint16_t dataLength)
 {
 	BEGIN_ASSERT_NOEXCEPT {
+		PRINTF("Running tests\n");
 		run_endian_test();
 		run_hex_test();
 		run_stream_test();
