@@ -4,25 +4,25 @@
 #include "assert.h"
 #include <stdint.h>
 #include "hex_utils.h"
-
+#include "utils.h"
 #include "hmac.h"
 
 static void testcase_sha256(const char* key_, const char* input_, const char* expected_)
 {
 	uint8_t key[150];
-	size_t keyLen = parseHexString(key_, key, sizeof(key));
+	size_t keyLen = parseHexString(key_, key, SIZEOF(key));
 
 	uint8_t input[150];
-	size_t inputLen = parseHexString(input_, input, sizeof(input));
+	size_t inputLen = parseHexString(input_, input, SIZEOF(input));
 
 	uint8_t expected[32];
-	size_t expectedLen = parseHexString(expected_, expected, sizeof(expected));
+	size_t expectedLen = parseHexString(expected_, expected, SIZEOF(expected));
 
 	uint8_t output[32];
 	hmac_sha256(
 	        key, keyLen,
 	        input, inputLen,
-	        output, 32
+	        output, SIZEOF(output)
 	);
 	EXPECT_EQ_BYTES(output, expected, expectedLen);
 }
