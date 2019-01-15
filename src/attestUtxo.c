@@ -147,9 +147,7 @@ void advanceOutputState(attestUtxoState_t* state)
 		// unexpected state
 		ASSERT(false);
 	}
-
 }
-
 
 void initInputParser(attestUtxoState_t *state)
 {
@@ -316,14 +314,14 @@ void attestUtxo_sendResponse(attestUtxoState_t* state)
 
 	// HMAC
 	hmac_sha256(
-	        attestKeyData.key, sizeof(attestKeyData.key),
+	        attestKeyData.key, SIZEOF(attestKeyData.key),
 	        response, pos, // all of response so far
 	        hmac, 32
 	);
 	os_memmove(response + pos, hmac, 16);
 	pos += 16;
 
-	ASSERT(pos == sizeof(response));
+	ASSERT(pos == SIZEOF(response));
 	io_send_buf(SUCCESS, response, pos);
 }
 

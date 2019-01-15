@@ -43,14 +43,12 @@ void deriveRawPublicKey(
 
 void extractRawPublicKey(
         const cx_ecfp_public_key_t* publicKey,
-        // 32 byte output
-        uint8_t* rawPublicKey, size_t rawPublicKeySize
+        uint8_t* outBuffer, size_t outSize
 );
 
-// Mod
 uint32_t deriveAddress(
         const path_spec_t* pathSpec,
-        uint8_t* output, size_t outputSize
+        uint8_t* outBuffer, size_t outSize
 );
 
 void run_key_derivation_test();

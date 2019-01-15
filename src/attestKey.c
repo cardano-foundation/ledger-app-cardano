@@ -22,7 +22,7 @@ void attestKey_initialize()
 	cx_rng(attestKeyData.key, ATTEST_KEY_SIZE);
 }
 
-void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, uint16_t dataLength)
+void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, size_t dataSize)
 {
 	#ifndef DEVEL
 	// This call shouldn't be available from non-devel mode
@@ -30,14 +30,14 @@ void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, uint16_t da
 	#endif
 	VALIDATE_REQUEST_PARAM(p1 == P1_UNUSED);
 	VALIDATE_REQUEST_PARAM(p2 == P2_UNUSED);
-	VALIDATE_REQUEST_PARAM(dataLength == ATTEST_KEY_SIZE);
+	VALIDATE_REQUEST_PARAM(dataSize == ATTEST_KEY_SIZE);
 
 	os_memmove(attestKeyData.key, dataBuffer, ATTEST_KEY_SIZE);
 	io_send_buf(SUCCESS, NULL, 0);
 	ui_idle();
 }
 
-void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, uint16_t dataLength)
+void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, size_t dataSize)
 {
 	#ifndef DEVEL
 	// This call shouldn't be available from non-devel mode
@@ -46,7 +46,7 @@ void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, uint16_t da
 
 	VALIDATE_REQUEST_PARAM(p1 == P1_UNUSED);
 	VALIDATE_REQUEST_PARAM(p2 == P2_UNUSED);
-	VALIDATE_REQUEST_PARAM(dataLength == 0);
+	VALIDATE_REQUEST_PARAM(dataSize == 0);
 
 	io_send_buf(SUCCESS, attestKeyData.key, ATTEST_KEY_SIZE);
 	ui_idle();

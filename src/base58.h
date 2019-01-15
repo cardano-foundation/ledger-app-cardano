@@ -5,8 +5,8 @@
 #include <stddef.h>
 
 size_t encode_base58(
-        const uint8_t *in, size_t length,
-        uint8_t *out, size_t maxoutlen
+        const uint8_t *inBuffer, size_t inSize,
+        uint8_t *outBuffer, size_t maxOutSize
 );
 
 void run_base58_test();

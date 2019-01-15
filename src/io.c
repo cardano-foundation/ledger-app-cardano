@@ -22,12 +22,12 @@ void _io_send_G_io_apdu_buffer(uint16_t code, uint16_t tx)
 	io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-void io_send_buf(uint16_t code, uint8_t* buffer, uint16_t len)
+void io_send_buf(uint16_t code, uint8_t* buffer, size_t bufferSize)
 {
-	CHECK_RESPONSE_SIZE(len);
+	CHECK_RESPONSE_SIZE(bufferSize);
 
-	os_memmove(G_io_apdu_buffer, buffer, len);
-	_io_send_G_io_apdu_buffer(code, len);
+	os_memmove(G_io_apdu_buffer, buffer, bufferSize);
+	_io_send_G_io_apdu_buffer(code, bufferSize);
 }
 
 

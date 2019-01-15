@@ -2,8 +2,9 @@
 #define H_CARDANO_APP_CRC32
 
 #include <stdint.h>
+#include <stddef.h>
 
-uint32_t crc32(const uint8_t *buffer, uint32_t length);
+uint32_t crc32(const uint8_t* inBuffer, size_t inSize);
 
 void run_crc32_test();
 #endif

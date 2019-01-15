@@ -14,50 +14,50 @@ uint8_t hex_parseNibble(const char c)
 	THROW(ERR_UNEXPECTED_TOKEN);
 }
 
-uint8_t hex_parseNibblePair(const char* str)
+uint8_t hex_parseNibblePair(const char* inStr)
 {
-	uint8_t first = hex_parseNibble(str[0]);
-	uint8_t second = hex_parseNibble(str[1]);
+	uint8_t first = hex_parseNibble(inStr[0]);
+	uint8_t second = hex_parseNibble(inStr[1]);
 	return (first << 4) + second;
 }
 
-void stream_appendFromHexString(stream_t* s, const char* str)
+void stream_appendFromHexString(stream_t* s, const char* inStr)
 {
-	unsigned len = strlen(str);
+	unsigned len = strlen(inStr);
 	if (len % 2) THROW(ERR_UNEXPECTED_TOKEN);
 	while (len >= 2) {
-		uint8_t tmp = hex_parseNibblePair(str);
+		uint8_t tmp = hex_parseNibblePair(inStr);
 		stream_appendData(s, &tmp, 1);
 		len -= 2;
-		str += 2;
+		inStr += 2;
 	}
 }
 
-size_t parseHexString(const char* str, uint8_t* buf, size_t maxLen)
+size_t parseHexString(const char* inStr, uint8_t* outBuffer, size_t outMaxSize)
 {
 
-	size_t len = strlen(str);
+	size_t len = strlen(inStr);
 	if (len % 2) THROW(ERR_UNEXPECTED_TOKEN);
 
 	size_t outLen = len / 2;
-	if (outLen > maxLen) {
+	if (outLen > outMaxSize) {
 		THROW(ERR_DATA_TOO_LARGE);
 	}
 
 	while (len >= 2) {
-		*buf = hex_parseNibblePair(str);
+		*outBuffer = hex_parseNibblePair(inStr);
 		len -= 2;
-		str += 2;
-		buf += 1;
+		inStr += 2;
+		outBuffer += 1;
 	}
 	return outLen;
 }
 
 
-void stream_initFromHexString(stream_t* s, const char* str)
+void stream_initFromHexString(stream_t* s, const char* inStr)
 {
 	stream_init(s);
-	stream_appendFromHexString(s, str);
+	stream_appendFromHexString(s, inStr);
 }
 
 void test_hex_nibble_parsing()

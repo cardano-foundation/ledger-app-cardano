@@ -35,26 +35,26 @@ size_t stream_availableBytes(const stream_t* stream)
 }
 
 // Ensures that stream has at least @len available bytes
-void stream_ensureAvailableBytes(const stream_t* stream, size_t len)
+void stream_ensureAvailableBytes(const stream_t* stream, size_t size)
 {
-	if (stream_availableBytes(stream) < len) {
+	if (stream_availableBytes(stream) < size) {
 		// Soft error -- wait for next APDU
 		THROW(ERR_NOT_ENOUGH_INPUT);
 	}
 }
 
 // Advances stream by @len
-void stream_advancePos(stream_t* stream, size_t len)
+void stream_advancePos(stream_t* stream, size_t size)
 {
 	// just in case somebody changes to signed
-	ASSERT(len >= 0);
+	ASSERT(size >= 0);
 	// Wraparound
-	ASSERT(stream->streamPos + len > stream->streamPos);
+	ASSERT(stream->streamPos + size > stream->streamPos);
 
 	stream_checkState(stream);
-	stream_ensureAvailableBytes(stream, len);
-	stream->bufferPos += len;
-	stream->streamPos += len;
+	stream_ensureAvailableBytes(stream, size);
+	stream->bufferPos += size;
+	stream->streamPos += size;
 }
 
 // Returns the first byte of the stream without advancing
@@ -97,18 +97,18 @@ size_t stream_unusedBytes(const stream_t* stream)
 }
 
 
-void stream_appendData(stream_t* stream, const uint8_t* data, size_t len)
+void stream_appendData(stream_t* stream, const uint8_t* inBuffer, size_t inSize)
 {
 	stream_checkState(stream);
-	if (len > stream_unusedBytes(stream)) {
+	if (inSize > stream_unusedBytes(stream)) {
 		THROW(ERR_DATA_TOO_LARGE);
 	}
 	// Prepare space
 	stream_shift(stream);
 
 	// Check stream space
-	ASSERT(stream->bufferEnd + len <= STREAM_BUFFER_SIZE);
-	os_memmove(&stream->buffer[stream->bufferEnd], data, len);
-	stream->bufferEnd += len;
+	ASSERT(stream->bufferEnd + inSize <= STREAM_BUFFER_SIZE);
+	os_memmove(&stream->buffer[stream->bufferEnd], inBuffer, inSize);
+	stream->bufferEnd += inSize;
 	stream_checkState(stream);
 }

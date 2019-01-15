@@ -26,8 +26,8 @@ static const uint32_t MAX_BUFFER_SIZE = 124;
 static const char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 size_t encode_base58(
-        const uint8_t *in, size_t length,
-        uint8_t *out, size_t maxoutlen
+        const uint8_t* inBuffer, size_t inSize,
+        uint8_t* outBuffer, size_t maxOutSize
 )
 {
 	uint8_t tmp[MAX_BUFFER_SIZE];
@@ -36,20 +36,20 @@ size_t encode_base58(
 	size_t startAt;
 	size_t zeroCount = 0;
 
-	ASSERT(length <= MAX_BUFFER_SIZE);
+	ASSERT(inSize <= MAX_BUFFER_SIZE);
 
-	os_memmove(tmp, in, length);
+	os_memmove(tmp, inBuffer, inSize);
 
-	while ((zeroCount < length) && (tmp[zeroCount] == 0)) {
+	while ((zeroCount < inSize) && (tmp[zeroCount] == 0)) {
 		++zeroCount;
 	}
-	j = 2 * length;
+	j = 2 * inSize;
 	startAt = zeroCount;
 
-	while (startAt < length) {
+	while (startAt < inSize) {
 		unsigned short remainder = 0;
 		unsigned char divLoop;
-		for (divLoop = startAt; divLoop < length; divLoop++) {
+		for (divLoop = startAt; divLoop < inSize; divLoop++) {
 			unsigned short digit256 = (unsigned short)(tmp[divLoop] & 0xff);
 			unsigned short tmpDiv = remainder * 256 + digit256;
 			tmp[divLoop] = (unsigned char)(tmpDiv / 58);
@@ -60,16 +60,16 @@ size_t encode_base58(
 		}
 		buffer[--j] = BASE58ALPHABET[remainder];
 	}
-	while ((j < (2 * length)) && (buffer[j] == BASE58ALPHABET[0])) {
+	while ((j < (2 * inSize)) && (buffer[j] == BASE58ALPHABET[0])) {
 		++j;
 	}
 	while (zeroCount-- > 0) {
 		buffer[--j] = BASE58ALPHABET[0];
 	}
-	length = 2 * length - j;
+	inSize = 2 * inSize - j;
 
-	ASSERT(length <= maxoutlen);
+	ASSERT(inSize <= maxOutSize);
 
-	os_memmove(out, (buffer + j), length);
-	return length;
+	os_memmove(outBuffer, (buffer + j), inSize);
+	return inSize;
 }

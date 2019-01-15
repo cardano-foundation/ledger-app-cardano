@@ -79,18 +79,18 @@ void deriveRawPublicKey(
 
 void extractRawPublicKey(
         const cx_ecfp_public_key_t* publicKey,
-        uint8_t* rawPublicKey, size_t rawPublicKeySize
+        uint8_t* outBuffer, size_t outSize
 )
 {
 	// copy public key little endian to big endian
-	ASSERT(rawPublicKeySize == 32);
+	ASSERT(outSize == 32);
 	uint8_t i;
 	for (i = 0; i < 32; i++) {
-		rawPublicKey[i] = publicKey->W[64 - i];
+		outBuffer[i] = publicKey->W[64 - i];
 	}
 
 	if ((publicKey->W[32] & 1) != 0) {
-		rawPublicKey[31] |= 0x80;
+		outBuffer[31] |= 0x80;
 	}
 }
 
@@ -159,11 +159,11 @@ void deriveExtendedPublicKey(
 
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
-        uint8_t* addressRoot, size_t addressRootSize
+        uint8_t* outBuffer, size_t outSize
 )
 {
 	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
-	ASSERT(addressRootSize == 28);
+	ASSERT(outSize == 28);
 
 	uint8_t cborBuf[64 + 10];
 	uint8_t* ptr = cborBuf;
@@ -192,13 +192,13 @@ void addressRootFromExtPubKey(
 	);
 	blake2b_224_hash(
 	        cborShaHash, SIZEOF(cborShaHash),
-	        addressRoot, addressRootSize
+	        outBuffer, outSize
 	);
 }
 
 uint32_t deriveAddress(
         const path_spec_t* pathSpec,
-        uint8_t* address, size_t maxSize
+        uint8_t* outBuffer, size_t outSize
 )
 {
 	validatePathForAddressDerivation(pathSpec);
@@ -253,7 +253,7 @@ uint32_t deriveAddress(
 
 	uint32_t length = encode_base58(
 	                          addressRaw, ptr - addressRaw,
-	                          address, maxSize
+	                          outBuffer, outSize
 	                  );
 	return length;
 }
