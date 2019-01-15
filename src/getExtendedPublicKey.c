@@ -27,15 +27,15 @@ void ensureParametersAreCorrect(
 
 void initializePath(uint8_t *dataBuffer)
 {
-	STATIC_ASSERT((255-1)/4 > MAX_BIP32_PATH, __bad_length);
+	STATIC_ASSERT((255-1)/4 > MAX_PATH_LENGTH, __bad_length);
 
-	data.pathLength = dataBuffer[0];
+	data.pathSpec.length = dataBuffer[0];
 
 	uint8_t i = 0;
-	for (i = 0; i < data.pathLength; i++) {
+	for (i = 0; i < data.pathSpec.length; i++) {
 		uint8_t offset = 1 + 4 * i;
 
-		data.bip32Path[i] = U4BE(dataBuffer, offset);
+		data.pathSpec.path[i] = U4BE(dataBuffer, offset);
 	}
 }
 
@@ -52,8 +52,7 @@ void handleGetExtendedPublicKey(
 	BEGIN_TRY {
 		TRY {
 			derivePrivateKey(
-			        data.bip32Path,
-			        data.pathLength,
+			        &data.pathSpec,
 			        &data.chainCode,
 			        &data.privateKey
 			);

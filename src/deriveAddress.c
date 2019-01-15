@@ -36,13 +36,13 @@ static void initializePath(uint8_t *dataBuffer)
 {
 	STATIC_ASSERT((255 - 1) / 4 > MAX_BIP32_PATH, __bad_length);
 
-	daData.pathLength = dataBuffer[0];
+	daData.pathSpec.length = dataBuffer[0];
 
 	uint8_t i = 0;
-	for (i = 0; i < daData.pathLength; i++) {
+	for (i = 0; i < daData.pathSpec.length; i++) {
 		uint8_t offset = 1 + 4 * i;
 
-		daData.bip32Path[i] = U4BE(dataBuffer, offset);
+		daData.pathSpec.path[i] = U4BE(dataBuffer, offset);
 	}
 }
 
@@ -57,7 +57,7 @@ void handleDeriveAddress(
 	initializePath(dataBuffer);
 
 	daData.addressLength = deriveAddress(
-	                               daData.bip32Path, daData.pathLength,
+	                               &daData.pathSpec,
 	                               daData.address, SIZEOF(daData.address)
 	                       );
 

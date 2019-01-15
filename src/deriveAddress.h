@@ -12,8 +12,7 @@ void handleDeriveAddress(
 );
 
 typedef struct {
-	uint32_t bip32Path[10];
-	uint32_t pathLength;
+	path_spec_t pathSpec;
 	uint8_t address[128];
 	uint8_t addressLength;
 } derive_address_data_t;

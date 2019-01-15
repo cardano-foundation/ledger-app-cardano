@@ -13,25 +13,25 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-void validatePathForPrivateKeyDerivation(const uint32_t* path, uint32_t pathLength)
+void validatePathForPrivateKeyDerivation(const path_spec_t* pathSpec)
 {
 	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
 	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
 
-	VALIDATE_PARAM(pathLength >= 3 && pathLength <= 10);
+	VALIDATE_PARAM(pathSpec->length >= 3 && pathSpec->length <= 10);
 
-	VALIDATE_PARAM(path[0] ==  bip44);
-	VALIDATE_PARAM(path[1] ==  adaCoinType);
-	VALIDATE_PARAM(path[2] >= HARDENED_BIP32);
+	VALIDATE_PARAM(pathSpec->path[0] ==  bip44);
+	VALIDATE_PARAM(pathSpec->path[1] ==  adaCoinType);
+	VALIDATE_PARAM(pathSpec->path[2] >= HARDENED_BIP32);
 }
 
 void derivePrivateKey(
-        const uint32_t* bip32Path, uint32_t pathLength,
+        const path_spec_t* pathSpec,
         chain_code_t* chainCode,
         privateKey_t* privateKey
 )
 {
-	validatePathForPrivateKeyDerivation(bip32Path, pathLength);
+	validatePathForPrivateKeyDerivation(pathSpec);
 
 	uint8_t privateKeyRaw[64];
 
@@ -43,8 +43,8 @@ void derivePrivateKey(
 			STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
-			        bip32Path,
-			        pathLength,
+			        pathSpec->path,
+			        pathSpec->length,
 			        privateKeyRaw,
 			        chainCode->code);
 
@@ -94,17 +94,17 @@ void extractRawPublicKey(
 	}
 }
 
-static void validatePathForAddressDerivation(const uint32_t* bip32Path, uint32_t pathLength)
+static void validatePathForAddressDerivation(const path_spec_t* pathSpec)
 {
 	// other checks are when deriving private key
-	VALIDATE_PARAM(pathLength >= 5);
-	VALIDATE_PARAM(bip32Path[3] == 0 || bip32Path[3] == 1);
+	VALIDATE_PARAM(pathSpec->length >= 5);
+	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
 }
 
 
 // pub_key + chain_code
 void deriveExtendedPublicKey(
-        const uint32_t* bip32Path, uint32_t pathLength,
+        const path_spec_t* pathSpec,
         extendedPublicKey_t* out
 )
 {
@@ -116,8 +116,7 @@ void deriveExtendedPublicKey(
 	BEGIN_TRY {
 		TRY {
 			derivePrivateKey(
-			        bip32Path,
-			        pathLength,
+			        pathSpec,
 			        &chainCode,
 			        &privateKey
 			);
@@ -198,20 +197,17 @@ void addressRootFromExtPubKey(
 }
 
 uint32_t deriveAddress(
-        const uint32_t* bip32Path, uint32_t pathLength,
+        const path_spec_t* pathSpec,
         uint8_t* address, size_t maxSize
 )
 {
-	validatePathForAddressDerivation(bip32Path, pathLength);
+	validatePathForAddressDerivation(pathSpec);
 
 	uint8_t addressRoot[28];
 	{
 		extendedPublicKey_t extPubKey;
 
-		deriveExtendedPublicKey(
-		        bip32Path, pathLength,
-		        &extPubKey
-		);
+		deriveExtendedPublicKey(pathSpec, &extPubKey);
 
 		addressRootFromExtPubKey(
 		        &extPubKey,

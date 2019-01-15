@@ -29,11 +29,15 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec.length = pathLen;
+	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+
 	uint8_t expected[64];
 	parseHexString(expected_, expected, 64);
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	EXPECT_EQ_BYTES(expected, privateKey.d, 64);
 }
 
@@ -100,9 +104,13 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec.length = pathLen;
+	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	cx_ecfp_public_key_t publicKey;
 	deriveRawPublicKey(&privateKey, &publicKey);
 	uint8_t publicKeyRaw[32];
@@ -156,7 +164,12 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
+
+	path_spec_t pathSpec;
+	pathSpec.length = pathLen;
+	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
 	parseHexString(expected, expectedBuffer, 32);
 	EXPECT_EQ_BYTES(expectedBuffer, chainCode.code, 32);
@@ -190,9 +203,13 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec.length = pathLen;
+	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+
 	uint8_t address[128];
 	os_memset(address, 0, 128);
-	uint32_t length = deriveAddress(path, pathLen, address, SIZEOF(address));
+	uint32_t length = deriveAddress(&pathSpec, address, SIZEOF(address));
 
 	address[length] = 0;
 
