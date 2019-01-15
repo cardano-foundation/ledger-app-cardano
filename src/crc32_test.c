@@ -29,8 +29,8 @@ void run_crc32_test()
 	ITERATE(it, testVectors) {
 		PRINTF("testcase_crc32 %s\n", PTR_PIC(it->inputHex));
 		uint8_t buffer[100];
-		size_t bufferLen = parseHexString(PTR_PIC(it->inputHex), buffer, 100);
-		uint32_t result = crc32(buffer, bufferLen);
+		size_t bufferSize = parseHexString(PTR_PIC(it->inputHex), buffer, 100);
+		uint32_t result = crc32(buffer, bufferSize);
 
 		EXPECT_EQ(result, it->expected);
 	}

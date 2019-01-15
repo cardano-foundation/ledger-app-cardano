@@ -11,13 +11,13 @@
 void testcase_base58(const char* inputHex, const char* expectedHex)
 {
 	PRINTF("testcase_base58: %s\n", inputHex);
-	uint8_t input[100];
-	uint8_t inputSize;
-	inputSize = parseHexString(inputHex, input, SIZEOF(input));
-	uint8_t output[100];
-	uint8_t outputLength = encode_base58(input, inputSize, output, SIZEOF(output));
-	EXPECT_EQ(outputLength, strlen(expectedHex));
-	EXPECT_EQ_BYTES(expectedHex, output, outputLength);
+	uint8_t inputBuffer[100];
+	size_t inputSize;
+	inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
+	uint8_t outputBuffer[100];
+	size_t outputSize = encode_base58(inputBuffer, inputSize, outputBuffer, SIZEOF(outputBuffer));
+	EXPECT_EQ(outputSize, strlen(expectedHex));
+	EXPECT_EQ_BYTES(expectedHex, outputBuffer, outputSize);
 }
 
 void run_base58_test()
