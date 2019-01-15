@@ -13,7 +13,6 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-// TODO
 #define MAX_BIP32_PATH 32
 
 static void io_exchange_address();
