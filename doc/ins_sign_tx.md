@@ -25,7 +25,7 @@ Given transaction inputs and transaction outputs (addresses + amounts), construc
 
 **TODO:❓IOHK needs to review if the following assumptions make sense.**
 
-The Cardano ledger app uses a custom, simplified, format for receiving the transaction to sign. The rationale behind not streaming directly the cardano raw transaction to Ledger is the following:  
+The Cardano ledger app uses a custom, simplified, format for streaming the transaction to be signed. The rationale behind not streaming directly the cardano raw transaction to Ledger is the following:  
 1) App needs to support [attested transaction inputs](ins_attest_utxo.md) which are not part of the standard Cardano transaction message format.
 2) App needs to support BIP32 change address outputs (Ledger should not display own change addresses to the user as this degrades UX)
 3) (TBD:❓ do we need to support this? What should be longest address Ledger can handle? Note that a resonable threshold might be 255 bytes (i.e., max 1 APDU)) App needs to support long output addresses (Cardano addresses can be >10kb long. As a consequence, Ledger cannot assume that it can safely store even a single full output address in the memory.)
