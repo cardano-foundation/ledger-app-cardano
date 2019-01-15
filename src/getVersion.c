@@ -18,11 +18,11 @@ void handleGetVersion(
         uint8_t *dataBuffer,
         uint16_t dataLength)
 {
-	uint8_t response[3];
-	response[0] = APPVERSION[0] - '0';
-	response[1] = APPVERSION[2] - '0';
-	response[2] = APPVERSION[4] - '0';
-	io_send_buf(SUCCESS, response, 3);
+	uint8_t responseBuffer[3];
+	responseBuffer[0] = APPVERSION[0] - '0';
+	responseBuffer[1] = APPVERSION[2] - '0';
+	responseBuffer[2] = APPVERSION[4] - '0';
+	io_send_buf(SUCCESS, responseBuffer, 3);
 }
 
 

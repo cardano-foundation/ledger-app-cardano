@@ -291,17 +291,17 @@ enum {
 void attestUtxo_sendResponse(attestUtxoState_t* state)
 {
 	// Response is (txHash, outputNumber, outputAmount, HMAC)
-	uint8_t response[32 + 4 + 8 + 16]; // Note: we have short HMAC
-	uint8_t hmac[32]; // Full HMAC
+	uint8_t responseBuffer[32 + 4 + 8 + 16]; // Note: we have short HMAC
+	uint8_t hmacBuffer[32]; // Full HMAC
 
 	size_t pos = 0;
 
 	// txHash
-	blake2b_256_finalize(&state ->txHashCtx, response + pos, 32);
+	blake2b_256_finalize(&state ->txHashCtx, responseBuffer + pos, 32);
 	pos += 32;
 
 	// outputNumber
-	u4be_write(response + pos, state->attestedOutputIndex);
+	u4be_write(responseBuffer + pos, state->attestedOutputIndex);
 	pos += 4;
 
 	// outputAmount
@@ -309,20 +309,20 @@ void attestUtxo_sendResponse(attestUtxoState_t* state)
 	if (amount == LOVELACE_INVALID) {
 		THROW(ERR_INVALID_DATA);
 	}
-	u8be_write(response + pos, amount);
+	u8be_write(responseBuffer + pos, amount);
 	pos += 8;
 
 	// HMAC
 	hmac_sha256(
 	        attestKeyData.key, SIZEOF(attestKeyData.key),
-	        response, pos, // all of response so far
-	        hmac, 32
+	        responseBuffer, pos, // all of response so far
+	        hmacBuffer, 32
 	);
-	os_memmove(response + pos, hmac, 16);
+	os_memmove(responseBuffer + pos, hmacBuffer, 16);
 	pos += 16;
 
-	ASSERT(pos == SIZEOF(response));
-	io_send_buf(SUCCESS, response, pos);
+	ASSERT(pos == SIZEOF(responseBuffer));
+	io_send_buf(SUCCESS, responseBuffer, pos);
 }
 
 void handle_attestUtxo(

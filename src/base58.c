@@ -30,7 +30,7 @@ size_t encode_base58(
         uint8_t* outBuffer, size_t maxOutSize
 )
 {
-	uint8_t tmp[MAX_BUFFER_SIZE];
+	uint8_t tmpBuffer[MAX_BUFFER_SIZE];
 	uint8_t buffer[MAX_BUFFER_SIZE * 2];
 	size_t j;
 	size_t startAt;
@@ -38,9 +38,9 @@ size_t encode_base58(
 
 	ASSERT(inSize <= MAX_BUFFER_SIZE);
 
-	os_memmove(tmp, inBuffer, inSize);
+	os_memmove(tmpBuffer, inBuffer, inSize);
 
-	while ((zeroCount < inSize) && (tmp[zeroCount] == 0)) {
+	while ((zeroCount < inSize) && (tmpBuffer[zeroCount] == 0)) {
 		++zeroCount;
 	}
 	j = 2 * inSize;
@@ -50,12 +50,12 @@ size_t encode_base58(
 		unsigned short remainder = 0;
 		unsigned char divLoop;
 		for (divLoop = startAt; divLoop < inSize; divLoop++) {
-			unsigned short digit256 = (unsigned short)(tmp[divLoop] & 0xff);
+			unsigned short digit256 = (unsigned short)(tmpBuffer[divLoop] & 0xff);
 			unsigned short tmpDiv = remainder * 256 + digit256;
-			tmp[divLoop] = (unsigned char)(tmpDiv / 58);
+			tmpBuffer[divLoop] = (unsigned char)(tmpDiv / 58);
 			remainder = (tmpDiv % 58);
 		}
-		if (tmp[startAt] == 0) {
+		if (tmpBuffer[startAt] == 0) {
 			++startAt;
 		}
 		buffer[--j] = BASE58ALPHABET[remainder];

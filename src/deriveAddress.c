@@ -56,10 +56,10 @@ void handleDeriveAddress(
 
 	initializePath(dataBuffer);
 
-	daData.addressLength = deriveAddress(
-	                               &daData.pathSpec,
-	                               daData.address, SIZEOF(daData.address)
-	                       );
+	daData.addressSize = deriveAddress(
+	                             &daData.pathSpec,
+	                             daData.addressBuffer, SIZEOF(daData.addressBuffer)
+	                     );
 
 	io_exchange_address();
 }
@@ -68,11 +68,11 @@ static void io_exchange_address()
 {
 	uint32_t tx = 0;
 
-	G_io_apdu_buffer[tx++] = daData.addressLength;
+	G_io_apdu_buffer[tx++] = daData.addressSize;
 
-	os_memmove(G_io_apdu_buffer + tx, daData.address, daData.addressLength);
+	os_memmove(G_io_apdu_buffer + tx, daData.addressBuffer, daData.addressSize);
 
-	tx += daData.addressLength;
+	tx += daData.addressSize;
 
 	G_io_apdu_buffer[tx++] = 0x90;
 	G_io_apdu_buffer[tx++] = 0x00;

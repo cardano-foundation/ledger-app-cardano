@@ -33,7 +33,7 @@ void derivePrivateKey(
 {
 	validatePathForPrivateKeyDerivation(pathSpec);
 
-	uint8_t privateKeyRaw[64];
+	uint8_t privateKeyRawBuffer[64];
 
 	STATIC_ASSERT(SIZEOF(chainCode->code) == 32, __bad_length);
 	os_memset(chainCode->code, 0, SIZEOF(chainCode->code));
@@ -45,17 +45,17 @@ void derivePrivateKey(
 			        CX_CURVE_Ed25519,
 			        pathSpec->path,
 			        pathSpec->length,
-			        privateKeyRaw,
+			        privateKeyRawBuffer,
 			        chainCode->code);
 
 			// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
 			// should work with the new SDK
 			privateKey->curve = CX_CURVE_Ed25519;
 			privateKey->d_len = 64;
-			os_memmove(privateKey->d, privateKeyRaw, 64);
+			os_memmove(privateKey->d, privateKeyRawBuffer, 64);
 		}
 		FINALLY {
-			os_memset(privateKeyRaw, 0, SIZEOF(privateKeyRaw));
+			os_memset(privateKeyRawBuffer, 0, SIZEOF(privateKeyRawBuffer));
 		}
 	} END_TRY;
 }
@@ -165,9 +165,9 @@ void addressRootFromExtPubKey(
 	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
 	ASSERT(outSize == 28);
 
-	uint8_t cborBuf[64 + 10];
-	uint8_t* ptr = cborBuf;
-	uint8_t* end = END(cborBuf);
+	uint8_t cborBuffer[64 + 10];
+	uint8_t* ptr = cborBuffer;
+	uint8_t* end = END(cborBuffer);
 
 
 	// [0, [0, publicKey:chainCode], Map(0)]
@@ -184,10 +184,10 @@ void addressRootFromExtPubKey(
 
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
 
-	// cborBuf is hashed twice. First by sha3_256 and then by blake2b_224
+	// cborBuffer is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
 	sha3_256_hash(
-	        cborBuf, ptr - cborBuf,
+	        cborBuffer, ptr - cborBuffer,
 	        cborShaHash, SIZEOF(cborShaHash)
 	);
 	blake2b_224_hash(

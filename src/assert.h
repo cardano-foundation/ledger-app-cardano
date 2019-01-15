@@ -6,7 +6,7 @@
 
 #define STATIC_ASSERT(COND,MSG) typedef char static_assert__##MSG[(COND)?1:-1] __attribute__((unused))
 
-extern void assert(int cond, const char* msg);
+extern void assert(int cond, const char* msgStr);
 
 // Note(ppershing): I like macro-like uppercase version better
 // because it captures reader's attention.
