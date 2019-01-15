@@ -164,7 +164,7 @@ void addressRootFromExtPubKey(
 )
 {
 	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
-	ASSERT(addressRootSize == 28); //
+	ASSERT(addressRootSize == 28);
 
 	uint8_t cborBuf[64 + 10];
 	uint8_t* ptr = cborBuf;
