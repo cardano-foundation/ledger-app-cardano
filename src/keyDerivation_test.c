@@ -181,8 +181,47 @@ void testChainCodeDerivation()
 	        "092979eec36b62a569381ec14ba33e65f3b80f40e28333f5bbc34577ad2c305d"
 	);
 
+#undef TESTCASE
+}
+
+void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expected)
+{
+	PRINTF("testcase_deriveAddress ");
+	PRINTF_PATH(path, pathLen);
+	PRINTF("\n");
+
+	uint8_t address[128];
+	os_memset(address, 0, 128);
+	uint32_t length = deriveAddress(path, pathLen, address, SIZEOF(address));
+
+	address[length] = 0;
+
+	EXPECT_EQ(length, strlen(expected));
+	EXPECT_EQ_BYTES(address, expected, length);
+}
+
+void testAddressDerivation()
+{
+#define TESTCASE(path_, expected_) \
+	{ \
+	    uint32_t path[] = { UNWRAP path_ }; \
+	    testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
+	}
 
 
+	TESTCASE(
+	        (HD + 44, HD + 1815, HD + 0, 1, 55),
+	        "Ae2tdPwUPEZEXaRTix2HTUK2MwuQbRvuPjmjBGFbhBg1VU5e7rGabXepb5Q"
+	);
+	TESTCASE(
+	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26),
+	        "Ae2tdPwUPEZ4BF2hi7DZC6V3fsvT7pKPm8Yg1yEyXGcTFhGYST4MGChhvy1"
+	);
+
+	TESTCASE(
+	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26, 32, 54, 61),
+	        "Ae2tdPwUPEZ9Gnw58m5cssQm3YNvvZQYHntLLj999XZdp7okWztXFAyFsBw"
+	);
 #undef TESTCASE
 }
 
@@ -194,4 +233,5 @@ void run_key_derivation_test()
 	testPrivateKeyDerivation();
 	testPublicKeyDerivation();
 	testChainCodeDerivation();
+	testAddressDerivation();
 }

@@ -18,6 +18,11 @@ typedef struct {
 	uint8_t code[CHAIN_CODE_SIZE];
 } chain_code_t;
 
+typedef struct {
+	uint8_t pubKey[PUBLIC_KEY_SIZE];
+	uint8_t chainCode[CHAIN_CODE_SIZE];
+} extendedPublicKey_t;
+
 void derivePrivateKey(
         const uint32_t* bip32Path, uint32_t pathLength,
         chain_code_t* chainCode, // 32 byte output
@@ -33,6 +38,16 @@ void extractRawPublicKey(
         const cx_ecfp_public_key_t* publicKey,
         // 32 byte output
         uint8_t* rawPublicKey, size_t rawPublicKeySize
+);
+
+void derivePublicKey(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* output, size_t outputSize
+);
+
+uint32_t deriveAddress(
+        const uint32_t* bip32Path, uint32_t pathLength,
+        uint8_t* output, size_t outputSize
 );
 
 void run_key_derivation_test();

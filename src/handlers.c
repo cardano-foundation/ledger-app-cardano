@@ -11,6 +11,7 @@
 #include "attestKey.h"
 #include "state.h"
 #include "errors.h"
+#include "deriveAddress.h"
 
 // The APDU protocol uses a single-byte instruction code (INS) to specify
 // which command should be executed. We'll use this code to dispatch on a
@@ -23,6 +24,7 @@ enum {
 
 	// 0x1* - public-key/address related
 	INS_GET_PUB_KEY   = 0x10,
+	INS_DERIVE_ADDRESS   = 0x11,
 
 	// 0x2* - signing-transaction related
 	INS_ATTEST_UTXO = 0x20,
@@ -58,6 +60,8 @@ handler_fn_t* lookupHandler(uint8_t ins)
 
 	case INS_GET_PUB_KEY:
 		return handleGetExtendedPublicKey;
+	case INS_DERIVE_ADDRESS:
+		return handleDeriveAddress;
 
 
 	case INS_ATTEST_UTXO:

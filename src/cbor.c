@@ -107,7 +107,7 @@ void cbor_advanceToken(stream_t* stream)
 
 size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t *buf, size_t bufSize)
 {
-	ASSERT(bufSize < 1024); // paranoia sanity check
+	ASSERT(bufSize < BUFFER_SIZE_PARANOIA);
 
 #define CHECK_BUF_LEN(requiredSize) if (requiredSize > bufSize) THROW(ERR_DATA_TOO_LARGE);
 	if (type == CBOR_TYPE_ARRAY_INDEF || type == CBOR_TYPE_INDEF_END) {
