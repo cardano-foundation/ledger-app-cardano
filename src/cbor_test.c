@@ -49,6 +49,7 @@ static void test_cbor_peek_token()
 
 		{"ff", CBOR_TYPE_INDEF_END, 0, 0},
 	};
+
 	ITERATE(it, testVectors) {
 		PRINTF("test_cbor_peek_token %s\n", PTR_PIC(it->hex));
 		stream_init(& ctx->s);
@@ -135,7 +136,6 @@ static void test_cbor_serialization()
 		EXPECT_EQ(stream_availableBytes(& ctx->s), len);
 		EXPECT_EQ_BYTES(stream_head(& ctx->s), buf, len);
 	}
-
 
 	// Check invalid type
 	const struct {
