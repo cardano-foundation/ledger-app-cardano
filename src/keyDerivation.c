@@ -105,12 +105,13 @@ static void validatePathForAddressDerivation(const uint32_t* bip32Path, uint32_t
 // pub_key + chain_code
 void deriveExtendedPublicKey(
         const uint32_t* bip32Path, uint32_t pathLength,
-        uint8_t* out, size_t outputSize
+        extendedPublicKey_t* out
 )
 {
-	cx_ecfp_public_key_t publicKey;
 	privateKey_t privateKey;
 	chain_code_t chainCode;
+
+	STATIC_ASSERT(SIZEOF(*out) == CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE, __bad_size_1);
 
 	BEGIN_TRY {
 		TRY {
@@ -121,22 +122,26 @@ void deriveExtendedPublicKey(
 			        &privateKey
 			);
 
+			// Pubkey part
+			cx_ecfp_public_key_t publicKey;
+
 			deriveRawPublicKey(&privateKey, &publicKey);
+
+			STATIC_ASSERT(SIZEOF(out->pubKey) == PUBLIC_KEY_SIZE, __bad_size_2);
+
+			extractRawPublicKey(&publicKey, out->pubKey, SIZEOF(out->pubKey));
+
+			// Chain code (we copy it second to avoid mid-updates extractRawPublicKey throws
+			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(out->chainCode), __bad_size_3);
+			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(chainCode.code), __bad_size_4);
+			os_memmove(out->chainCode, chainCode.code, CHAIN_CODE_SIZE);
 		}
 		FINALLY {
 			os_memset(&privateKey, 0, SIZEOF(privateKey));
 		}
 	} END_TRY;
-
-
-	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
-	extractRawPublicKey(&publicKey, rawPublicKey, SIZEOF(rawPublicKey));
-
-
-	ASSERT(outputSize = CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE);
-	os_memmove(out, rawPublicKey, CHAIN_CODE_SIZE);
-	os_memmove(out + CHAIN_CODE_SIZE, chainCode.code, PUBLIC_KEY_SIZE);
 }
+
 
 // Note(ppershing): updates ptr!
 #define WRITE_TOKEN(ptr, end, type, value) \
@@ -154,11 +159,11 @@ void deriveExtendedPublicKey(
 	}
 
 void addressRootFromExtPubKey(
-        const uint8_t* extPubKey, size_t extPubKeySize,
+        const extendedPublicKey_t* extPubKey,
         uint8_t* addressRoot, size_t addressRootSize
 )
 {
-	ASSERT(extPubKeySize == EXTENDED_PUBKEY_SIZE);
+	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
 	ASSERT(addressRootSize == 28); //
 
 	uint8_t cborBuf[64 + 10];
@@ -201,15 +206,15 @@ uint32_t deriveAddress(
 
 	uint8_t addressRoot[28];
 	{
-		uint8_t extPubKey[EXTENDED_PUBKEY_SIZE];
+		extendedPublicKey_t extPubKey;
 
 		deriveExtendedPublicKey(
 		        bip32Path, pathLength,
-		        extPubKey, SIZEOF(extPubKey)
+		        &extPubKey
 		);
 
 		addressRootFromExtPubKey(
-		        extPubKey, SIZEOF(extPubKey),
+		        &extPubKey,
 		        addressRoot, SIZEOF(addressRoot)
 		);
 	}

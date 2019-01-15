@@ -18,6 +18,11 @@ typedef struct {
 	uint8_t code[CHAIN_CODE_SIZE];
 } chain_code_t;
 
+typedef struct {
+	uint8_t pubKey[PUBLIC_KEY_SIZE];
+	uint8_t chainCode[CHAIN_CODE_SIZE];
+} extendedPublicKey_t;
+
 void derivePrivateKey(
         const uint32_t* bip32Path, uint32_t pathLength,
         chain_code_t* chainCode, // 32 byte output
