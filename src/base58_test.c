@@ -8,7 +8,7 @@
 #include <string.h>
 #include "utils.h"
 
-void testcase_base58(const char* inputHex, const char* expected)
+void testcase_base58(const char* inputHex, const char* expectedHex)
 {
 	PRINTF("testcase_base58: %s\n", inputHex);
 	uint8_t input[100];
@@ -16,8 +16,8 @@ void testcase_base58(const char* inputHex, const char* expected)
 	inputSize = parseHexString(inputHex, input, SIZEOF(input));
 	uint8_t output[100];
 	uint8_t outputLength = encode_base58(input, inputSize, output, SIZEOF(output));
-	EXPECT_EQ(outputLength, strlen(expected));
-	EXPECT_EQ_BYTES(expected, output, outputLength);
+	EXPECT_EQ(outputLength, strlen(expectedHex));
+	EXPECT_EQ_BYTES(expectedHex, output, outputLength);
 }
 
 void run_base58_test()

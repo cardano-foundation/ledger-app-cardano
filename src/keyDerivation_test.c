@@ -23,7 +23,7 @@ void PRINTF_PATH(const uint32_t* path, uint32_t pathLen)
 	}
 }
 
-void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expected_)
+void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_derivePrivateKey ");
 	PRINTF_PATH(path, pathLen);
@@ -34,7 +34,7 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
 
 	uint8_t expected[64];
-	parseHexString(expected_, expected, 64);
+	parseHexString(expectedHex, expected, 64);
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
@@ -46,10 +46,10 @@ void testPrivateKeyDerivation()
 
 #define HD HARDENED_BIP32
 
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePrivateKey(path, ARRAY_LEN(path), expected_); \
+	    testcase_derivePrivateKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 
@@ -123,10 +123,10 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 
 void testPublicKeyDerivation()
 {
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePublicKey(path, ARRAY_LEN(path), expected_); \
+	    testcase_derivePublicKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(
@@ -156,7 +156,7 @@ void testPublicKeyDerivation()
 }
 
 
-void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expected)
+void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_deriveChainCode ");
 	PRINTF_PATH(path, pathLen);
@@ -171,17 +171,17 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
-	parseHexString(expected, expectedBuffer, 32);
+	parseHexString(expectedHex, expectedBuffer, 32);
 	EXPECT_EQ_BYTES(expectedBuffer, chainCode.code, 32);
 }
 
 // not tested
 void testChainCodeDerivation()
 {
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveChainCode(path, ARRAY_LEN(path), expected_); \
+	    testcase_deriveChainCode(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(

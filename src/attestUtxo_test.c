@@ -8,7 +8,7 @@
 #include "utils.h"
 
 
-void test_attest(const char** txChunks, uint32_t numChunks, uint32_t outputIndex, uint64_t expectedAmount)
+void test_attest(const char** txChunksHex, uint32_t numChunks, uint32_t outputIndex, uint64_t expectedAmount)
 {
 	PRINTF("test_attest %d\n", outputIndex);
 	// TODO(ppershing): this is too big for stack!
@@ -16,7 +16,7 @@ void test_attest(const char** txChunks, uint32_t numChunks, uint32_t outputIndex
 
 	initAttestUtxo(&state, outputIndex);
 	for (unsigned i =0; i < numChunks; i++) {
-		stream_appendFromHexString(& state.stream, PTR_PIC(txChunks[i]));
+		stream_appendFromHexString(& state.stream, PTR_PIC(txChunksHex[i]));
 		BEGIN_TRY {
 			TRY {
 				keepParsing(&state);
@@ -53,7 +53,7 @@ void run_test_attestUtxo()
 	};
 
 	const struct {
-		const char** txChunks;
+		const char** txChunksHex;
 		uint32_t chunksLen;
 		uint32_t outputIndex;
 		uint64_t expectedAmount;
@@ -69,6 +69,6 @@ void run_test_attestUtxo()
 	};
 
 	ITERATE(it, testVectors) {
-		test_attest(it->txChunks, it->chunksLen, it->outputIndex, it->expectedAmount);
+		test_attest(it->txChunksHex, it->chunksLen, it->outputIndex, it->expectedAmount);
 	}
 }

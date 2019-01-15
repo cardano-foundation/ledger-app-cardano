@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "hmac.h"
 
-static void testcase_sha256(const char* keyHex, const char* inputHex, const char* expected_)
+static void testcase_sha256(const char* keyHex, const char* inputHex, const char* expectedHex)
 {
 	PRINTF("testcase_sha256 %s %s\n", keyHex, inputHex);
 	uint8_t key[150];
@@ -17,7 +17,7 @@ static void testcase_sha256(const char* keyHex, const char* inputHex, const char
 	size_t inputLen = parseHexString(inputHex, input, SIZEOF(input));
 
 	uint8_t expected[32];
-	size_t expectedLen = parseHexString(expected_, expected, SIZEOF(expected));
+	size_t expectedLen = parseHexString(expectedHex, expected, SIZEOF(expected));
 
 	uint8_t output[32];
 	hmac_sha256(

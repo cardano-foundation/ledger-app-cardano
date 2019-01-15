@@ -9,9 +9,9 @@
 
 
 void testcase_chunks_blake2b_512(
-        const char* chunks[],
+        const char* chunksHex[],
         uint32_t chunksCount,
-        const char* expected_
+        const char* expectedHex
 )
 {
 	PRINTF("testcase_chunks_blake2b_512\n");
@@ -20,14 +20,14 @@ void testcase_chunks_blake2b_512(
 	uint8_t output[64];
 	for (unsigned i = 0; i < chunksCount; i++) {
 		uint8_t chunkData[20];
-		size_t chunkSize = parseHexString(PIC(chunks[i]), chunkData, SIZEOF(chunkData));
+		size_t chunkSize = parseHexString(PIC(chunksHex[i]), chunkData, SIZEOF(chunkData));
 
 		blake2b_512_append(&ctx, chunkData, chunkSize);
 	}
 	blake2b_512_finalize(&ctx, output, 64);
 
 	uint8_t expected[64];
-	parseHexString(expected_, expected, SIZEOF(expected));
+	parseHexString(expectedHex, expected, SIZEOF(expected));
 	EXPECT_EQ_BYTES(expected, output, 64);
 }
 
