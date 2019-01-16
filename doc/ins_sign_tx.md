@@ -14,6 +14,8 @@ The main issue we are trying to address with the respect of fee calculation is t
 
 I was trying to think this out multiple times and I think b) is the best choice for now. e) would work but it is needlessly complicated and we are still left with a similar problem for the outputs (In order to get decent UX, NanoS should skip the change output from confirmations. This however means that Nano S must be able to somehow verify this change output is indeed its change. Easiest way is to either 1) supply also the derivation path and verify they match 2) extending 1) just don't bother to send the address, just a derivation path) (edited) 
 
+**IOHK vincent/nicolas**: we think c) is the best choice, since it allows modification to the format in the future, and
+it prevent from keeping the potentially large transaction binary data on the ledger memory, since we can just accumulate a digest instead. technically the input can be anything that have all the extra metadata and is streamable enough to not have to hold on to the input whilst allowing to generate the CBOR dynamically and passing it to a hashing context as bytes.
 
 # TODO(VL): rest of the document needs to be updated after we get feedback on the previous section
 
