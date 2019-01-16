@@ -7,12 +7,14 @@
 #include "keyDerivation.h"
 #include "utils.h"
 #include "endian.h"
+#include "state.h"
+#include "utils.h"
+#include "ux.h"
+#include "io.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-get_ext_pub_key_data_t data;
-
-void io_exchange_public_key(cx_ecfp_public_key_t* publicKey, chain_code_t* chainCode);
+static getExtendedPublicKeyGlobal_t* ctx = &(instructionState.extPubKeyGlobal);
 
 void ensureParametersAreCorrect(
         uint8_t p1,
@@ -26,19 +28,29 @@ void ensureParametersAreCorrect(
 	VALIDATE_PARAM(dataLength == dataBuffer[0] * 4 + 1 );
 }
 
-void initializePath(uint8_t *dataBuffer, path_spec_t* pathSpec)
+
+// TODO(ppershing): this is duplicate from deriveAddress!
+static void initializePath(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
 {
-	STATIC_ASSERT((255 - 1 /* length data */ ) / 4 /* sizeof(pathspec.path[i]) */ > MAX_PATH_LENGTH, __bad_length);
+	// Cast length to size_t
+	size_t length = dataBuffer[0];
+	if (length > ARRAY_LEN(pathSpec->path)) {
+		THROW(ERR_INVALID_DATA);
+	}
+	if (length * 4 + 1 != dataSize) {
+		THROW(ERR_INVALID_DATA);
+	}
 
-	pathSpec->length = dataBuffer[0];
+	pathSpec->length = length;
 
-	uint8_t i = 0;
-	for (i = 0; i < pathSpec->length; i++) {
-		uint8_t offset = 1 + 4 * i;
-
+	for (size_t i = 0; i < length; i++) {
+		size_t offset = 1 + 4 * i;
 		pathSpec->path[i] = u4be_read(dataBuffer + offset);
 	}
 }
+
+// forward declaration
+void respond_with_public_key(const extendedPublicKey_t*);
 
 void handleGetExtendedPublicKey(
         uint8_t p1,
@@ -48,47 +60,30 @@ void handleGetExtendedPublicKey(
 {
 	ensureParametersAreCorrect(p1, p2, dataBuffer, dataLength);
 
-	initializePath(dataBuffer, &data.pathSpec);
+	initializePath(& ctx->pathSpec, dataBuffer, dataLength);
 
-	BEGIN_TRY {
-		TRY {
-			derivePrivateKey(
-			        &data.pathSpec,
-			        &data.chainCode,
-			        &data.privateKey
-			);
+	deriveExtendedPublicKey(
+	        & ctx->pathSpec,
+	        & ctx->extPubKey
+	);
 
-			deriveRawPublicKey(&data.privateKey, &data.publicKey);
-		}
-		FINALLY {
-			os_memset(&data.privateKey, 0, sizeof(data.privateKey));
-		}
-	} END_TRY;
-
-	io_exchange_public_key(&data.publicKey, &data.chainCode);
+	respond_with_public_key(& ctx->extPubKey);
 }
 
-void ui_idle();
-
-void io_exchange_public_key(cx_ecfp_public_key_t* publicKey, chain_code_t* chainCode)
+void respond_with_public_key(const extendedPublicKey_t* extPubKey)
 {
-	uint32_t tx = 0;
+	// Note: we reuse G_io_apdu_buffer!
+	uint8_t* responseBuffer = G_io_apdu_buffer;
+	size_t responseMaxSize = SIZEOF(G_io_apdu_buffer);
 
-	G_io_apdu_buffer[tx++] = PUBLIC_KEY_SIZE;
+	STATIC_ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE, __bad_ext_pub_key_size);
 
-	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
-	extractRawPublicKey(publicKey, rawPublicKey, SIZEOF(rawPublicKey));
-	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, PUBLIC_KEY_SIZE);
+	size_t outSize = 1 + EXTENDED_PUBKEY_SIZE;
+	ASSERT(outSize <= responseMaxSize);
 
-	tx += PUBLIC_KEY_SIZE;
+	u1be_write(responseBuffer, EXTENDED_PUBKEY_SIZE);
+	os_memmove(responseBuffer + 1, extPubKey, SIZEOF(*extPubKey));
 
-	os_memmove(G_io_apdu_buffer + tx, chainCode->code, CHAIN_CODE_SIZE);
-
-	tx += CHAIN_CODE_SIZE;
-
-	G_io_apdu_buffer[tx++] = 0x90;
-	G_io_apdu_buffer[tx++] = 0x00;
-
-	io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+	io_send_buf(SUCCESS, responseBuffer, outSize);
 	ui_idle();
 }

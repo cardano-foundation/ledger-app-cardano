@@ -36,6 +36,11 @@ void derivePrivateKey(
         privateKey_t* privateKey // output
 );
 
+void deriveExtendedPublicKey(
+        const path_spec_t* pathSpec,
+        extendedPublicKey_t* out
+);
+
 void deriveRawPublicKey(
         const privateKey_t* privateKey,
         cx_ecfp_public_key_t* publicKey // output

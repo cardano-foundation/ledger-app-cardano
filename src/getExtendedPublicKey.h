@@ -9,9 +9,7 @@ handler_fn_t handleGetExtendedPublicKey;
 
 typedef struct {
 	path_spec_t pathSpec;
-	chain_code_t chainCode;
-	cx_ecfp_public_key_t publicKey;
-	privateKey_t privateKey;
-} get_ext_pub_key_data_t;
+	extendedPublicKey_t extPubKey;
+} getExtendedPublicKeyGlobal_t;
 
 #endif
