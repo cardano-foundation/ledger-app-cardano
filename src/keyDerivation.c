@@ -12,47 +12,6 @@
 #include "utils.h"
 #include "endian.h"
 
-size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
-{
-#define VALIDATE(cond) if (!(cond)) THROW(ERR_INVALID_DATA)
-
-	// Ensure we have length
-	VALIDATE(dataSize >= 1);
-
-	// Cast length to size_t
-	size_t length = dataBuffer[0];
-
-	// Ensure length is valid
-	VALIDATE(length <= ARRAY_LEN(pathSpec->path));
-	VALIDATE(length * 4 + 1 <= dataSize);
-
-	pathSpec->length = length;
-
-	size_t offset = 1;
-	for (size_t i = 0; i < length; i++) {
-		pathSpec->path[i] = u4be_read(dataBuffer + offset);
-		offset += 4;
-	}
-	return offset;
-#undef VALIDATE
-}
-
-bool isValidCardanoBIP44Path(const path_spec_t* pathSpec)
-{
-	const uint32_t HD = HARDENED_BIP32; // shorthand
-#define CHECK(cond) if (!(cond)) return false
-
-	CHECK(pathSpec->length <= ARRAY_LEN(pathSpec->path));
-	CHECK(pathSpec->length >= 3);
-	CHECK(pathSpec->path[0] == (BIP_44 | HD));
-	CHECK(pathSpec->path[1] == (ADA_COIN_TYPE | HD));
-	// Account is hardened
-	CHECK(pathSpec->path[2] == (pathSpec->path[2] | HD));
-	return true;
-
-#undef CHECK
-}
-
 
 void derivePrivateKey(
         const path_spec_t* pathSpec,
@@ -60,7 +19,7 @@ void derivePrivateKey(
         privateKey_t* privateKey
 )
 {
-	if (!isValidCardanoBIP44Path(pathSpec)) {
+	if (!isValidBIP44Prefix(pathSpec)) {
 		THROW(ERR_INVALID_REQUEST_PARAMETERS);
 	}
 

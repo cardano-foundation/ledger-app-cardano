@@ -4,23 +4,14 @@
 #include <os.h>
 #include "handlers.h"
 #include <stdbool.h>
+#include "bip44.h"
 
-static const uint32_t MAX_PATH_LENGTH = 10;
-
-static const uint32_t BIP_44 = 44;
-static const uint32_t ADA_COIN_TYPE = 1815;
-static const uint32_t HARDENED_BIP32 = ((uint32_t) 1 << 31);
 
 static const size_t PUBLIC_KEY_SIZE =  32;
 static const size_t CHAIN_CODE_SIZE =  32;
 static const size_t EXTENDED_PUBKEY_SIZE = CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE;
 
 typedef cx_ecfp_256_extended_private_key_t privateKey_t;
-
-typedef struct {
-	uint32_t path[MAX_PATH_LENGTH];
-	uint32_t length;
-} path_spec_t;
 
 typedef struct {
 	uint8_t code[CHAIN_CODE_SIZE];
@@ -31,18 +22,12 @@ typedef struct {
 	uint8_t chainCode[CHAIN_CODE_SIZE];
 } extendedPublicKey_t;
 
-size_t pathSpec_parseFromWire(
-        path_spec_t* pathSpec,
-        uint8_t* dataBuffer, size_t dataSize
-);
-
-bool isValidCardanoBIP44Path(const path_spec_t* pathSpec);
-
 void derivePrivateKey(
         const path_spec_t* pathSpec,
         chain_code_t* chainCode, // 32 byte output
         privateKey_t* privateKey // output
 );
+
 
 void deriveExtendedPublicKey(
         const path_spec_t* pathSpec,

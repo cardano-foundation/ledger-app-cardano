@@ -21,13 +21,14 @@ static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 
 static deriveAddressGlobal_t* ctx = &(instructionState.deriveAddressGlobal);
 
+
 static void validatePath(const path_spec_t* pathSpec)
 {
-	VALIDATE_PARAM(isValidCardanoBIP44Path(pathSpec));
+	VALIDATE_PARAM(isValidBIP44Prefix(pathSpec));
 	// other checks are when deriving private key
-	VALIDATE_PARAM(pathSpec->length >= 5);
-	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
-	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
+	VALIDATE_PARAM(pathSpec->length > BIP44_I_ADDRESS);
+	VALIDATE_PARAM(isAcceptableBIP44AccountValue(pathSpec->path[BIP44_I_ACCOUNT]));
+	VALIDATE_PARAM(isValidBIP44ChainValue(pathSpec->path[BIP44_I_CHAIN]));
 }
 
 void handleDeriveAddress(

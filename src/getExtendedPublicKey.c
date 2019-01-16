@@ -23,9 +23,9 @@ static void respond_with_public_key(const extendedPublicKey_t*);
 
 static void validatePath(const path_spec_t* pathSpec)
 {
-	VALIDATE_PARAM(isValidCardanoBIP44Path(&ctx->pathSpec));
-	VALIDATE_PARAM(pathSpec->length >= 3);
-	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
+	VALIDATE_PARAM(isValidBIP44Prefix(&ctx->pathSpec));
+	VALIDATE_PARAM(pathSpec->length > BIP44_I_ACCOUNT);
+	VALIDATE_PARAM(isAcceptableBIP44AccountValue(pathSpec->path[BIP44_I_ACCOUNT]));
 };
 
 
