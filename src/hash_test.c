@@ -9,41 +9,43 @@
 
 
 void testcase_chunks_blake2b_512(
-        const char* chunks[],
+        const char* chunksHex[],
         uint32_t chunksCount,
-        const char* expected_
+        const char* expectedHex
 )
 {
 	PRINTF("testcase_chunks_blake2b_512\n");
 	blake2b_512_context_t ctx;
 	blake2b_512_init(&ctx);
-	uint8_t output[64];
+	uint8_t outputBuffer[64];
 	for (unsigned i = 0; i < chunksCount; i++) {
-		uint8_t chunkData[20];
-		size_t chunkSize = parseHexString(PIC(chunks[i]), chunkData, SIZEOF(chunkData));
+		uint8_t chunkBuffer[20];
+		size_t chunkSize = parseHexString(PIC(chunksHex[i]), chunkBuffer, SIZEOF(chunkBuffer));
 
-		blake2b_512_append(&ctx, chunkData, chunkSize);
+		blake2b_512_append(&ctx, chunkBuffer, chunkSize);
 	}
-	blake2b_512_finalize(&ctx, output, 64);
+	blake2b_512_finalize(&ctx, outputBuffer, SIZEOF(outputBuffer));
 
-	uint8_t expected[64];
-	parseHexString(expected_, expected, SIZEOF(expected));
-	EXPECT_EQ_BYTES(expected, output, 64);
+	uint8_t expectedBuffer[64];
+	size_t expectedSize = parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
+	ASSERT(expectedSize == 64);
+
+	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, SIZEOF(expectedBuffer));
 }
 
 void testcase_blake2b_224(const char* inputHex, const char* expectedHex)
 {
 	PRINTF("testcase_blake2b_224 %s\n", inputHex);
-	uint8_t input[200];
-	uint8_t inputLen = parseHexString(inputHex, input, SIZEOF(input));
+	uint8_t inputBuffer[200];
+	size_t inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
 
-	uint8_t expectedData[28];
-	uint8_t expectedLen = parseHexString(expectedHex, expectedData, SIZEOF(expectedData));
+	uint8_t expectedBuffer[28];
+	size_t expectedSize = parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
 
-	ASSERT(expectedLen == 28);
-	uint8_t output[28];
-	blake2b_224_hash(input, inputLen, output, 28);
-	EXPECT_EQ_BYTES(expectedData, output, 28);
+	ASSERT(expectedSize == 28);
+	uint8_t outputBuffer[28];
+	blake2b_224_hash(inputBuffer, inputSize, outputBuffer, SIZEOF(outputBuffer));
+	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, expectedSize);
 }
 
 void run_blake2b_test()

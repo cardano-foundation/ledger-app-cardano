@@ -7,25 +7,25 @@
 #include "utils.h"
 #include "hmac.h"
 
-static void testcase_sha256(const char* keyHex, const char* inputHex, const char* expected_)
+static void testcase_sha256(const char* keyHex, const char* inputHex, const char* expectedHex)
 {
 	PRINTF("testcase_sha256 %s %s\n", keyHex, inputHex);
-	uint8_t key[150];
-	size_t keyLen = parseHexString(keyHex, key, SIZEOF(key));
+	uint8_t keyBuffer[150];
+	size_t keySize = parseHexString(keyHex, keyBuffer, SIZEOF(keyBuffer));
 
-	uint8_t input[150];
-	size_t inputLen = parseHexString(inputHex, input, SIZEOF(input));
+	uint8_t inputBuffer[150];
+	size_t inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
 
-	uint8_t expected[32];
-	size_t expectedLen = parseHexString(expected_, expected, SIZEOF(expected));
+	uint8_t expectedBuffer[32];
+	size_t expectedSize = parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
 
-	uint8_t output[32];
+	uint8_t outputBuffer[32];
 	hmac_sha256(
-	        key, keyLen,
-	        input, inputLen,
-	        output, SIZEOF(output)
+	        keyBuffer, keySize,
+	        inputBuffer, inputSize,
+	        outputBuffer, SIZEOF(outputBuffer)
 	);
-	EXPECT_EQ_BYTES(output, expected, expectedLen);
+	EXPECT_EQ_BYTES(outputBuffer, expectedBuffer, expectedSize);
 }
 
 void run_hmac_test()

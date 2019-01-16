@@ -5,9 +5,9 @@
 #include <stddef.h>
 
 void hmac_sha256(
-        const uint8_t *key, size_t keyLen,
-        const uint8_t *input, size_t inputLen,
-        uint8_t *output, size_t outputLen
+        const uint8_t *keyBuffer, size_t keySize,
+        const uint8_t *inBuffer, size_t inSize,
+        uint8_t *outBuffer, size_t outSize
 );
 
 

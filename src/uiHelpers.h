@@ -32,13 +32,13 @@ typedef union {
 void ui_idle(void);
 
 void displayScrollingText(
-        const char* header,
-        const char* text,
+        const char* headerStr,
+        const char* bodyStr,
         callback_t* callback);
 
 void displayConfirm(
-        const char* header,
-        const char* text,
+        const char* headerStr,
+        const char* bodyStr,
         callback_t* confirm,
         callback_t* reject
 );

@@ -28,7 +28,7 @@
 #define EXPECT_EQ(expr, result) ASSERT(expr == result)
 
 // Assert that first len bytes are same
-#define EXPECT_EQ_BYTES(ptr1, ptr2, len) ASSERT(os_memcmp(ptr1, ptr2, len) == 0);
+#define EXPECT_EQ_BYTES(ptr1, ptr2, size) ASSERT(os_memcmp(ptr1, ptr2, size) == 0);
 
 // Assert that streams have have available content
 #define EXPECT_EQ_STREAM(s1_ptr, s2_ptr) \

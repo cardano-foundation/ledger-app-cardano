@@ -19,6 +19,7 @@
 
 #include "base58.h"
 #include "assert.h"
+#include "utils.h"
 #include <os.h>
 
 static const uint32_t MAX_BUFFER_SIZE = 124;
@@ -26,50 +27,49 @@ static const uint32_t MAX_BUFFER_SIZE = 124;
 static const char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 size_t encode_base58(
-        const uint8_t *in, size_t length,
-        uint8_t *out, size_t maxoutlen
+        const uint8_t* inBuffer, size_t inSize,
+        uint8_t* outBuffer, size_t maxOutSize
 )
 {
-	uint8_t tmp[MAX_BUFFER_SIZE];
+	uint8_t tmpBuffer[MAX_BUFFER_SIZE];
 	uint8_t buffer[MAX_BUFFER_SIZE * 2];
-	size_t j;
 	size_t startAt;
 	size_t zeroCount = 0;
 
-	ASSERT(length <= MAX_BUFFER_SIZE);
+	ASSERT(inSize <= SIZEOF(tmpBuffer));
 
-	os_memmove(tmp, in, length);
+	os_memmove(tmpBuffer, inBuffer, inSize);
 
-	while ((zeroCount < length) && (tmp[zeroCount] == 0)) {
+	while ((zeroCount < inSize) && (tmpBuffer[zeroCount] == 0)) {
 		++zeroCount;
 	}
-	j = 2 * length;
+	size_t j = 2 * inSize;
 	startAt = zeroCount;
 
-	while (startAt < length) {
+	while (startAt < inSize) {
 		unsigned short remainder = 0;
 		unsigned char divLoop;
-		for (divLoop = startAt; divLoop < length; divLoop++) {
-			unsigned short digit256 = (unsigned short)(tmp[divLoop] & 0xff);
+		for (divLoop = startAt; divLoop < inSize; divLoop++) {
+			unsigned short digit256 = (unsigned short)(tmpBuffer[divLoop] & 0xff);
 			unsigned short tmpDiv = remainder * 256 + digit256;
-			tmp[divLoop] = (unsigned char)(tmpDiv / 58);
+			tmpBuffer[divLoop] = (unsigned char)(tmpDiv / 58);
 			remainder = (tmpDiv % 58);
 		}
-		if (tmp[startAt] == 0) {
+		if (tmpBuffer[startAt] == 0) {
 			++startAt;
 		}
 		buffer[--j] = BASE58ALPHABET[remainder];
 	}
-	while ((j < (2 * length)) && (buffer[j] == BASE58ALPHABET[0])) {
+	while ((j < (2 * inSize)) && (buffer[j] == BASE58ALPHABET[0])) {
 		++j;
 	}
 	while (zeroCount-- > 0) {
 		buffer[--j] = BASE58ALPHABET[0];
 	}
-	length = 2 * length - j;
+	inSize = 2 * inSize - j;
 
-	ASSERT(length <= maxoutlen);
+	ASSERT(inSize <= maxOutSize);
 
-	os_memmove(out, (buffer + j), length);
-	return length;
+	os_memmove(outBuffer, (buffer + j), inSize);
+	return inSize;
 }

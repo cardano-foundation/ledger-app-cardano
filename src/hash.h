@@ -3,6 +3,7 @@
 
 #include <os.h>
 #include "assert.h"
+#include "utils.h"
 
 // This file provides convenience functions for using firmware hashing api
 
@@ -34,43 +35,44 @@ enum {
 	\
 	inline void cipher##_##bits##_append( \
 		cipher##_##bits##_context_t* ctx, \
-		const uint8_t* data, size_t dataLen \
+		const uint8_t* inBuffer, size_t inSize \
 	) { \
 		cx_hash( \
 			& ctx->cx_ctx.header, \
 			0, /* Do not output the hash, yet */ \
-			data, \
-			dataLen, \
+			inBuffer, \
+			inSize, \
 			NULL, 0 \
 		); \
 	} \
 	\
 	inline void cipher##_##bits##_finalize( \
 		cipher##_##bits##_context_t* ctx, \
-		uint8_t* output, size_t outputLen \
+		uint8_t* outBuffer, size_t outSize \
 	) { \
-		ASSERT(outputLen == CIPHER##_##bits##_SIZE); \
+		ASSERT(outSize == CIPHER##_##bits##_SIZE); \
 		cx_hash( \
 			& ctx->cx_ctx.header, \
 			CX_LAST, /* Output the hash */ \
 			NULL, \
 			0, \
-			output, \
+			outBuffer, \
 			CIPHER##_##bits##_SIZE \
 		); \
 	} \
 	/* Convenience function to make all in one step */ \
 	inline void cipher##_##bits##_hash( \
-		const uint8_t* input, size_t inputLen, \
-		uint8_t* output, size_t outputLen \
+		const uint8_t* inBuffer, size_t inSize, \
+		uint8_t* outBuffer, size_t outSize \
 	) { \
-	    ASSERT(outputLen == CIPHER##_##bits##_SIZE); \
+		ASSERT(inSize < BUFFER_SIZE_PARANOIA); \
+	    ASSERT(outSize == CIPHER##_##bits##_SIZE); \
 	    cipher##_##bits##_context_t ctx; \
 	    cipher##_##bits##_init(&ctx); \
 	    /* Note: This could be done by single cx_hash call */ \
 	    /* But we don't really care */ \
-	    cipher##_##bits##_append(&ctx, input, inputLen); \
-	    cipher##_##bits##_finalize(&ctx, output, outputLen); \
+	    cipher##_##bits##_append(&ctx, inBuffer, inSize); \
+	    cipher##_##bits##_finalize(&ctx, outBuffer, outSize); \
 	}
 
 __CIPHER_DECLARE(BLAKE2B, blake2b, 224)

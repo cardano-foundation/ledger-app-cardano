@@ -6,12 +6,13 @@
 #include "getExtendedPublicKey.h"
 #include "keyDerivation.h"
 #include "utils.h"
+#include "endian.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
 get_ext_pub_key_data_t data;
 
-void io_exchange_address();
+void io_exchange_public_key(cx_ecfp_public_key_t* publicKey, chain_code_t* chainCode);
 
 void ensureParametersAreCorrect(
         uint8_t p1,
@@ -25,17 +26,17 @@ void ensureParametersAreCorrect(
 	VALIDATE_PARAM(dataLength == dataBuffer[0] * 4 + 1 );
 }
 
-void initializePath(uint8_t *dataBuffer)
+void initializePath(uint8_t *dataBuffer, path_spec_t* pathSpec)
 {
-	STATIC_ASSERT((255-1)/4 > MAX_BIP32_PATH, __bad_length);
+	STATIC_ASSERT((255 - 1 /* length data */ ) / 4 /* sizeof(pathspec.path[i]) */ > MAX_PATH_LENGTH, __bad_length);
 
-	data.pathLength = dataBuffer[0];
+	pathSpec->length = dataBuffer[0];
 
 	uint8_t i = 0;
-	for (i = 0; i < data.pathLength; i++) {
+	for (i = 0; i < pathSpec->length; i++) {
 		uint8_t offset = 1 + 4 * i;
 
-		data.bip32Path[i] = U4BE(dataBuffer, offset);
+		pathSpec->path[i] = u4be_read(dataBuffer + offset);
 	}
 }
 
@@ -47,13 +48,12 @@ void handleGetExtendedPublicKey(
 {
 	ensureParametersAreCorrect(p1, p2, dataBuffer, dataLength);
 
-	initializePath(dataBuffer);
+	initializePath(dataBuffer, &data.pathSpec);
 
 	BEGIN_TRY {
 		TRY {
 			derivePrivateKey(
-			        data.bip32Path,
-			        data.pathLength,
+			        &data.pathSpec,
 			        &data.chainCode,
 			        &data.privateKey
 			);
@@ -65,24 +65,24 @@ void handleGetExtendedPublicKey(
 		}
 	} END_TRY;
 
-	io_exchange_address();
+	io_exchange_public_key(&data.publicKey, &data.chainCode);
 }
 
 void ui_idle();
 
-void io_exchange_address()
+void io_exchange_public_key(cx_ecfp_public_key_t* publicKey, chain_code_t* chainCode)
 {
 	uint32_t tx = 0;
 
 	G_io_apdu_buffer[tx++] = PUBLIC_KEY_SIZE;
 
 	uint8_t rawPublicKey[PUBLIC_KEY_SIZE];
-	extractRawPublicKey(&data.publicKey, rawPublicKey, SIZEOF(rawPublicKey));
+	extractRawPublicKey(publicKey, rawPublicKey, SIZEOF(rawPublicKey));
 	os_memmove(G_io_apdu_buffer + tx, rawPublicKey, PUBLIC_KEY_SIZE);
 
 	tx += PUBLIC_KEY_SIZE;
 
-	os_memmove(G_io_apdu_buffer + tx, data.chainCode.code, CHAIN_CODE_SIZE);
+	os_memmove(G_io_apdu_buffer + tx, chainCode->code, CHAIN_CODE_SIZE);
 
 	tx += CHAIN_CODE_SIZE;
 

@@ -15,9 +15,10 @@
 
 #define MAX_BIP32_PATH 32
 
-static void io_exchange_address();
+static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 void ui_idle();
 
+// TODO: move this into global state
 derive_address_data_t daData;
 
 static void ensureParametersAreCorrect(
@@ -36,13 +37,13 @@ static void initializePath(uint8_t *dataBuffer)
 {
 	STATIC_ASSERT((255 - 1) / 4 > MAX_BIP32_PATH, __bad_length);
 
-	daData.pathLength = dataBuffer[0];
+	daData.pathSpec.length = dataBuffer[0];
 
 	uint8_t i = 0;
-	for (i = 0; i < daData.pathLength; i++) {
+	for (i = 0; i < daData.pathSpec.length; i++) {
 		uint8_t offset = 1 + 4 * i;
 
-		daData.bip32Path[i] = U4BE(dataBuffer, offset);
+		daData.pathSpec.path[i] = U4BE(dataBuffer, offset);
 	}
 }
 
@@ -56,23 +57,23 @@ void handleDeriveAddress(
 
 	initializePath(dataBuffer);
 
-	daData.addressLength = deriveAddress(
-	                               daData.bip32Path, daData.pathLength,
-	                               daData.address, SIZEOF(daData.address)
-	                       );
+	daData.addressSize = deriveAddress(
+	                             &daData.pathSpec,
+	                             daData.addressBuffer, SIZEOF(daData.addressBuffer)
+	                     );
 
-	io_exchange_address();
+	io_respond_with_address(daData.addressBuffer, daData.addressSize);
 }
 
-static void io_exchange_address()
+static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize)
 {
 	uint32_t tx = 0;
 
-	G_io_apdu_buffer[tx++] = daData.addressLength;
+	G_io_apdu_buffer[tx++] = addressSize;
 
-	os_memmove(G_io_apdu_buffer + tx, daData.address, daData.addressLength);
+	os_memmove(G_io_apdu_buffer + tx, addressBuffer, addressSize);
 
-	tx += daData.addressLength;
+	tx += addressSize;
 
 	G_io_apdu_buffer[tx++] = 0x90;
 	G_io_apdu_buffer[tx++] = 0x00;

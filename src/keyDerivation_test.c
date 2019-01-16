@@ -11,6 +11,12 @@
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
 #define UNWRAP(...) __VA_ARGS__
 
+void pathSpec_init(path_spec_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
+{
+	pathSpec->length = pathLength;
+	os_memmove(pathSpec->path, pathArray, pathLength * 4);
+}
+
 void PRINTF_PATH(const uint32_t* path, uint32_t pathLen)
 {
 	for (uint32_t i = 0; i < pathLen; i++) {
@@ -23,18 +29,21 @@ void PRINTF_PATH(const uint32_t* path, uint32_t pathLen)
 	}
 }
 
-void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expected_)
+void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_derivePrivateKey ");
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec_init(&pathSpec, path, pathLen);
+
 	uint8_t expected[64];
-	parseHexString(expected_, expected, 64);
+	parseHexString(expectedHex, expected, SIZEOF(expected));
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
-	EXPECT_EQ_BYTES(expected, privateKey.d, 64);
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
+	EXPECT_EQ_BYTES(expected, privateKey.d, SIZEOF(expected));
 }
 
 void testPrivateKeyDerivation()
@@ -42,10 +51,10 @@ void testPrivateKeyDerivation()
 
 #define HD HARDENED_BIP32
 
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePrivateKey(path, ARRAY_LEN(path), expected_); \
+	    testcase_derivePrivateKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 
@@ -100,25 +109,28 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec_init(&pathSpec, path, pathLen);
+
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	cx_ecfp_public_key_t publicKey;
 	deriveRawPublicKey(&privateKey, &publicKey);
 	uint8_t publicKeyRaw[32];
-	extractRawPublicKey(&publicKey, publicKeyRaw, 32);
+	extractRawPublicKey(&publicKey, publicKeyRaw, SIZEOF(publicKeyRaw));
 
 	uint8_t expectedBuffer[32];
-	parseHexString(expected, expectedBuffer, 32);
-	EXPECT_EQ_BYTES(expectedBuffer, publicKeyRaw, 32);
+	parseHexString(expected, expectedBuffer, SIZEOF(expectedBuffer));
+	EXPECT_EQ_BYTES(expectedBuffer, publicKeyRaw, SIZEOF(expectedBuffer));
 }
 
 void testPublicKeyDerivation()
 {
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePublicKey(path, ARRAY_LEN(path), expected_); \
+	    testcase_derivePublicKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(
@@ -148,7 +160,7 @@ void testPublicKeyDerivation()
 }
 
 
-void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expected)
+void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_deriveChainCode ");
 	PRINTF_PATH(path, pathLen);
@@ -156,19 +168,23 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
-	derivePrivateKey(path, pathLen, &chainCode, &privateKey);
+
+	path_spec_t pathSpec;
+	pathSpec_init(&pathSpec, path, pathLen);
+
+	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
-	parseHexString(expected, expectedBuffer, 32);
+	parseHexString(expectedHex, expectedBuffer, 32);
 	EXPECT_EQ_BYTES(expectedBuffer, chainCode.code, 32);
 }
 
 // not tested
 void testChainCodeDerivation()
 {
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, expectedHex_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveChainCode(path, ARRAY_LEN(path), expected_); \
+	    testcase_deriveChainCode(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(
@@ -190,9 +206,12 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
+	path_spec_t pathSpec;
+	pathSpec_init(&pathSpec, path, pathLen);
+
 	uint8_t address[128];
 	os_memset(address, 0, 128);
-	uint32_t length = deriveAddress(path, pathLen, address, SIZEOF(address));
+	uint32_t length = deriveAddress(&pathSpec, address, SIZEOF(address));
 
 	address[length] = 0;
 

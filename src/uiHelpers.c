@@ -55,7 +55,7 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 void update_display_content()
 {
 	ASSERT(scrollingState->currentText[DISPLAY_TEXT_LEN] == '\0');
-	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
 	os_memmove(
 	        scrollingState->currentText,
 	        scrollingState->fullText + scrollingState->scrollIndex,
@@ -111,30 +111,30 @@ static unsigned int ui_scrollingText_button(unsigned int button_mask, unsigned i
 
 
 void displayScrollingText(
-        const char* header,
-        const char* text,
+        const char* headerStr,
+        const char* bodyStr,
         callback_t* callback)
 {
-	size_t header_len = strlen(header);
-	size_t text_len = strlen(text);
+	size_t header_len = strlen(headerStr);
+	size_t text_len = strlen(bodyStr);
 	// sanity checks
-	ASSERT(header_len < sizeof(scrollingState->header));
-	ASSERT(text_len < sizeof(scrollingState->fullText));
+	ASSERT(header_len < SIZEOF(scrollingState->header));
+	ASSERT(text_len < SIZEOF(scrollingState->fullText));
 
 	// clear all memory
-	os_memset(&displayState, 0, sizeof(displayState));
+	os_memset(&displayState, 0, SIZEOF(displayState));
 
 	// Copy data
-	os_memmove(scrollingState->header, header, header_len);
-	os_memmove(scrollingState->fullText, text, text_len);
-	STATIC_ASSERT(DISPLAY_TEXT_LEN < sizeof(scrollingState->currentText), overflow_check);
+	os_memmove(scrollingState->header, headerStr, header_len);
+	os_memmove(scrollingState->fullText, bodyStr, text_len);
+	STATIC_ASSERT(DISPLAY_TEXT_LEN < SIZEOF(scrollingState->currentText), overflow_check);
 
 	// Note(ppershing): due to previous clearing of memory
 	// this also works with cases where
 	// strlen(fullText) < DISPLAY_TEXT_LEN
 
 
-	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
 
 	os_memmove(scrollingState->currentText, scrollingState->fullText + scrollingState->scrollIndex, DISPLAY_TEXT_LEN);
 
@@ -189,23 +189,23 @@ static unsigned int ui_confirm_button(unsigned int button_mask, unsigned int but
 }
 
 void displayConfirm(
-        const char* header,
-        const char* text,
+        const char* headerStr,
+        const char* bodyStr,
         callback_t* confirm,
         callback_t* reject)
 {
-	size_t header_len = strlen(header);
-	size_t text_len = strlen(text);
+	size_t header_len = strlen(headerStr);
+	size_t text_len = strlen(bodyStr);
 	// sanity checks, keep 1 byte for null terminator
 	ASSERT(header_len < SIZEOF(confirmState->header));
 	ASSERT(text_len < SIZEOF(confirmState->text));
 
 	// clear all memory
-	os_memset(&displayState, 0, sizeof(displayState));
+	os_memset(&displayState, 0, SIZEOF(displayState));
 
 	// Copy data
-	os_memmove(confirmState->header, header, header_len);
-	os_memmove(confirmState->text, text, text_len);
+	os_memmove(confirmState->header, headerStr, header_len);
+	os_memmove(confirmState->text, bodyStr, text_len);
 	confirmState->confirm = confirm;
 	confirmState->reject = reject;
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);

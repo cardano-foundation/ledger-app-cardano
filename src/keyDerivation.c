@@ -13,27 +13,27 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-void validatePathForPrivateKeyDerivation(const uint32_t* path, uint32_t pathLength)
+void validatePathForPrivateKeyDerivation(const path_spec_t* pathSpec)
 {
 	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
 	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
 
-	VALIDATE_PARAM(pathLength >= 3 && pathLength <= 10);
+	VALIDATE_PARAM(pathSpec->length >= 3 && pathSpec->length <= 10);
 
-	VALIDATE_PARAM(path[0] ==  bip44);
-	VALIDATE_PARAM(path[1] ==  adaCoinType);
-	VALIDATE_PARAM(path[2] >= HARDENED_BIP32);
+	VALIDATE_PARAM(pathSpec->path[0] ==  bip44);
+	VALIDATE_PARAM(pathSpec->path[1] ==  adaCoinType);
+	VALIDATE_PARAM(pathSpec->path[2] >= HARDENED_BIP32);
 }
 
 void derivePrivateKey(
-        const uint32_t* bip32Path, uint32_t pathLength,
+        const path_spec_t* pathSpec,
         chain_code_t* chainCode,
         privateKey_t* privateKey
 )
 {
-	validatePathForPrivateKeyDerivation(bip32Path, pathLength);
+	validatePathForPrivateKeyDerivation(pathSpec);
 
-	uint8_t privateKeyRaw[64];
+	uint8_t privateKeyRawBuffer[64];
 
 	STATIC_ASSERT(SIZEOF(chainCode->code) == 32, __bad_length);
 	os_memset(chainCode->code, 0, SIZEOF(chainCode->code));
@@ -41,21 +41,23 @@ void derivePrivateKey(
 	BEGIN_TRY {
 		TRY {
 			STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
+			STATIC_ASSERT(SIZEOF(privateKey->d) == 64, __bad_length);
+
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
-			        bip32Path,
-			        pathLength,
-			        privateKeyRaw,
+			        pathSpec->path,
+			        pathSpec->length,
+			        privateKeyRawBuffer,
 			        chainCode->code);
 
 			// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
 			// should work with the new SDK
 			privateKey->curve = CX_CURVE_Ed25519;
 			privateKey->d_len = 64;
-			os_memmove(privateKey->d, privateKeyRaw, 64);
+			os_memmove(privateKey->d, privateKeyRawBuffer, 64);
 		}
 		FINALLY {
-			os_memset(privateKeyRaw, 0, SIZEOF(privateKeyRaw));
+			os_memset(privateKeyRawBuffer, 0, SIZEOF(privateKeyRawBuffer));
 		}
 	} END_TRY;
 }
@@ -79,32 +81,34 @@ void deriveRawPublicKey(
 
 void extractRawPublicKey(
         const cx_ecfp_public_key_t* publicKey,
-        uint8_t* rawPublicKey, size_t rawPublicKeySize
+        uint8_t* outBuffer, size_t outSize
 )
 {
 	// copy public key little endian to big endian
-	ASSERT(rawPublicKeySize == 32);
+	ASSERT(outSize == 32);
+	STATIC_ASSERT(SIZEOF(publicKey->W) == 65, __bad_length);
+
 	uint8_t i;
 	for (i = 0; i < 32; i++) {
-		rawPublicKey[i] = publicKey->W[64 - i];
+		outBuffer[i] = publicKey->W[64 - i];
 	}
 
 	if ((publicKey->W[32] & 1) != 0) {
-		rawPublicKey[31] |= 0x80;
+		outBuffer[31] |= 0x80;
 	}
 }
 
-static void validatePathForAddressDerivation(const uint32_t* bip32Path, uint32_t pathLength)
+static void validatePathForAddressDerivation(const path_spec_t* pathSpec)
 {
 	// other checks are when deriving private key
-	VALIDATE_PARAM(pathLength >= 5);
-	VALIDATE_PARAM(bip32Path[3] == 0 || bip32Path[3] == 1);
+	VALIDATE_PARAM(pathSpec->length >= 5);
+	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
 }
 
 
 // pub_key + chain_code
 void deriveExtendedPublicKey(
-        const uint32_t* bip32Path, uint32_t pathLength,
+        const path_spec_t* pathSpec,
         extendedPublicKey_t* out
 )
 {
@@ -116,8 +120,7 @@ void deriveExtendedPublicKey(
 	BEGIN_TRY {
 		TRY {
 			derivePrivateKey(
-			        bip32Path,
-			        pathLength,
+			        pathSpec,
 			        &chainCode,
 			        &privateKey
 			);
@@ -160,15 +163,15 @@ void deriveExtendedPublicKey(
 
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
-        uint8_t* addressRoot, size_t addressRootSize
+        uint8_t* outBuffer, size_t outSize
 )
 {
 	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
-	ASSERT(addressRootSize == 28);
+	ASSERT(outSize == 28);
 
-	uint8_t cborBuf[64 + 10];
-	uint8_t* ptr = cborBuf;
-	uint8_t* end = END(cborBuf);
+	uint8_t cborBuffer[64 + 10];
+	uint8_t* ptr = cborBuffer;
+	uint8_t* end = END(cborBuffer);
 
 
 	// [0, [0, publicKey:chainCode], Map(0)]
@@ -185,33 +188,30 @@ void addressRootFromExtPubKey(
 
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
 
-	// cborBuf is hashed twice. First by sha3_256 and then by blake2b_224
+	// cborBuffer is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
 	sha3_256_hash(
-	        cborBuf, ptr - cborBuf,
+	        cborBuffer, ptr - cborBuffer,
 	        cborShaHash, SIZEOF(cborShaHash)
 	);
 	blake2b_224_hash(
 	        cborShaHash, SIZEOF(cborShaHash),
-	        addressRoot, addressRootSize
+	        outBuffer, outSize
 	);
 }
 
 uint32_t deriveAddress(
-        const uint32_t* bip32Path, uint32_t pathLength,
-        uint8_t* address, size_t maxSize
+        const path_spec_t* pathSpec,
+        uint8_t* outBuffer, size_t outSize
 )
 {
-	validatePathForAddressDerivation(bip32Path, pathLength);
+	validatePathForAddressDerivation(pathSpec);
 
 	uint8_t addressRoot[28];
 	{
 		extendedPublicKey_t extPubKey;
 
-		deriveExtendedPublicKey(
-		        bip32Path, pathLength,
-		        &extPubKey
-		);
+		deriveExtendedPublicKey(pathSpec, &extPubKey);
 
 		addressRootFromExtPubKey(
 		        &extPubKey,
@@ -257,7 +257,7 @@ uint32_t deriveAddress(
 
 	uint32_t length = encode_base58(
 	                          addressRaw, ptr - addressRaw,
-	                          address, maxSize
+	                          outBuffer, outSize
 	                  );
 	return length;
 }

@@ -13,7 +13,7 @@
 void _io_send_G_io_apdu_buffer(uint16_t code, uint16_t tx);
 
 // Normal code should use just this helper function
-void io_send_buf(uint16_t code, uint8_t* buffer, uint16_t len);
+void io_send_buf(uint16_t code, uint8_t* buffer, size_t bufferSize);
 
 // Asserts that the response fits into response buffer
 void CHECK_RESPONSE_SIZE(unsigned int tx);
