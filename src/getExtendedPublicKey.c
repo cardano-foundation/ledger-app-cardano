@@ -29,38 +29,34 @@ void ensureParametersAreCorrect(
 }
 
 
-// TODO(ppershing): this is duplicate from deriveAddress!
-static void initializePath(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
-{
-	// Cast length to size_t
-	size_t length = dataBuffer[0];
-	if (length > ARRAY_LEN(pathSpec->path)) {
-		THROW(ERR_INVALID_DATA);
-	}
-	if (length * 4 + 1 != dataSize) {
-		THROW(ERR_INVALID_DATA);
-	}
-
-	pathSpec->length = length;
-
-	for (size_t i = 0; i < length; i++) {
-		size_t offset = 1 + 4 * i;
-		pathSpec->path[i] = u4be_read(dataBuffer + offset);
-	}
-}
 
 // forward declaration
 void respond_with_public_key(const extendedPublicKey_t*);
+
+
+static void validatePath(const path_spec_t* pathSpec)
+{
+	// TODO(ppershing): additional path validation?
+	VALIDATE_PARAM(isValidCardanoBIP44Path(&ctx->pathSpec));
+	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
+};
+
 
 void handleGetExtendedPublicKey(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        size_t dataLength)
+        size_t dataSize)
 {
-	ensureParametersAreCorrect(p1, p2, dataBuffer, dataLength);
+	ensureParametersAreCorrect(p1, p2, dataBuffer, dataSize);
 
-	initializePath(& ctx->pathSpec, dataBuffer, dataLength);
+	size_t parsedSize = pathSpec_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
+
+	if (parsedSize != dataSize) {
+		THROW(ERR_INVALID_DATA);
+	}
+
+	validatePath(&ctx->pathSpec);
 
 	deriveExtendedPublicKey(
 	        & ctx->pathSpec,

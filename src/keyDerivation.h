@@ -3,6 +3,7 @@
 
 #include <os.h>
 #include "handlers.h"
+#include <stdbool.h>
 
 static const uint32_t MAX_PATH_LENGTH = 10;
 
@@ -29,6 +30,13 @@ typedef struct {
 	uint8_t pubKey[PUBLIC_KEY_SIZE];
 	uint8_t chainCode[CHAIN_CODE_SIZE];
 } extendedPublicKey_t;
+
+size_t pathSpec_parseFromWire(
+        path_spec_t* pathSpec,
+        uint8_t* dataBuffer, size_t dataSize
+);
+
+bool isValidCardanoBIP44Path(const path_spec_t* pathSpec);
 
 void derivePrivateKey(
         const path_spec_t* pathSpec,

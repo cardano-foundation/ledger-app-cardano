@@ -10,20 +10,47 @@
 #include "crc32.h"
 #include "base58.h"
 #include "utils.h"
+#include "endian.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-void validatePathForPrivateKeyDerivation(const path_spec_t* pathSpec)
+size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
 {
-	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
-	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
+	// Cast length to size_t
+	size_t length = dataBuffer[0];
+	if (length > ARRAY_LEN(pathSpec->path)) {
+		THROW(ERR_INVALID_DATA);
+	}
+	if (length * 4 + 1 > dataSize) {
+		THROW(ERR_INVALID_DATA);
+	}
 
-	VALIDATE_PARAM(pathSpec->length >= 3 && pathSpec->length <= 10);
+	pathSpec->length = length;
 
-	VALIDATE_PARAM(pathSpec->path[0] ==  bip44);
-	VALIDATE_PARAM(pathSpec->path[1] ==  adaCoinType);
-	VALIDATE_PARAM(pathSpec->path[2] >= HARDENED_BIP32);
+	size_t offset = 1;
+	for (size_t i = 0; i < length; i++) {
+		pathSpec->path[i] = u4be_read(dataBuffer + offset);
+		offset += 4;
+	}
+	return offset;
 }
+
+bool isValidCardanoBIP44Path(const path_spec_t* pathSpec)
+{
+	const uint32_t HD = HARDENED_BIP32; // shorthand
+#define CHECK(cond) if (!(cond)) return false
+
+	CHECK(pathSpec->length <= ARRAY_LEN(pathSpec->path));
+	CHECK(pathSpec->length >= 3);
+	CHECK(pathSpec->path[0] == (BIP_44 | HD));
+	CHECK(pathSpec->path[1] == (ADA_COIN_TYPE | HD));
+	// Account is hardened
+	CHECK(pathSpec->path[2] == (pathSpec->path[2] | HD));
+	return true;
+
+#undef CHECK
+}
+
 
 void derivePrivateKey(
         const path_spec_t* pathSpec,
@@ -31,7 +58,9 @@ void derivePrivateKey(
         privateKey_t* privateKey
 )
 {
-	validatePathForPrivateKeyDerivation(pathSpec);
+	if (!isValidCardanoBIP44Path(pathSpec)) {
+		THROW(ERR_INVALID_REQUEST_PARAMETERS);
+	}
 
 	uint8_t privateKeyRawBuffer[64];
 
@@ -96,13 +125,6 @@ void extractRawPublicKey(
 	if ((publicKey->W[32] & 1) != 0) {
 		outBuffer[31] |= 0x80;
 	}
-}
-
-static void validatePathForAddressDerivation(const path_spec_t* pathSpec)
-{
-	// other checks are when deriving private key
-	VALIDATE_PARAM(pathSpec->length >= 5);
-	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
 }
 
 
@@ -205,8 +227,6 @@ uint32_t deriveAddress(
         uint8_t* outBuffer, size_t outSize
 )
 {
-	validatePathForAddressDerivation(pathSpec);
-
 	uint8_t addressRoot[28];
 	{
 		extendedPublicKey_t extPubKey;
