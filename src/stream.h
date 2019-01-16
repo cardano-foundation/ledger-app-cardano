@@ -20,8 +20,8 @@ typedef struct {
 
 void stream_init(stream_t* stream);
 size_t stream_availableBytes(const stream_t* stream);
-void stream_ensureAvailableBytes(const stream_t* stream, size_t size);
-void stream_advancePos(stream_t* stream, size_t size);
+void stream_ensureAvailableBytes(const stream_t* stream, size_t requiredSize);
+void stream_advancePos(stream_t* stream, size_t advanceBy);
 uint8_t stream_peekByte(const stream_t* stream);
 const uint8_t* stream_head(const stream_t* stream);
 size_t stream_unusedBytes(const stream_t* stream);

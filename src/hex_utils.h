@@ -6,7 +6,7 @@
 
 uint8_t hex_parseNibble(const char c);
 
-uint8_t hex_parseNibblePair(const char* inStr);
+uint8_t hex_parseNibblePair(const char* buffer);
 
 void stream_appendFromHexString(stream_t* s, const char* inStr);
 

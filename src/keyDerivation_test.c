@@ -11,6 +11,12 @@
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
 #define UNWRAP(...) __VA_ARGS__
 
+void pathSpec_init(path_spec_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
+{
+	pathSpec->length = pathLength;
+	os_memmove(pathSpec->path, pathArray, pathLength * 4);
+}
+
 void PRINTF_PATH(const uint32_t* path, uint32_t pathLen)
 {
 	for (uint32_t i = 0; i < pathLen; i++) {
@@ -30,15 +36,14 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	PRINTF("\n");
 
 	path_spec_t pathSpec;
-	pathSpec.length = pathLen;
-	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+	pathSpec_init(&pathSpec, path, pathLen);
 
 	uint8_t expected[64];
-	parseHexString(expectedHex, expected, 64);
+	parseHexString(expectedHex, expected, SIZEOF(expected));
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
-	EXPECT_EQ_BYTES(expected, privateKey.d, 64);
+	EXPECT_EQ_BYTES(expected, privateKey.d, SIZEOF(expected));
 }
 
 void testPrivateKeyDerivation()
@@ -105,8 +110,7 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	PRINTF("\n");
 
 	path_spec_t pathSpec;
-	pathSpec.length = pathLen;
-	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+	pathSpec_init(&pathSpec, path, pathLen);
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
@@ -114,11 +118,11 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	cx_ecfp_public_key_t publicKey;
 	deriveRawPublicKey(&privateKey, &publicKey);
 	uint8_t publicKeyRaw[32];
-	extractRawPublicKey(&publicKey, publicKeyRaw, 32);
+	extractRawPublicKey(&publicKey, publicKeyRaw, SIZEOF(publicKeyRaw));
 
 	uint8_t expectedBuffer[32];
-	parseHexString(expected, expectedBuffer, 32);
-	EXPECT_EQ_BYTES(expectedBuffer, publicKeyRaw, 32);
+	parseHexString(expected, expectedBuffer, SIZEOF(expectedBuffer));
+	EXPECT_EQ_BYTES(expectedBuffer, publicKeyRaw, SIZEOF(expectedBuffer));
 }
 
 void testPublicKeyDerivation()
@@ -166,8 +170,7 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 	privateKey_t privateKey;
 
 	path_spec_t pathSpec;
-	pathSpec.length = pathLen;
-	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+	pathSpec_init(&pathSpec, path, pathLen);
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
@@ -204,8 +207,7 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	PRINTF("\n");
 
 	path_spec_t pathSpec;
-	pathSpec.length = pathLen;
-	os_memmove(pathSpec.path, path, MAX_PATH_LENGTH * 4);
+	pathSpec_init(&pathSpec, path, pathLen);
 
 	uint8_t address[128];
 	os_memset(address, 0, 128);

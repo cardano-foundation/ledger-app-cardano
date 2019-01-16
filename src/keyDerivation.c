@@ -41,6 +41,8 @@ void derivePrivateKey(
 	BEGIN_TRY {
 		TRY {
 			STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
+			STATIC_ASSERT(SIZEOF(privateKey->d) == 64, __bad_length);
+
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
 			        pathSpec->path,
@@ -84,6 +86,8 @@ void extractRawPublicKey(
 {
 	// copy public key little endian to big endian
 	ASSERT(outSize == 32);
+	STATIC_ASSERT(SIZEOF(publicKey->W) == 65, __bad_length);
+
 	uint8_t i;
 	for (i = 0; i < 32; i++) {
 		outBuffer[i] = publicKey->W[64 - i];

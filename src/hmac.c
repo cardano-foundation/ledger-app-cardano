@@ -1,5 +1,6 @@
 #include "hmac.h"
 #include "assert.h"
+#include "utils.h"
 #include <os.h>
 
 void hmac_sha256(
@@ -9,6 +10,9 @@ void hmac_sha256(
 )
 {
 	ASSERT(outSize == 32);
+	ASSERT(inSize < BUFFER_SIZE_PARANOIA);
+	ASSERT(keySize < BUFFER_SIZE_PARANOIA);
+
 	// TODO(ppershing): what is the return value of this
 	// cx_hmac_sha256 function? According to cx.h
 	// it returns int!

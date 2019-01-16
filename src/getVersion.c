@@ -9,6 +9,7 @@
 #include "errors.h"
 #include "io.h"
 #include "assert.h"
+#include "utils.h"
 
 // handleGetVersion is the entry point for the getVersion command. It
 // unconditionally sends the app version.
@@ -18,6 +19,11 @@ void handleGetVersion(
         uint8_t *dataBuffer,
         uint16_t dataLength)
 {
+	STATIC_ASSERT(APPVERSION == 5, __bad_length);
+	ASSERT(APPVERSION[0] >= '0' && APPVERSION[0] <= '9');
+	ASSERT(APPVERSION[2] >= '0' && APPVERSION[2] <= '9');
+	ASSERT(APPVERSION[4] >= '0' && APPVERSION[4] <= '9');
+
 	uint8_t responseBuffer[3];
 	responseBuffer[0] = APPVERSION[0] - '0';
 	responseBuffer[1] = APPVERSION[2] - '0';

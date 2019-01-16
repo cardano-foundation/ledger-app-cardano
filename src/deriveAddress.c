@@ -15,9 +15,10 @@
 
 #define MAX_BIP32_PATH 32
 
-static void io_exchange_address();
+static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 void ui_idle();
 
+// TODO: move this into global state
 derive_address_data_t daData;
 
 static void ensureParametersAreCorrect(
@@ -61,18 +62,18 @@ void handleDeriveAddress(
 	                             daData.addressBuffer, SIZEOF(daData.addressBuffer)
 	                     );
 
-	io_exchange_address();
+	io_respond_with_address(daData.addressBuffer, daData.addressSize);
 }
 
-static void io_exchange_address()
+static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize)
 {
 	uint32_t tx = 0;
 
-	G_io_apdu_buffer[tx++] = daData.addressSize;
+	G_io_apdu_buffer[tx++] = addressSize;
 
-	os_memmove(G_io_apdu_buffer + tx, daData.addressBuffer, daData.addressSize);
+	os_memmove(G_io_apdu_buffer + tx, addressBuffer, addressSize);
 
-	tx += daData.addressSize;
+	tx += addressSize;
 
 	G_io_apdu_buffer[tx++] = 0x90;
 	G_io_apdu_buffer[tx++] = 0x00;

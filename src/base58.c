@@ -19,6 +19,7 @@
 
 #include "base58.h"
 #include "assert.h"
+#include "utils.h"
 #include <os.h>
 
 static const uint32_t MAX_BUFFER_SIZE = 124;
@@ -32,18 +33,17 @@ size_t encode_base58(
 {
 	uint8_t tmpBuffer[MAX_BUFFER_SIZE];
 	uint8_t buffer[MAX_BUFFER_SIZE * 2];
-	size_t j;
 	size_t startAt;
 	size_t zeroCount = 0;
 
-	ASSERT(inSize <= MAX_BUFFER_SIZE);
+	ASSERT(inSize <= SIZEOF(tmpBuffer));
 
 	os_memmove(tmpBuffer, inBuffer, inSize);
 
 	while ((zeroCount < inSize) && (tmpBuffer[zeroCount] == 0)) {
 		++zeroCount;
 	}
-	j = 2 * inSize;
+	size_t j = 2 * inSize;
 	startAt = zeroCount;
 
 	while (startAt < inSize) {

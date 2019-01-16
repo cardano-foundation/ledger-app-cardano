@@ -19,16 +19,18 @@ void testcase_chunks_blake2b_512(
 	blake2b_512_init(&ctx);
 	uint8_t outputBuffer[64];
 	for (unsigned i = 0; i < chunksCount; i++) {
-		uint8_t chunkData[20];
-		size_t chunkSize = parseHexString(PIC(chunksHex[i]), chunkData, SIZEOF(chunkData));
+		uint8_t chunkBuffer[20];
+		size_t chunkSize = parseHexString(PIC(chunksHex[i]), chunkBuffer, SIZEOF(chunkBuffer));
 
-		blake2b_512_append(&ctx, chunkData, chunkSize);
+		blake2b_512_append(&ctx, chunkBuffer, chunkSize);
 	}
-	blake2b_512_finalize(&ctx, outputBuffer, 64);
+	blake2b_512_finalize(&ctx, outputBuffer, SIZEOF(outputBuffer));
 
 	uint8_t expectedBuffer[64];
-	parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
-	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, 64);
+	size_t expectedSize = parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
+	ASSERT(expectedSize == 64);
+
+	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, SIZEOF(expectedBuffer));
 }
 
 void testcase_blake2b_224(const char* inputHex, const char* expectedHex)
@@ -42,8 +44,8 @@ void testcase_blake2b_224(const char* inputHex, const char* expectedHex)
 
 	ASSERT(expectedSize == 28);
 	uint8_t outputBuffer[28];
-	blake2b_224_hash(inputBuffer, inputSize, outputBuffer, 28);
-	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, 28);
+	blake2b_224_hash(inputBuffer, inputSize, outputBuffer, SIZEOF(outputBuffer));
+	EXPECT_EQ_BYTES(expectedBuffer, outputBuffer, expectedSize);
 }
 
 void run_blake2b_test()

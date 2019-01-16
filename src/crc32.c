@@ -1,13 +1,16 @@
 #include "crc32.h"
+#include "utils.h"
 
 // Code taken from: https://www.hackersdelight.org/hdcodetxt/crc.c.txt option crc32b
 
 uint32_t crc32(const uint8_t* inBuffer, size_t inSize)
 {
+	ASSERT(inSize < BUFFER_SIZE_PARANOIA);
+
 	uint32_t byte, crc, mask;
 
 	crc = 0xFFFFFFFF;
-	for(uint32_t i = 0; i < inSize; i++) {
+	for(size_t i = 0; i < inSize; i++) {
 		byte = inBuffer[i];
 		crc = crc ^ byte;
 

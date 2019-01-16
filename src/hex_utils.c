@@ -14,10 +14,10 @@ uint8_t hex_parseNibble(const char c)
 	THROW(ERR_UNEXPECTED_TOKEN);
 }
 
-uint8_t hex_parseNibblePair(const char* inStr)
+uint8_t hex_parseNibblePair(const char* buffer)
 {
-	uint8_t first = hex_parseNibble(inStr[0]);
-	uint8_t second = hex_parseNibble(inStr[1]);
+	uint8_t first = hex_parseNibble(buffer[0]);
+	uint8_t second = hex_parseNibble(buffer[1]);
 	return (first << 4) + second;
 }
 

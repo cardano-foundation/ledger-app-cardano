@@ -55,7 +55,7 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 void update_display_content()
 {
 	ASSERT(scrollingState->currentText[DISPLAY_TEXT_LEN] == '\0');
-	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
 	os_memmove(
 	        scrollingState->currentText,
 	        scrollingState->fullText + scrollingState->scrollIndex,
@@ -118,23 +118,23 @@ void displayScrollingText(
 	size_t header_len = strlen(headerStr);
 	size_t text_len = strlen(bodyStr);
 	// sanity checks
-	ASSERT(header_len < sizeof(scrollingState->header));
-	ASSERT(text_len < sizeof(scrollingState->fullText));
+	ASSERT(header_len < SIZEOF(scrollingState->header));
+	ASSERT(text_len < SIZEOF(scrollingState->fullText));
 
 	// clear all memory
-	os_memset(&displayState, 0, sizeof(displayState));
+	os_memset(&displayState, 0, SIZEOF(displayState));
 
 	// Copy data
 	os_memmove(scrollingState->header, headerStr, header_len);
 	os_memmove(scrollingState->fullText, bodyStr, text_len);
-	STATIC_ASSERT(DISPLAY_TEXT_LEN < sizeof(scrollingState->currentText), overflow_check);
+	STATIC_ASSERT(DISPLAY_TEXT_LEN < SIZEOF(scrollingState->currentText), overflow_check);
 
 	// Note(ppershing): due to previous clearing of memory
 	// this also works with cases where
 	// strlen(fullText) < DISPLAY_TEXT_LEN
 
 
-	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < sizeof(scrollingState->fullText));
+	ASSERT(scrollingState->scrollIndex + DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
 
 	os_memmove(scrollingState->currentText, scrollingState->fullText + scrollingState->scrollIndex, DISPLAY_TEXT_LEN);
 
@@ -201,7 +201,7 @@ void displayConfirm(
 	ASSERT(text_len < SIZEOF(confirmState->text));
 
 	// clear all memory
-	os_memset(&displayState, 0, sizeof(displayState));
+	os_memset(&displayState, 0, SIZEOF(displayState));
 
 	// Copy data
 	os_memmove(confirmState->header, headerStr, header_len);

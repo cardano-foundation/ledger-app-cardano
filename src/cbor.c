@@ -105,14 +105,14 @@ void cbor_advanceToken(stream_t* stream)
 }
 
 
-size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* inBuffer, size_t inSize)
+size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* buffer, size_t bufferSize)
 {
-	ASSERT(inSize < BUFFER_SIZE_PARANOIA);
+	ASSERT(bufferSize < BUFFER_SIZE_PARANOIA);
 
-#define CHECK_BUF_LEN(requiredSize) if (requiredSize > inSize) THROW(ERR_DATA_TOO_LARGE);
+#define CHECK_BUF_LEN(requiredSize) if ((size_t) requiredSize > bufferSize) THROW(ERR_DATA_TOO_LARGE);
 	if (type == CBOR_TYPE_ARRAY_INDEF || type == CBOR_TYPE_INDEF_END) {
 		CHECK_BUF_LEN(1);
-		inBuffer[0] = type;
+		buffer[0] = type;
 		return 1;
 	}
 
@@ -139,27 +139,27 @@ size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* inBuffer, size_t i
 
 	if (value < VALUE_MIN_W1) {
 		CHECK_BUF_LEN(1);
-		u1be_write(inBuffer, type | value);
+		u1be_write(buffer, type | value);
 		return 1;
 	} else if (value < VALUE_MIN_W2) {
 		CHECK_BUF_LEN(1 + 1);
-		u1be_write(inBuffer, type | 24);
-		u1be_write(inBuffer + 1, value);
+		u1be_write(buffer, type | 24);
+		u1be_write(buffer + 1, value);
 		return 1 + 1;
 	} else if (value < VALUE_MIN_W4) {
 		CHECK_BUF_LEN(1 + 2);
-		u1be_write(inBuffer, type | 25);
-		u2be_write(inBuffer + 1, value);
+		u1be_write(buffer, type | 25);
+		u2be_write(buffer + 1, value);
 		return 1 + 2;
 	} else if (value < VALUE_MIN_W8) {
 		CHECK_BUF_LEN(1 + 4);
-		u1be_write(inBuffer, type | 26);
-		u4be_write(inBuffer + 1, value);
+		u1be_write(buffer, type | 26);
+		u4be_write(buffer + 1, value);
 		return 1 + 4;
 	} else {
 		CHECK_BUF_LEN(1 + 8);
-		inBuffer[0] = type | 27;
-		u8be_write(inBuffer + 1, value);
+		u1be_write(buffer, type | 27);
+		u8be_write(buffer + 1, value);
 		return 1 + 8;
 	}
 #undef CHECK_BUF_LEN

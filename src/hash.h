@@ -3,6 +3,7 @@
 
 #include <os.h>
 #include "assert.h"
+#include "utils.h"
 
 // This file provides convenience functions for using firmware hashing api
 
@@ -64,6 +65,7 @@ enum {
 		const uint8_t* inBuffer, size_t inSize, \
 		uint8_t* outBuffer, size_t outSize \
 	) { \
+		ASSERT(inSize < BUFFER_SIZE_PARANOIA); \
 	    ASSERT(outSize == CIPHER##_##bits##_SIZE); \
 	    cipher##_##bits##_context_t ctx; \
 	    cipher##_##bits##_init(&ctx); \
