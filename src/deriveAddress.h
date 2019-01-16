@@ -8,7 +8,7 @@ void handleDeriveAddress(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        uint16_t dataLength
+        size_t dataLength
 );
 
 typedef struct {

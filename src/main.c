@@ -169,8 +169,6 @@ static void cardano_main(void)
 
 	// Exchange APDUs until EXCEPTION_IO_RESET is thrown.
 	for (;;) {
-		volatile unsigned short sw = 0;
-
 		// The Ledger SDK implements a form of exception handling. In addition
 		// to explicit THROWs in user code, syscalls (prefixed with os_ or
 		// cx_) may also throw exceptions.
