@@ -19,15 +19,14 @@
 
 static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 
-// TODO: move this into global state
 static deriveAddressGlobal_t* ctx = &(instructionState.deriveAddressGlobal);
 
 static void validatePath(const path_spec_t* pathSpec)
 {
 	VALIDATE_PARAM(isValidCardanoBIP44Path(pathSpec));
 	// other checks are when deriving private key
-	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
 	VALIDATE_PARAM(pathSpec->length >= 5);
+	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
 	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
 }
 

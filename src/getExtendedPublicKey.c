@@ -16,28 +16,15 @@
 
 static getExtendedPublicKeyGlobal_t* ctx = &(instructionState.extPubKeyGlobal);
 
-void ensureParametersAreCorrect(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t *dataBuffer,
-        uint16_t dataLength)
-{
-	VALIDATE_PARAM(p1 == 0);
-	VALIDATE_PARAM(p2 == 0);
-	VALIDATE_PARAM(dataLength >= 1);
-	VALIDATE_PARAM(dataLength == dataBuffer[0] * 4 + 1 );
-}
-
-
 
 // forward declaration
-void respond_with_public_key(const extendedPublicKey_t*);
+static void respond_with_public_key(const extendedPublicKey_t*);
 
 
 static void validatePath(const path_spec_t* pathSpec)
 {
-	// TODO(ppershing): additional path validation?
 	VALIDATE_PARAM(isValidCardanoBIP44Path(&ctx->pathSpec));
+	VALIDATE_PARAM(pathSpec->length >= 3);
 	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
 };
 
@@ -48,7 +35,8 @@ void handleGetExtendedPublicKey(
         uint8_t *dataBuffer,
         size_t dataSize)
 {
-	ensureParametersAreCorrect(p1, p2, dataBuffer, dataSize);
+	VALIDATE_PARAM(p1 == 0);
+	VALIDATE_PARAM(p2 == 0);
 
 	size_t parsedSize = pathSpec_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
 
@@ -66,7 +54,7 @@ void handleGetExtendedPublicKey(
 	respond_with_public_key(& ctx->extPubKey);
 }
 
-void respond_with_public_key(const extendedPublicKey_t* extPubKey)
+static void respond_with_public_key(const extendedPublicKey_t* extPubKey)
 {
 	// Note: we reuse G_io_apdu_buffer!
 	uint8_t* responseBuffer = G_io_apdu_buffer;

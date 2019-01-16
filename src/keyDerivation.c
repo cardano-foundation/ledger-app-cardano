@@ -12,18 +12,19 @@
 #include "utils.h"
 #include "endian.h"
 
-#define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
-
 size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
 {
+#define VALIDATE(cond) if (!(cond)) THROW(ERR_INVALID_DATA)
+
+	// Ensure we have length
+	VALIDATE(dataSize >= 1);
+
 	// Cast length to size_t
 	size_t length = dataBuffer[0];
-	if (length > ARRAY_LEN(pathSpec->path)) {
-		THROW(ERR_INVALID_DATA);
-	}
-	if (length * 4 + 1 > dataSize) {
-		THROW(ERR_INVALID_DATA);
-	}
+
+	// Ensure length is valid
+	VALIDATE(length <= ARRAY_LEN(pathSpec->path));
+	VALIDATE(length * 4 + 1 <= dataSize);
 
 	pathSpec->length = length;
 
@@ -33,6 +34,7 @@ size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t
 		offset += 4;
 	}
 	return offset;
+#undef VALIDATE
 }
 
 bool isValidCardanoBIP44Path(const path_spec_t* pathSpec)
@@ -183,6 +185,10 @@ void deriveExtendedPublicKey(
 	    ptr += bufSize; \
 	}
 
+enum {
+	CARDANO_ADDRESS_TYPE_PUBKEY = 0,
+};
+
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
         uint8_t* outBuffer, size_t outSize
@@ -199,16 +205,16 @@ void addressRootFromExtPubKey(
 	// [0, [0, publicKey:chainCode], Map(0)]
 	// TODO(ppershing): what are the first two 0 constants?
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 3);
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
 
 	// enter inner array
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 2);
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0 /* this seems to be hardcoded to 0*/);
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, EXTENDED_PUBKEY_SIZE);
 	WRITE_DATA(ptr, end, extPubKey, EXTENDED_PUBKEY_SIZE);
 	// exit inner array
 
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
 
 	// cborBuffer is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
@@ -262,9 +268,9 @@ uint32_t deriveAddress(
 		WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, SIZEOF(addressRoot));
 		WRITE_DATA(ptr, end, addressRoot, SIZEOF(addressRoot));
 
-		WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
 
-		WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0); // TODO(what does this zero stand for?)
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
 
 		// Note(ppershing): see note above
 		uint8_t* inner_end = ptr;
