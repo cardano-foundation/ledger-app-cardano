@@ -10,74 +10,65 @@
 #include "hash.h"
 #include "keyDerivation.h"
 #include "utils.h"
+#include "endian.h"
+#include "io.h"
+#include "ux.h"
+#include "state.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-#define MAX_BIP32_PATH 32
-
 static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
-void ui_idle();
 
-// TODO: move this into global state
-derive_address_data_t daData;
+static deriveAddressGlobal_t* ctx = &(instructionState.deriveAddressGlobal);
 
-static void ensureParametersAreCorrect(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t *dataBuffer,
-        uint16_t dataLength)
+static void validatePath(const path_spec_t* pathSpec)
 {
-	VALIDATE_PARAM(p1 == 0);
-	VALIDATE_PARAM(p2 == 0);
-	VALIDATE_PARAM(dataLength >= 1);
-	VALIDATE_PARAM(dataLength == dataBuffer[0] * 4 + 1 );
-}
-
-static void initializePath(uint8_t *dataBuffer)
-{
-	STATIC_ASSERT((255 - 1) / 4 > MAX_BIP32_PATH, __bad_length);
-
-	daData.pathSpec.length = dataBuffer[0];
-
-	uint8_t i = 0;
-	for (i = 0; i < daData.pathSpec.length; i++) {
-		uint8_t offset = 1 + 4 * i;
-
-		daData.pathSpec.path[i] = U4BE(dataBuffer, offset);
-	}
+	VALIDATE_PARAM(isValidCardanoBIP44Path(pathSpec));
+	// other checks are when deriving private key
+	VALIDATE_PARAM(pathSpec->length >= 5);
+	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
+	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
 }
 
 void handleDeriveAddress(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        size_t dataLength)
+        size_t dataSize)
 {
-	ensureParametersAreCorrect(p1, p2, dataBuffer, dataLength);
+	VALIDATE_PARAM(p1 == 0);
+	VALIDATE_PARAM(p2 == 0);
 
-	initializePath(dataBuffer);
+	size_t parsedSize = pathSpec_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
 
-	daData.addressSize = deriveAddress(
-	                             &daData.pathSpec,
-	                             daData.addressBuffer, SIZEOF(daData.addressBuffer)
-	                     );
+	if (parsedSize != dataSize) {
+		THROW(ERR_INVALID_DATA);
+	}
 
-	io_respond_with_address(daData.addressBuffer, daData.addressSize);
+	validatePath(&ctx->pathSpec);
+
+	ctx->addressSize = deriveAddress(
+	                           & ctx->pathSpec,
+	                           & ctx->addressBuffer[0],
+	                           SIZEOF(ctx->addressBuffer)
+	                   );
+
+	io_respond_with_address(& ctx->addressBuffer[0], ctx->addressSize);
 }
 
 static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize)
 {
-	uint32_t tx = 0;
+	ASSERT(addressSize < BUFFER_SIZE_PARANOIA);
 
-	G_io_apdu_buffer[tx++] = addressSize;
+	uint8_t* responseBuffer = G_io_apdu_buffer;
+	size_t responseMaxSize = SIZEOF(G_io_apdu_buffer);
 
-	os_memmove(G_io_apdu_buffer + tx, addressBuffer, addressSize);
+	size_t outSize = addressSize + 1;
+	ASSERT(outSize <= responseMaxSize);
 
-	tx += addressSize;
+	u1be_write(responseBuffer, addressSize);
+	os_memmove(responseBuffer + 1, addressBuffer, addressSize);
 
-	G_io_apdu_buffer[tx++] = 0x90;
-	G_io_apdu_buffer[tx++] = 0x00;
-
-	io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+	io_send_buf(SUCCESS, responseBuffer, outSize);
 	ui_idle();
 }

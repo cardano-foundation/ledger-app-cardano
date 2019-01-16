@@ -15,6 +15,6 @@ typedef struct {
 	path_spec_t pathSpec;
 	uint8_t addressBuffer[128];
 	size_t addressSize;
-} derive_address_data_t;
+} deriveAddressGlobal_t;
 
 #endif

@@ -4,6 +4,7 @@
 #include "getVersion.h"
 #include "stream.h"
 #include "getExtendedPublicKey.h"
+#include "deriveAddress.h"
 
 typedef struct {
 	stream_t s;
@@ -13,6 +14,7 @@ typedef union {
 	// Here should go states of all instructions
 	testsGlobal_t testsGlobal;
 	getExtendedPublicKeyGlobal_t extPubKeyGlobal;
+	deriveAddressGlobal_t deriveAddressGlobal;
 } instructionState_t;
 
 typedef struct {

@@ -10,20 +10,49 @@
 #include "crc32.h"
 #include "base58.h"
 #include "utils.h"
+#include "endian.h"
 
-#define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
-
-void validatePathForPrivateKeyDerivation(const path_spec_t* pathSpec)
+size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
 {
-	uint32_t bip44 = BIP_44 | HARDENED_BIP32;
-	uint32_t adaCoinType = ADA_COIN_TYPE | HARDENED_BIP32;
+#define VALIDATE(cond) if (!(cond)) THROW(ERR_INVALID_DATA)
 
-	VALIDATE_PARAM(pathSpec->length >= 3 && pathSpec->length <= 10);
+	// Ensure we have length
+	VALIDATE(dataSize >= 1);
 
-	VALIDATE_PARAM(pathSpec->path[0] ==  bip44);
-	VALIDATE_PARAM(pathSpec->path[1] ==  adaCoinType);
-	VALIDATE_PARAM(pathSpec->path[2] >= HARDENED_BIP32);
+	// Cast length to size_t
+	size_t length = dataBuffer[0];
+
+	// Ensure length is valid
+	VALIDATE(length <= ARRAY_LEN(pathSpec->path));
+	VALIDATE(length * 4 + 1 <= dataSize);
+
+	pathSpec->length = length;
+
+	size_t offset = 1;
+	for (size_t i = 0; i < length; i++) {
+		pathSpec->path[i] = u4be_read(dataBuffer + offset);
+		offset += 4;
+	}
+	return offset;
+#undef VALIDATE
 }
+
+bool isValidCardanoBIP44Path(const path_spec_t* pathSpec)
+{
+	const uint32_t HD = HARDENED_BIP32; // shorthand
+#define CHECK(cond) if (!(cond)) return false
+
+	CHECK(pathSpec->length <= ARRAY_LEN(pathSpec->path));
+	CHECK(pathSpec->length >= 3);
+	CHECK(pathSpec->path[0] == (BIP_44 | HD));
+	CHECK(pathSpec->path[1] == (ADA_COIN_TYPE | HD));
+	// Account is hardened
+	CHECK(pathSpec->path[2] == (pathSpec->path[2] | HD));
+	return true;
+
+#undef CHECK
+}
+
 
 void derivePrivateKey(
         const path_spec_t* pathSpec,
@@ -31,7 +60,9 @@ void derivePrivateKey(
         privateKey_t* privateKey
 )
 {
-	validatePathForPrivateKeyDerivation(pathSpec);
+	if (!isValidCardanoBIP44Path(pathSpec)) {
+		THROW(ERR_INVALID_REQUEST_PARAMETERS);
+	}
 
 	uint8_t privateKeyRawBuffer[64];
 
@@ -98,13 +129,6 @@ void extractRawPublicKey(
 	}
 }
 
-static void validatePathForAddressDerivation(const path_spec_t* pathSpec)
-{
-	// other checks are when deriving private key
-	VALIDATE_PARAM(pathSpec->length >= 5);
-	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
-}
-
 
 // pub_key + chain_code
 void deriveExtendedPublicKey(
@@ -161,6 +185,10 @@ void deriveExtendedPublicKey(
 	    ptr += bufSize; \
 	}
 
+enum {
+	CARDANO_ADDRESS_TYPE_PUBKEY = 0,
+};
+
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
         uint8_t* outBuffer, size_t outSize
@@ -177,16 +205,16 @@ void addressRootFromExtPubKey(
 	// [0, [0, publicKey:chainCode], Map(0)]
 	// TODO(ppershing): what are the first two 0 constants?
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 3);
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
 
 	// enter inner array
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 2);
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0 /* this seems to be hardcoded to 0*/);
 	WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, EXTENDED_PUBKEY_SIZE);
 	WRITE_DATA(ptr, end, extPubKey, EXTENDED_PUBKEY_SIZE);
 	// exit inner array
 
-	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
+	WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
 
 	// cborBuffer is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
@@ -205,8 +233,6 @@ uint32_t deriveAddress(
         uint8_t* outBuffer, size_t outSize
 )
 {
-	validatePathForAddressDerivation(pathSpec);
-
 	uint8_t addressRoot[28];
 	{
 		extendedPublicKey_t extPubKey;
@@ -242,9 +268,9 @@ uint32_t deriveAddress(
 		WRITE_TOKEN(ptr, end, CBOR_TYPE_BYTES, SIZEOF(addressRoot));
 		WRITE_DATA(ptr, end, addressRoot, SIZEOF(addressRoot));
 
-		WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0);
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
 
-		WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, 0); // TODO(what does this zero stand for?)
+		WRITE_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
 
 		// Note(ppershing): see note above
 		uint8_t* inner_end = ptr;
