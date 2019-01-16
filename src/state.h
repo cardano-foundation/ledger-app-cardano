@@ -3,6 +3,7 @@
 
 #include "getVersion.h"
 #include "stream.h"
+#include "getExtendedPublicKey.h"
 
 typedef struct {
 	stream_t s;
@@ -11,6 +12,7 @@ typedef struct {
 typedef union {
 	// Here should go states of all instructions
 	testsGlobal_t testsGlobal;
+	getExtendedPublicKeyGlobal_t extPubKeyGlobal;
 } instructionState_t;
 
 typedef struct {
