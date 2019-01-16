@@ -63,6 +63,8 @@ Upon receiving last txChunk (as determined by the transaction parsing) the respo
 
 Note on HMAC: We use `HMAC_SHA256(key=32 byte session key, message=(txHash,outNum,amount))` to compute the signature digest and return first 16 bytes of it. This should be resilient enough to birthday paradox and other attacks as the key is just per session and we Ledger's signing speed is slow. ❓(IOHK): Is this enough? 
 
+**IOHK vincenthz/nicolas**: we're not quite sure what is this supposed to protect from, and if that's useful for anything until we have the attested data on the ledger validated directly anyway.
+
 **Ledger transaction parsing compatibility**
 
 For security reasons, we decided that transaction parsing *should not* be future-compatible. This stems from 2 practical considerations:
