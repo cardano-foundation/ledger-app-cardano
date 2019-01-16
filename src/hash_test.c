@@ -20,7 +20,7 @@ void testcase_chunks_blake2b_512(
 	uint8_t outputBuffer[64];
 	for (unsigned i = 0; i < chunksCount; i++) {
 		uint8_t chunkBuffer[20];
-		size_t chunkSize = parseHexString(PIC(chunksHex[i]), chunkBuffer, SIZEOF(chunkBuffer));
+		size_t chunkSize = parseHexString(PTR_PIC(chunksHex[i]), chunkBuffer, SIZEOF(chunkBuffer));
 
 		blake2b_512_append(&ctx, chunkBuffer, chunkSize);
 	}

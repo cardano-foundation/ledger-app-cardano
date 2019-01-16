@@ -17,7 +17,7 @@ void handleGetVersion(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        uint16_t dataLength)
+        size_t dataLength)
 {
 	STATIC_ASSERT(APPVERSION == 5, __bad_length);
 	ASSERT(APPVERSION[0] >= '0' && APPVERSION[0] <= '9');
@@ -61,7 +61,7 @@ void handleShowAbout(
         uint8_t p1,
         uint8_t p2,
         uint8_t *dataBuffer,
-        uint16_t dataLength)
+        size_t dataLength)
 {
 
 	const char* header = "Header line";
