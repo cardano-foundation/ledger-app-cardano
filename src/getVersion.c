@@ -19,10 +19,10 @@ void handleGetVersion(
         uint8_t *dataBuffer,
         size_t dataLength)
 {
-	STATIC_ASSERT(APPVERSION == 5, __bad_length);
-	ASSERT(APPVERSION[0] >= '0' && APPVERSION[0] <= '9');
-	ASSERT(APPVERSION[2] >= '0' && APPVERSION[2] <= '9');
-	ASSERT(APPVERSION[4] >= '0' && APPVERSION[4] <= '9');
+	STATIC_ASSERT(SIZEOF(APPVERSION) == 5 + 1, __bad_length);
+	STATIC_ASSERT(APPVERSION[0] >= '0' && APPVERSION[0] <= '9', __bad_version_major);
+	STATIC_ASSERT(APPVERSION[2] >= '0' && APPVERSION[2] <= '9', __bad_version_minor);
+	STATIC_ASSERT(APPVERSION[4] >= '0' && APPVERSION[4] <= '9', __bad_version_patch);
 
 	uint8_t responseBuffer[3];
 	responseBuffer[0] = APPVERSION[0] - '0';
