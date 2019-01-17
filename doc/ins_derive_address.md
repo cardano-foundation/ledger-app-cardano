@@ -1,6 +1,8 @@
 # Derive Address
 
-Derive `v2` address for a given BIP32 path, return, and show it to the user for confirmation.
+**IOHK nicolas/vincent**: just as a note, the deterministic address recovery mechanism is describe in the BIP32, the path model used in IOHK and recommended to use is BIP44.
+
+Derive `v2` address for a given BIP44 path, return, and show it to the user for confirmation.
 We expect this call to be used for the address verification purposes (i.e., matching address on Ledger with the one on the screen).
 
 ❓(IOHK): Should we display the address to the user always or optionally? (Probably always unless there is another usecase of this call)
@@ -13,7 +15,7 @@ Note: Unlike BTC Ledger app which returns both public key and the corresponding 
 Note: Derive address rejects any path that is not at least an "address" -- currently there is no use for "addresses" representing whole account (e.g., path 44'/1815'/0') nor addresses representing chain (e.g., path 44'1815'/0'/0)
 
 ❓(IOHK): Should we restrict this to only to valid chain number (e.g., internal/external)? Or even just to an external chain? (Note: There probably isn't much reason to let the user verify change addresses but we recommend allowing it anyway)
-
+**IOHK nicolas/vincent**: you might want to provide the application a way to recover the change address (this will be useful for wallet recovery). So you need to restrict it to internal/external addresses but still allow the internal address too.
 
 **Command**
 

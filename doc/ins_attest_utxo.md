@@ -63,6 +63,8 @@ Upon receiving last txChunk (as determined by the transaction parsing) the respo
 
 Note on HMAC: We use `HMAC_SHA256(key=32 byte session key, message=(txHash,outNum,amount))` to compute the signature digest and return first 16 bytes of it. This should be resilient enough to birthday paradox and other attacks as the key is just per session and we Ledger's signing speed is slow. ❓(IOHK): Is this enough? 
 
+**IOHK vincenthz/nicolas**: we're not quite sure what is this supposed to protect from, and if that's useful for anything until we have the attested data on the ledger validated directly anyway.
+
 **Ledger transaction parsing compatibility**
 
 For security reasons, we decided that transaction parsing *should not* be future-compatible. This stems from 2 practical considerations:
@@ -136,9 +138,12 @@ On top of that, Ledger relaxes following checks:
 - Fee checks. The app *does not* verify that there is enough transaction fee.
 - ❓(VL, IOHK): should we do at least check that sum(inputs) > sum(outputs) ?
 
+
 We believe these skipped checks *are not necessary* in order to attest UTxO as the attestation's sole purpose is to **bind** together UTxO (i.e., transaction hash + output number) and amount. This can be done whenever main transaction CBOR structure parses correctly. If the attacker supplies wrong transaction data, either
 1) the Ledger app will show (from the user-perspective) unexpected amounts and the user would not confirm the transaction, or
 2) the Ledger app would show (from the user-perspective) correct amounts but the UTxO has been meddled with. UTxO is, however, referred to by the hash in the transaction under signing and as such, even if Ledger signs such transaction,  *Cardano blockchain nodes* will reject it.
+
+**IOHK vincent/nicolas**: since the transaction size, values of fees, etc. are dynamically updatable, it's probably a bad idea to verify on the ledger side/app. I would consider the addresses as opaque, the validity can be checked on the server side. this also allow a new format more transparently in the future. I don't think it's necessary to add further validity checks like `MAX_ADA`, or `sum(is) > sum(os)`, this will be enforced by the server side anyway.
 
 
 **Signing oracle**

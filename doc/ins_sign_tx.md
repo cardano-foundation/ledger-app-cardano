@@ -14,6 +14,8 @@ The main issue we are trying to address with the respect of fee calculation is t
 
 I was trying to think this out multiple times and I think b) is the best choice for now. e) would work but it is needlessly complicated and we are still left with a similar problem for the outputs (In order to get decent UX, NanoS should skip the change output from confirmations. This however means that Nano S must be able to somehow verify this change output is indeed its change. Easiest way is to either 1) supply also the derivation path and verify they match 2) extending 1) just don't bother to send the address, just a derivation path) (edited) 
 
+**IOHK vincent/nicolas**: we think c) is the best choice, since it allows modification to the format in the future, and
+it prevent from keeping the potentially large transaction binary data on the ledger memory, since we can just accumulate a digest instead. technically the input can be anything that have all the extra metadata and is streamable enough to not have to hold on to the input whilst allowing to generate the CBOR dynamically and passing it to a hashing context as bytes.
 
 # TODO(VL): rest of the document needs to be updated after we get feedback on the previous section
 
@@ -27,8 +29,8 @@ Given transaction inputs and transaction outputs (addresses + amounts), construc
 
 The Cardano ledger app uses a custom, simplified, format for streaming the transaction to be signed. The rationale behind not streaming directly the cardano raw transaction to Ledger is the following:  
 1) App needs to support [attested transaction inputs](ins_attest_utxo.md) which are not part of the standard Cardano transaction message format.
-2) App needs to support BIP32 change address outputs (Ledger should not display own change addresses to the user as this degrades UX)
-3) (TBD:❓ do we need to support this? What should be longest address Ledger can handle? Note that a resonable threshold might be 255 bytes (i.e., max 1 APDU)) App needs to support long output addresses (Cardano addresses can be >10kb long. As a consequence, Ledger cannot assume that it can safely store even a single full output address in the memory.)
+2) App needs to support BIP44 change address outputs (Ledger should not display own change addresses to the user as this degrades UX)
+3) (TBD:❓ do we need to support this? What should be longest address Ledger can handle? Note that a resonable threshold might be 255 bytes (i.e., max 1 APDU)) App needs to support long output addresses (Cardano addresses can be >10kb long. As a consequence, Ledger cannot assume that it can safely store even a single full output address in the memory.) **IOHK vincent/nicolas**: You should be fine with limiting an address size to 100 bytes.
 
 **Non-goals:** The communication protocol is designed to *ease* the Ledger App implementation (and simplify potential edge conditions). As such, the protocol might need more APDU exchanges than strictly necessary. We deem this as a good tradeoff between implementation and performance (after all, the bottleneck are user UI confirmations).
 
