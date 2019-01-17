@@ -11,8 +11,8 @@
 #include "hmac.h"
 #include "attestKey.h"
 #include "state.h"
+#include "cardano.h"
 
-const uint64_t CARDANO_ADDRESS_TYPE_PUBKEY = 0;
 static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
 
 // We do not parse addresses, just keep streaming over then
@@ -44,12 +44,12 @@ void parser_advanceInputState(attest_utxo_parser_state_t* state)
 		break;
 
 	case INPUT_EXPECT_TYPE:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_UNSIGNED, CARDANO_INPUT_TYPE_UTXO);
 		state->inputState = INPUT_EXPECT_TAG;
 		break;
 
 	case INPUT_EXPECT_TAG:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, 24);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
 		state->inputState = INPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
 		break;
 
@@ -102,7 +102,7 @@ void parser_advanceOutputState(attest_utxo_parser_state_t* state)
 		break;
 
 	case OUTPUT_EXPECT_ADDRESS_TAG:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, 24);
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
 		state->outputState = OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
 		break;
 
