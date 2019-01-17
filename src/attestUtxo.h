@@ -67,12 +67,12 @@ static const uint64_t LOVELACE_MAX_SUPPLY = __LOVELACE_MAX_SUPPLY;
 static const uint64_t LOVELACE_INVALID = __LOVELACE_INVALID;
 
 static const uint16_t ATTEST_INIT_MAGIC = 4547;
+static const uint16_t ATTEST_PARSER_INIT_MAGIC = 4647;
 
 STATIC_ASSERT(LOVELACE_MAX_SUPPLY < LOVELACE_INVALID, __paranoia);
 
-// Note(ppershing): This structure
 typedef struct {
-	uint16_t isInitialized;
+	uint16_t parserInitializedMagic;
 	// parser state
 	txMainDecoderState_t mainState;
 	txInputDecoderState_t inputState;
@@ -84,14 +84,19 @@ typedef struct {
 	uint32_t currentOutputIndex;
 	uint32_t attestedOutputIndex;
 	uint64_t outputAmount;
+} attest_utxo_parser_state_t ;
+
+typedef struct {
+	uint16_t initializedMagic;
+	attest_utxo_parser_state_t parserState;
 	blake2b_256_context_t txHashCtx;
-} attestUtxoState_t;
+} ins_attest_utxo_context_t;
 
-void advanceMainState(attestUtxoState_t *state);
-void keepParsing(attestUtxoState_t *state);
-void initAttestUtxo(attestUtxoState_t *state, int outputIndex);
+void parser_advanceMainState(attest_utxo_parser_state_t *state);
+void parser_keepParsing(attest_utxo_parser_state_t *state);
+void parser_init(attest_utxo_parser_state_t *state, int outputIndex);
 
-uint64_t getAttestedAmount(attestUtxoState_t* state);
+uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state);
 
 void handle_attestUtxo(
         uint8_t p1,

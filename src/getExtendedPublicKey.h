@@ -10,6 +10,6 @@ handler_fn_t handleGetExtendedPublicKey;
 typedef struct {
 	bip44_path_t pathSpec;
 	extendedPublicKey_t extPubKey;
-} getExtendedPublicKeyGlobal_t;
+} ins_get_ext_pubkey_context_t;
 
 #endif

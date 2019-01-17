@@ -5,7 +5,7 @@
 #include "test_utils.h"
 #include "state.h"
 
-static testsGlobal_t* ctx = &(instructionState.testsGlobal);
+static ins_tests_context_t* ctx = &(instructionState.testsContext);
 
 void _run_stream_test(stream_t* s)
 {

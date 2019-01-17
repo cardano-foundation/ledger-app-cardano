@@ -5,16 +5,18 @@
 #include "stream.h"
 #include "getExtendedPublicKey.h"
 #include "deriveAddress.h"
+#include "attestUtxo.h"
 
 typedef struct {
 	stream_t s;
-} testsGlobal_t;
+} ins_tests_context_t;
 
 typedef union {
 	// Here should go states of all instructions
-	testsGlobal_t testsGlobal;
-	getExtendedPublicKeyGlobal_t extPubKeyGlobal;
-	deriveAddressGlobal_t deriveAddressGlobal;
+	ins_tests_context_t testsContext;
+	ins_get_ext_pubkey_context_t extPubKeyContext;
+	ins_derive_address_context_t deriveAddressContext;
+	ins_attest_utxo_context_t attestUtxoContext;
 } instructionState_t;
 
 typedef struct {
