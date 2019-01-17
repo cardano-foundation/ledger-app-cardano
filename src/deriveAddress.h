@@ -12,7 +12,7 @@ void handleDeriveAddress(
 );
 
 typedef struct {
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	uint8_t addressBuffer[128];
 	size_t addressSize;
 } deriveAddressGlobal_t;

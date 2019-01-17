@@ -17,17 +17,21 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
+
+
 static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 
 static deriveAddressGlobal_t* ctx = &(instructionState.deriveAddressGlobal);
 
-static void validatePath(const path_spec_t* pathSpec)
+
+static void validatePath(const bip44_path_t* pathSpec)
 {
-	VALIDATE_PARAM(isValidCardanoBIP44Path(pathSpec));
-	// other checks are when deriving private key
-	VALIDATE_PARAM(pathSpec->length >= 5);
-	VALIDATE_PARAM(pathSpec->path[2] == (0 | HARDENED_BIP32)); // account 0
-	VALIDATE_PARAM(pathSpec->path[3] == 0 || pathSpec->path[3] == 1);
+#define VALIDATE_PATH(cond) if (!(cond)) THROW(ERR_INVALID_BIP44_PATH)
+	VALIDATE_PATH(bip44_hasValidPrefix(pathSpec));
+	VALIDATE_PATH(bip44_hasValidAccount(pathSpec));
+	VALIDATE_PATH(bip44_hasValidChainType(pathSpec));
+	VALIDATE_PATH(bip44_containsAddress(pathSpec));
+#undef VALIDATE_PATH
 }
 
 void handleDeriveAddress(
@@ -39,7 +43,7 @@ void handleDeriveAddress(
 	VALIDATE_PARAM(p1 == 0);
 	VALIDATE_PARAM(p2 == 0);
 
-	size_t parsedSize = pathSpec_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
+	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
 
 	if (parsedSize != dataSize) {
 		THROW(ERR_INVALID_DATA);

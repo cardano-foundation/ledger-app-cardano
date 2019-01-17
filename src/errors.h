@@ -34,9 +34,14 @@ enum {
 	ERR_INVALID_STATE              = 0x6E06,
 	// Some part of request data is invalid
 	ERR_INVALID_DATA               = 0x6E07,
+	// BIP44 path is rejected
+	ERR_INVALID_BIP44_PATH         = 0x6E08,
+
+	// User rejected the action
+	ERR_USER_REJECTED              = 0x6E09,
 
 	// end of errors which trigger automatic response
-	_ERR_AUTORESPOND_END           = 0x6E08,
+	_ERR_AUTORESPOND_END           = 0x6E10,
 
 	// Errors below SHOULD NOT be returned to the client
 	// Instead, leaking these to the main() scope
