@@ -15,6 +15,6 @@ typedef struct {
 	bip44_path_t pathSpec;
 	uint8_t addressBuffer[128];
 	size_t addressSize;
-} deriveAddressGlobal_t;
+} ins_derive_address_context_t;
 
 #endif

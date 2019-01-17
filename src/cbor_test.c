@@ -7,7 +7,7 @@
 #include "state.h"
 #include "utils.h"
 
-static testsGlobal_t* ctx = &(instructionState.testsGlobal);
+static ins_tests_context_t* ctx = &(instructionState.testsContext);
 
 // Test vectors are taken from
 // https://tools.ietf.org/html/rfc7049#appendix-A

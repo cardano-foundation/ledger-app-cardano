@@ -12,9 +12,9 @@ void test_attest(const char** txChunksHex, uint32_t numChunks, uint32_t outputIn
 {
 	PRINTF("test_attest %d\n", outputIndex);
 	// TODO(ppershing): this is too big for stack!
-	attestUtxoState_t state;
+	attest_utxo_parser_state_t state;
 
-	initAttestUtxo(&state, outputIndex);
+	initUtxoParser(&state, outputIndex);
 	for (unsigned i =0; i < numChunks; i++) {
 		stream_appendFromHexString(& state.stream, PTR_PIC(txChunksHex[i]));
 		BEGIN_TRY {

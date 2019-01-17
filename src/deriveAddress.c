@@ -21,7 +21,7 @@
 
 static void io_respond_with_address(uint8_t* addressBuffer, size_t addressSize);
 
-static deriveAddressGlobal_t* ctx = &(instructionState.deriveAddressGlobal);
+static ins_derive_address_context_t* ctx = &(instructionState.deriveAddressContext);
 
 
 static void validatePath(const bip44_path_t* pathSpec)

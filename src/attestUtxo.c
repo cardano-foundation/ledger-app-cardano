@@ -10,11 +10,13 @@
 #include "hash.h"
 #include "hmac.h"
 #include "attestKey.h"
+#include "state.h"
 
 const uint64_t CARDANO_ADDRESS_TYPE_PUBKEY = 0;
+static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
 
 // We do not parse addresses, just keep streaming over then
-void skipThroughAddressBytes(attestUtxoState_t* state)
+void skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 	stream_ensureAvailableBytes(stream, 1); // We have to consume at least something
@@ -27,7 +29,7 @@ void skipThroughAddressBytes(attestUtxoState_t* state)
 }
 
 // Performs a single transition on the Input parser
-void advanceInputState(attestUtxoState_t* state)
+void advanceInputState(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 	switch (state->inputState) {
@@ -80,7 +82,7 @@ void advanceInputState(attestUtxoState_t* state)
 }
 
 // Makes one step on the transaction Output parser
-void advanceOutputState(attestUtxoState_t* state)
+void advanceOutputState(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = & state->stream;
 	switch(state-> outputState) {
@@ -149,20 +151,20 @@ void advanceOutputState(attestUtxoState_t* state)
 	}
 }
 
-void initInputParser(attestUtxoState_t *state)
+void initInputParser(attest_utxo_parser_state_t *state)
 {
 	MEMCLEAR(& state->inputState, txInputDecoderState_t);
 	state->inputState = INPUT_PARSING_NOT_STARTED;
 }
 
-void initOutputParser(attestUtxoState_t *state)
+void initOutputParser(attest_utxo_parser_state_t *state)
 {
 	MEMCLEAR(& state->outputState, txOutputDecoderState_t);
 	state->outputState = OUTPUT_PARSING_NOT_STARTED;
 }
 
 // Makes one parsing step or throws ERR_NOT_ENOUGH_INPUT
-void advanceMainState(attestUtxoState_t *state)
+void advanceMainState(attest_utxo_parser_state_t *state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 	switch (state->mainState) {
@@ -240,22 +242,21 @@ void advanceMainState(attestUtxoState_t *state)
 	}
 }
 
-void initAttestUtxo(
-        attestUtxoState_t* state,
+void initUtxoParser(
+        attest_utxo_parser_state_t* state,
         int outputIndex
 )
 {
-	MEMCLEAR(state, attestUtxoState_t);
+	MEMCLEAR(state, attest_utxo_parser_state_t);
 	state->mainState = MAIN_PARSING_NOT_STARTED;
 	state->outputAmount = LOVELACE_INVALID;
 	state->attestedOutputIndex = outputIndex;
 	stream_init(& state->stream);
-	state->isInitialized = ATTEST_INIT_MAGIC;
-	blake2b_256_init(& state->txHashCtx);
+	state->parserInitializedMagic = ATTEST_PARSER_INIT_MAGIC;
 }
 
 // TODO(ppershing): revisit these conditions
-uint64_t getAttestedAmount(attestUtxoState_t* state)
+uint64_t getAttestedAmount(attest_utxo_parser_state_t* state)
 {
 	if (state->mainState != MAIN_FINISHED) return LOVELACE_INVALID;
 	if (state->currentOutputIndex <= state->attestedOutputIndex) return LOVELACE_INVALID;
@@ -263,15 +264,15 @@ uint64_t getAttestedAmount(attestUtxoState_t* state)
 	return state->outputAmount;
 }
 
-bool isInitialized(attestUtxoState_t* state)
+static bool parserIsInitialized(attest_utxo_parser_state_t* state)
 {
-	return state->isInitialized == ATTEST_INIT_MAGIC;
+	return state->parserInitializedMagic == ATTEST_PARSER_INIT_MAGIC;
 }
 
 // throws ERR_NOT_ENOUGH_INPUT when cannot proceed further
-void keepParsing(attestUtxoState_t* state)
+void keepParsing(attest_utxo_parser_state_t* state)
 {
-	ASSERT(isInitialized(state));
+	ASSERT(parserIsInitialized(state));
 
 	while(state -> mainState != MAIN_FINISHED) {
 		advanceMainState(state);
@@ -280,7 +281,7 @@ void keepParsing(attestUtxoState_t* state)
 
 
 // TODO: move this to the global state union
-attestUtxoState_t global_state;
+attest_utxo_parser_state_t global_state;
 
 enum {
 	P1_INITIAL = 0x01,
@@ -288,75 +289,77 @@ enum {
 };
 
 
-void attestUtxo_sendResponse(attestUtxoState_t* state)
+void attestUtxo_sendResponse()
 {
 	// Response is (txHash, outputNumber, outputAmount, HMAC)
-	uint8_t responseBuffer[32 + 4 + 8 + 16]; // Note: we have short HMAC
-	uint8_t hmacBuffer[32]; // Full HMAC
-
-	size_t pos = 0;
-
-	// txHash
-	blake2b_256_finalize(&state ->txHashCtx, responseBuffer + pos, 32);
-	pos += 32;
-
-	// outputNumber
-	u4be_write(responseBuffer + pos, state->attestedOutputIndex);
-	pos += 4;
-
 	// outputAmount
-	uint64_t amount = getAttestedAmount(state);
+	uint64_t amount = getAttestedAmount(&ctx->parserState);
 	if (amount == LOVELACE_INVALID) {
 		THROW(ERR_INVALID_DATA);
 	}
-	u8be_write(responseBuffer + pos, amount);
-	pos += 8;
 
-	// HMAC
+	struct {
+		struct {
+			uint8_t txHash[32];
+			uint8_t index[4];
+			uint8_t amount[8];
+		} data;
+		uint8_t hmac[16];
+	} response;
+
+
+	blake2b_256_finalize(&ctx ->txHashCtx, response.data.txHash, SIZEOF(response.data.txHash));
+	u4be_write(response.data.index, ctx->parserState.attestedOutputIndex);
+	u8be_write(response.data.amount, amount);
+
+
+	// attested HMAC
+	uint8_t hmacBuffer[32];
 	hmac_sha256(
 	        attestKeyData.key, SIZEOF(attestKeyData.key),
-	        responseBuffer, pos, // all of response so far
-	        hmacBuffer, 32
+	        (uint8_t*) &response.data, SIZEOF(response.data),
+	        hmacBuffer, SIZEOF(hmacBuffer)
 	);
-	os_memmove(responseBuffer + pos, hmacBuffer, 16);
-	pos += 16;
 
-	ASSERT(pos == SIZEOF(responseBuffer));
-	io_send_buf(SUCCESS, responseBuffer, pos);
+	os_memmove(response.hmac, hmacBuffer, SIZEOF(response.hmac));
+
+	io_send_buf(SUCCESS, (uint8_t*) &response, SIZEOF(response));
 }
 
 void handle_attestUtxo(
         uint8_t p1,
         uint8_t p2,
         uint8_t* dataBuffer,
-        size_t dataLength
+        size_t dataSize
 )
 {
-	attestUtxoState_t* state = &global_state;
-
 	VALIDATE_REQUEST_PARAM(p1 == P1_INITIAL || p1 == P1_CONTINUE);
 
 	if (p1 == P1_INITIAL) {
 		VALIDATE_REQUEST_PARAM(p2 == 0);
-		VALIDATE_REQUEST_PARAM(dataLength >= 4);
+		VALIDATE_REQUEST_PARAM(dataSize >= 4);
+
 		uint32_t outputIndex = u4be_read(dataBuffer);
-		initAttestUtxo(state, outputIndex);
+		initUtxoParser( &ctx->parserState, outputIndex);
+		blake2b_256_init(& ctx->txHashCtx);
+
+		ctx->initializedMagic = ATTEST_INIT_MAGIC;
 		// Skip outputIndex
 		dataBuffer += 4;
-		dataLength -= 4;
+		dataSize -= 4;
 	} else {
-		if (!isInitialized(state)) {
+		if (ctx->initializedMagic != ATTEST_INIT_MAGIC) {
 			THROW(ERR_INVALID_STATE);
 		}
 	}
 
 	BEGIN_TRY {
 		TRY {
-			stream_appendData(&state->stream, dataBuffer, dataLength);
-			blake2b_256_append(& state->txHashCtx, dataBuffer, dataLength);
-			keepParsing(state);
-			ASSERT(state->mainState == MAIN_FINISHED);
-			attestUtxo_sendResponse(state);
+			stream_appendData(& ctx->parserState.stream, dataBuffer, dataSize);
+			blake2b_256_append(& ctx->txHashCtx, dataBuffer, dataSize);
+			keepParsing(& ctx->parserState);
+			ASSERT(ctx->parserState.mainState == MAIN_FINISHED);
+			attestUtxo_sendResponse();
 			ui_idle();
 		}
 		CATCH(ERR_NOT_ENOUGH_INPUT)

@@ -15,7 +15,7 @@
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
-static getExtendedPublicKeyGlobal_t* ctx = &(instructionState.extPubKeyGlobal);
+static ins_get_ext_pubkey_context_t* ctx = &(instructionState.extPubKeyContext);
 
 
 // forward declaration
