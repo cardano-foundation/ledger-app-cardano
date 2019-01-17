@@ -8,7 +8,7 @@
 handler_fn_t handleGetExtendedPublicKey;
 
 typedef struct {
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	extendedPublicKey_t extPubKey;
 } getExtendedPublicKeyGlobal_t;
 

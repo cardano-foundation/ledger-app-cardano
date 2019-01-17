@@ -14,14 +14,16 @@
 
 
 void derivePrivateKey(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         chain_code_t* chainCode,
         privateKey_t* privateKey
 )
 {
-	if (!isValidBIP44Prefix(pathSpec)) {
-		THROW(ERR_INVALID_REQUEST_PARAMETERS);
+	if (!bip44_hasValidPrefix(pathSpec)) {
+		THROW(ERR_INVALID_BIP44_PATH);
 	}
+	// Sanity check
+	ASSERT(pathSpec->length < ARRAY_LEN(pathSpec->path));
 
 	uint8_t privateKeyRawBuffer[64];
 
@@ -91,7 +93,7 @@ void extractRawPublicKey(
 
 // pub_key + chain_code
 void deriveExtendedPublicKey(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         extendedPublicKey_t* out
 )
 {
@@ -188,7 +190,7 @@ void addressRootFromExtPubKey(
 }
 
 uint32_t deriveAddress(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         uint8_t* outBuffer, size_t outSize
 )
 {

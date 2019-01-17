@@ -23,14 +23,14 @@ typedef struct {
 } extendedPublicKey_t;
 
 void derivePrivateKey(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         chain_code_t* chainCode, // 32 byte output
         privateKey_t* privateKey // output
 );
 
 
 void deriveExtendedPublicKey(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         extendedPublicKey_t* out
 );
 
@@ -45,7 +45,7 @@ void extractRawPublicKey(
 );
 
 uint32_t deriveAddress(
-        const path_spec_t* pathSpec,
+        const bip44_path_t* pathSpec,
         uint8_t* outBuffer, size_t outSize
 );
 

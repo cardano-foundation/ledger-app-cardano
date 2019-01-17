@@ -11,7 +11,7 @@
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
 #define UNWRAP(...) __VA_ARGS__
 
-void pathSpec_init(path_spec_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
+void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
 {
 	pathSpec->length = pathLength;
 	os_memmove(pathSpec->path, pathArray, pathLength * 4);
@@ -35,7 +35,7 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
 	uint8_t expected[64];
@@ -109,7 +109,7 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
 	chain_code_t chainCode;
@@ -169,7 +169,7 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
@@ -206,7 +206,7 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	PRINTF_PATH(path, pathLen);
 	PRINTF("\n");
 
-	path_spec_t pathSpec;
+	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
 	uint8_t address[128];

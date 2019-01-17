@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "ux.h"
 #include "io.h"
+#include "uiHelpers.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
@@ -18,14 +19,16 @@ static getExtendedPublicKeyGlobal_t* ctx = &(instructionState.extPubKeyGlobal);
 
 
 // forward declaration
-static void respond_with_public_key(const extendedPublicKey_t*);
+static void respond_with_extended_public_key();
+static void default_reject();
 
-
-static void validatePath(const path_spec_t* pathSpec)
+static void validatePath(const bip44_path_t* pathSpec)
 {
-	VALIDATE_PARAM(isValidBIP44Prefix(&ctx->pathSpec));
-	VALIDATE_PARAM(pathSpec->length > BIP44_I_ACCOUNT);
-	VALIDATE_PARAM(isAcceptableBIP44AccountValue(pathSpec->path[BIP44_I_ACCOUNT]));
+#define VALIDATE_PATH(cond) if (!(cond)) THROW(ERR_INVALID_BIP44_PATH)
+
+	VALIDATE_PATH(bip44_hasValidPrefix(pathSpec));
+	VALIDATE_PATH(bip44_hasValidAccount(pathSpec));
+#undef VALIDATE_PATH
 };
 
 
@@ -38,7 +41,7 @@ void handleGetExtendedPublicKey(
 	VALIDATE_PARAM(p1 == 0);
 	VALIDATE_PARAM(p2 == 0);
 
-	size_t parsedSize = pathSpec_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
+	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
 
 	if (parsedSize != dataSize) {
 		THROW(ERR_INVALID_DATA);
@@ -51,11 +54,30 @@ void handleGetExtendedPublicKey(
 	        & ctx->extPubKey
 	);
 
-	respond_with_public_key(& ctx->extPubKey);
+	const bool REQUIRE_CONFIRM = false;
+	if (REQUIRE_CONFIRM) {
+		displayConfirm(
+		        "Export public key?",
+		        "",
+		        respond_with_extended_public_key,
+		        default_reject
+		);
+	} else {
+		respond_with_extended_public_key();
+	}
 }
 
-static void respond_with_public_key(const extendedPublicKey_t* extPubKey)
+// TODO(ppershing): move to uiHelpers?
+static void default_reject()
 {
+	io_send_buf(ERR_USER_REJECTED, NULL, 0);
+	ui_idle();
+}
+
+static void respond_with_extended_public_key()
+{
+	const extendedPublicKey_t* extPubKey = & ctx->extPubKey;
+
 	// Note: we reuse G_io_apdu_buffer!
 	uint8_t* responseBuffer = G_io_apdu_buffer;
 	size_t responseMaxSize = SIZEOF(G_io_apdu_buffer);

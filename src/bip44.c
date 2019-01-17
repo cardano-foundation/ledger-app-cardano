@@ -5,7 +5,10 @@
 #include <stdbool.h>
 #include "endian.h"
 
-size_t pathSpec_parseFromWire(path_spec_t* pathSpec, uint8_t *dataBuffer, size_t dataSize)
+size_t bip44_parseFromWire(
+        bip44_path_t* pathSpec,
+        uint8_t *dataBuffer, size_t dataSize
+)
 {
 #define VALIDATE(cond) if (!(cond)) THROW(ERR_INVALID_DATA)
 
@@ -35,12 +38,10 @@ bool isHardened(uint32_t value)
 	return value == (value | HARDENED_BIP32);
 }
 
-bool isValidBIP44Prefix(const path_spec_t* pathSpec)
+bool bip44_hasValidPrefix(const bip44_path_t* pathSpec)
 {
 	const uint32_t HD = HARDENED_BIP32; // shorthand
 #define CHECK(cond) if (!(cond)) return false
-
-	CHECK(pathSpec->length <= ARRAY_LEN(pathSpec->path));
 	// Have at least account
 	CHECK(pathSpec->length > BIP44_I_ACCOUNT);
 
@@ -68,9 +69,53 @@ bool isValidBIP44ChainValue(uint32_t value)
 
 static const uint32_t MAX_ACCEPTED_ACCOUNT = 10;
 
-bool isAcceptableBIP44AccountValue(uint32_t value)
+// {{{ Account
+bool bip44_containsAccount(const bip44_path_t* pathSpec)
 {
-	if (!isHardened(value)) return false;
-	uint32_t raw = value & (!HARDENED_BIP32);
-	return raw < MAX_ACCEPTED_ACCOUNT;
+	return pathSpec->length > BIP44_I_ACCOUNT;
+}
+
+uint32_t bip44_getAccount(const bip44_path_t* pathSpec)
+{
+	ASSERT(pathSpec->length > BIP44_I_ACCOUNT);
+	return pathSpec->path[BIP44_I_ACCOUNT];
+}
+
+bool bip44_hasValidAccount(const bip44_path_t* pathSpec)
+{
+	if (!bip44_containsAccount(pathSpec)) return false;
+	uint32_t account = bip44_getAccount(pathSpec);
+	if (!isHardened(account)) return false;
+	// Un-harden
+	account = account & (!HARDENED_BIP32);
+	return account < MAX_ACCEPTED_ACCOUNT;
+}
+// }}}
+
+
+// {{{ Chain type
+bool bip44_containsChainType(const bip44_path_t* pathSpec)
+{
+	return pathSpec->length > BIP44_I_CHAIN;
+}
+
+uint32_t bip44_getChainTypeValue(const bip44_path_t* pathSpec)
+{
+	ASSERT(pathSpec->length > BIP44_I_CHAIN);
+	return pathSpec->path[BIP44_I_CHAIN];
+}
+
+bool bip44_hasValidChainType(const bip44_path_t* pathSpec)
+{
+	if (!bip44_containsChainType(pathSpec)) return false;
+	uint32_t chainType = bip44_getChainTypeValue(pathSpec);
+
+	return (chainType == CARDANO_CHAIN_INTERNAL) || (chainType == CARDANO_CHAIN_EXTERNAL);
+}
+
+// }}}
+
+bool bip44_containsAddress(const bip44_path_t* pathSpec)
+{
+	return pathSpec->length > BIP44_I_ADDRESS;
 }
