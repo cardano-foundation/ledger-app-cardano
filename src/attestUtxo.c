@@ -297,6 +297,7 @@ void attestUtxo_sendResponse()
 		uint8_t hmac[16];
 	} response;
 
+	STATIC_ASSERT(SIZEOF(response) == 32+4+8+16, "response is packed");
 
 	blake2b_256_finalize(&ctx ->txHashCtx, response.data.txHash, SIZEOF(response.data.txHash));
 	u4be_write(response.data.index, ctx->parserState.attestedOutputIndex);
@@ -311,6 +312,7 @@ void attestUtxo_sendResponse()
 	        hmacBuffer, SIZEOF(hmacBuffer)
 	);
 
+	STATIC_ASSERT(SIZEOF(response.hmac) <= SIZEOF(hmacBuffer), "buffer sanity check");
 	os_memmove(response.hmac, hmacBuffer, SIZEOF(response.hmac));
 
 	io_send_buf(SUCCESS, (uint8_t*) &response, SIZEOF(response));

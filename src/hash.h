@@ -26,7 +26,7 @@ enum {
 		cipher##_##bits##_context_t* ctx \
 	) \
 	{ \
-		STATIC_ASSERT( bits == CIPHER##_##bits##_SIZE * 8, __inconsistent_size); \
+		STATIC_ASSERT( bits == CIPHER##_##bits##_SIZE * 8, "bad cipher size"); \
 		cx_##cipher##_init( \
 			& ctx->cx_ctx, \
 		CIPHER##_##bits##_SIZE * 8 \

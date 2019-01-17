@@ -5,11 +5,11 @@
 #include "utils.h"
 
 // paranoia
-STATIC_ASSERT(STREAM_BUFFER_SIZE == SIZEOF(((stream_t*) 0)->buffer), __stream_buffer_bad_size);
+STATIC_ASSERT(STREAM_BUFFER_SIZE == SIZEOF(((stream_t*) 0)->buffer), "stream buffer bad size");
 
 void stream_init(stream_t* stream)
 {
-	STATIC_ASSERT(SIZEOF(*stream) > STREAM_BUFFER_SIZE, __paranoia);
+	STATIC_ASSERT(SIZEOF(*stream) > STREAM_BUFFER_SIZE, "paranoia");
 	os_memset(stream, 0, SIZEOF(*stream));
 	stream->isInitialized = STREAM_INIT_MAGIC;
 }

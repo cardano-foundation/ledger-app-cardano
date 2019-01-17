@@ -69,7 +69,7 @@ static const uint64_t LOVELACE_INVALID = __LOVELACE_INVALID;
 static const uint16_t ATTEST_INIT_MAGIC = 4547;
 static const uint16_t ATTEST_PARSER_INIT_MAGIC = 4647;
 
-STATIC_ASSERT(LOVELACE_MAX_SUPPLY < LOVELACE_INVALID, __paranoia);
+STATIC_ASSERT(LOVELACE_MAX_SUPPLY < LOVELACE_INVALID, "bad LOVELACE_INVALID");
 
 typedef struct {
 	uint16_t parserInitializedMagic;

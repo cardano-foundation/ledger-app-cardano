@@ -42,7 +42,7 @@
 // inferred type have the same size.
 #define MEMCLEAR(ptr, expected_type) \
 { \
-    STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), __safe_memclear); \
+    STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), "bad memclear parameters"); \
     os_memset(ptr, 0, sizeof(expected_type)); \
 }
 
