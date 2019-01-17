@@ -9,7 +9,7 @@ Could be called at any time
 
 |Field|Value|
 |-----|-----|
-| INS | ❓ |
+| INS | `0x01` |
 | P1 | unused |
 | P2 | unused |
 | Lc | 0 |
