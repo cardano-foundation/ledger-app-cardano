@@ -54,22 +54,10 @@ bool bip44_hasValidPrefix(const bip44_path_t* pathSpec)
 #undef CHECK
 }
 
-// change addresses
-static const uint32_t CARDANO_CHAIN_INTERNAL = 1;
-// public addresses
-static const uint32_t CARDANO_CHAIN_EXTERNAL = 0;
 
-bool isValidBIP44ChainValue(uint32_t value)
-{
-	return (
-	               (value == CARDANO_CHAIN_INTERNAL) ||
-	               (value == CARDANO_CHAIN_EXTERNAL)
-	       );
-}
-
+// Account
 static const uint32_t MAX_ACCEPTED_ACCOUNT = 10;
 
-// {{{ Account
 bool bip44_containsAccount(const bip44_path_t* pathSpec)
 {
 	return pathSpec->length > BIP44_I_ACCOUNT;
@@ -90,10 +78,11 @@ bool bip44_hasValidAccount(const bip44_path_t* pathSpec)
 	account = account & (!HARDENED_BIP32);
 	return account < MAX_ACCEPTED_ACCOUNT;
 }
-// }}}
 
+// ChainType
+static const uint32_t CARDANO_CHAIN_INTERNAL = 1;
+static const uint32_t CARDANO_CHAIN_EXTERNAL = 0;
 
-// {{{ Chain type
 bool bip44_containsChainType(const bip44_path_t* pathSpec)
 {
 	return pathSpec->length > BIP44_I_CHAIN;
@@ -113,7 +102,7 @@ bool bip44_hasValidChainType(const bip44_path_t* pathSpec)
 	return (chainType == CARDANO_CHAIN_INTERNAL) || (chainType == CARDANO_CHAIN_EXTERNAL);
 }
 
-// }}}
+// Address
 
 bool bip44_containsAddress(const bip44_path_t* pathSpec)
 {
