@@ -82,7 +82,7 @@ static void respond_with_extended_public_key()
 	uint8_t* responseBuffer = G_io_apdu_buffer;
 	size_t responseMaxSize = SIZEOF(G_io_apdu_buffer);
 
-	STATIC_ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE, __bad_ext_pub_key_size);
+	STATIC_ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE, "bad extended public key size");
 
 	size_t outSize = 1 + EXTENDED_PUBKEY_SIZE;
 	ASSERT(outSize <= responseMaxSize);

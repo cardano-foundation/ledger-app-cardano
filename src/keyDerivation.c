@@ -27,13 +27,13 @@ void derivePrivateKey(
 
 	uint8_t privateKeyRawBuffer[64];
 
-	STATIC_ASSERT(SIZEOF(chainCode->code) == 32, __bad_length);
+	STATIC_ASSERT(SIZEOF(chainCode->code) == 32, "bad chain code length");
 	os_memset(chainCode->code, 0, SIZEOF(chainCode->code));
 
 	BEGIN_TRY {
 		TRY {
-			STATIC_ASSERT(CX_APILEVEL >= 5, unsupported_api_level);
-			STATIC_ASSERT(SIZEOF(privateKey->d) == 64, __bad_length);
+			STATIC_ASSERT(CX_APILEVEL >= 5, "unsupported api level");
+			STATIC_ASSERT(SIZEOF(privateKey->d) == 64, "bad private key length");
 
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
@@ -78,7 +78,7 @@ void extractRawPublicKey(
 {
 	// copy public key little endian to big endian
 	ASSERT(outSize == 32);
-	STATIC_ASSERT(SIZEOF(publicKey->W) == 65, __bad_length);
+	STATIC_ASSERT(SIZEOF(publicKey->W) == 65, "bad public key length");
 
 	uint8_t i;
 	for (i = 0; i < 32; i++) {
@@ -100,7 +100,7 @@ void deriveExtendedPublicKey(
 	privateKey_t privateKey;
 	chain_code_t chainCode;
 
-	STATIC_ASSERT(SIZEOF(*out) == CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE, __bad_size_1);
+	STATIC_ASSERT(SIZEOF(*out) == CHAIN_CODE_SIZE + PUBLIC_KEY_SIZE, "bad ext pub key size");
 
 	BEGIN_TRY {
 		TRY {
@@ -115,13 +115,13 @@ void deriveExtendedPublicKey(
 
 			deriveRawPublicKey(&privateKey, &publicKey);
 
-			STATIC_ASSERT(SIZEOF(out->pubKey) == PUBLIC_KEY_SIZE, __bad_size_2);
+			STATIC_ASSERT(SIZEOF(out->pubKey) == PUBLIC_KEY_SIZE, "bad pub key size");
 
 			extractRawPublicKey(&publicKey, out->pubKey, SIZEOF(out->pubKey));
 
 			// Chain code (we copy it second to avoid mid-updates extractRawPublicKey throws
-			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(out->chainCode), __bad_size_3);
-			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(chainCode.code), __bad_size_4);
+			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(out->chainCode), "bad chain code size");
+			STATIC_ASSERT(CHAIN_CODE_SIZE == SIZEOF(chainCode.code), "bad chain code size");
 			os_memmove(out->chainCode, chainCode.code, CHAIN_CODE_SIZE);
 		}
 		FINALLY {

@@ -4,7 +4,11 @@
 #include <stdint.h>
 #include "errors.h"
 
-#define STATIC_ASSERT(COND,MSG) typedef char static_assert__##MSG[(COND)?1:-1] __attribute__((unused))
+// from https://stackoverflow.com/questions/19343205/c-concatenating-file-and-line-macros
+#define _TO_STR1_(x) #x
+#define _TO_STR2_(x) _TO_STR1_(x)
+
+#define STATIC_ASSERT _Static_assert
 
 extern void assert(int cond, const char* msgStr);
 
@@ -12,10 +16,6 @@ extern void assert(int cond, const char* msgStr);
 // because it captures reader's attention.
 #define ASSERT_WITH_MSG(cond, msg) assert(cond, msg)
 
-
-// from https://stackoverflow.com/questions/19343205/c-concatenating-file-and-line-macros
-#define _TO_STR1_(x) #x
-#define _TO_STR2_(x) _TO_STR1_(x)
 
 #define _MAX_ASSERT_LENGTH_ 25
 // Shortens a string literal by skipping some prefix

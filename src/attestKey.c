@@ -14,7 +14,7 @@ static uint8_t P2_UNUSED = 0x00;
 attestKeyData_t attestKeyData;
 
 // Sanity check
-STATIC_ASSERT(sizeof(attestKeyData.key) == ATTEST_KEY_SIZE, __bad_size);
+STATIC_ASSERT(sizeof(attestKeyData.key) == ATTEST_KEY_SIZE, "bad ATTEST_KEY_SIZE");
 
 // Should be called at app startup
 void attestKey_initialize()

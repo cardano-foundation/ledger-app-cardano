@@ -19,7 +19,7 @@ static confirmState_t* confirmState = &(displayState.confirm);
 #define ID_BTN_LEFT 0x01
 #define ID_BTN_RIGHT 0x02
 
-STATIC_ASSERT(sizeof(uint8_t) == sizeof(char), __wrong_char_size);
+STATIC_ASSERT(sizeof(uint8_t) == sizeof(char), "bad char size");
 
 // {{{ scrollingText
 static const bagl_element_t ui_scrollingText[] = {
