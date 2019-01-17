@@ -93,11 +93,11 @@ typedef struct {
 	blake2b_256_context_t txHashCtx;
 } ins_attest_utxo_context_t;
 
-void advanceMainState(attest_utxo_parser_state_t *state);
-void keepParsing(attest_utxo_parser_state_t *state);
-void initUtxoParser(attest_utxo_parser_state_t *state, int outputIndex);
+void parser_advanceMainState(attest_utxo_parser_state_t *state);
+void parser_keepParsing(attest_utxo_parser_state_t *state);
+void parser_init(attest_utxo_parser_state_t *state, int outputIndex);
 
-uint64_t getAttestedAmount(attest_utxo_parser_state_t* state);
+uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state);
 
 void handle_attestUtxo(
         uint8_t p1,
