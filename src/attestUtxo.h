@@ -86,7 +86,6 @@ typedef struct {
 	uint64_t outputAmount;
 } attest_utxo_parser_state_t ;
 
-// Note(ppershing): This structure
 typedef struct {
 	uint16_t initializedMagic;
 	attest_utxo_parser_state_t parserState;
