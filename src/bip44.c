@@ -4,6 +4,7 @@
 #include "utils.h"
 #include <stdbool.h>
 #include "endian.h"
+#include <string.h>
 
 size_t bip44_parseFromWire(
         bip44_path_t* pathSpec,
@@ -107,4 +108,46 @@ bool bip44_hasValidChainType(const bip44_path_t* pathSpec)
 bool bip44_containsAddress(const bip44_path_t* pathSpec)
 {
 	return pathSpec->length > BIP44_I_ADDRESS;
+}
+
+
+// TODO(ppershing): this function needs to be thoroughly tested
+// on small outputSize
+void bip44_format(const bip44_path_t* pathSpec, char* out, size_t outSize)
+{
+	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
+	// We have to have space for terminating null
+	ASSERT(outSize > 0);
+	char* ptr = out;
+	char* end = (out + outSize);
+
+#define WRITE(fmt, ...) \
+	{ \
+		ASSERT(ptr <= end); \
+		size_t availableSize = end - ptr; \
+		/* Note(ppershing): We do not bother checking return */ \
+		/* value of snprintf as it always returns 0. */ \
+		/* Go figure out ... */ \
+		snprintf(ptr, availableSize, fmt, ##__VA_ARGS__); \
+		size_t res = strlen(ptr); \
+		/* TODO(better error handling) */ \
+		ASSERT(res + 1 < availableSize); \
+		ptr += res; \
+	}
+
+	WRITE("m");
+
+	ASSERT(pathSpec->length < ARRAY_LEN(pathSpec->path));
+
+	for (size_t i = 0; i < pathSpec->length; i++) {
+		uint32_t value = pathSpec->path[i];
+
+		if ((value & HARDENED_BIP32) == HARDENED_BIP32) {
+			WRITE("/%d'", (int) (value & ~HARDENED_BIP32));
+		} else {
+			WRITE("/%d", (int) value);
+		}
+	}
+
+	ASSERT(ptr < end);
 }

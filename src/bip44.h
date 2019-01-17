@@ -47,4 +47,6 @@ bool bip44_containsAddress(const bip44_path_t* pathSpec);
 
 bool isHardened(uint32_t value);
 
+void bip44_format(const bip44_path_t*, char* out, size_t outSize);
+
 #endif

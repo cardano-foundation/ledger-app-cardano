@@ -17,26 +17,22 @@ void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t pathLen
 	os_memmove(pathSpec->path, pathArray, pathLength * 4);
 }
 
-void PRINTF_PATH(const uint32_t* path, uint32_t pathLen)
+
+void PRINTF_bip44(const bip44_path_t* pathSpec)
 {
-	for (uint32_t i = 0; i < pathLen; i++) {
-		uint32_t id = path[i];
-		if (id & HARDENED_BIP32) {
-			PRINTF("/%d'", id & ~HARDENED_BIP32);
-		} else {
-			PRINTF("/%d", id);
-		}
-	}
-}
+	char tmp[100];
+	bip44_format(pathSpec, tmp, SIZEOF(tmp));
+	PRINTF("%s", tmp);
+};
 
 void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_derivePrivateKey ");
-	PRINTF_PATH(path, pathLen);
-	PRINTF("\n");
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
+	PRINTF_bip44(&pathSpec);
+	PRINTF("\n");
 
 	uint8_t expected[64];
 	parseHexString(expectedHex, expected, SIZEOF(expected));
@@ -97,20 +93,21 @@ void testPrivateKeyDerivation()
 	    EXPECT_THROWS( testcase_derivePrivateKey(path, ARRAY_LEN(path), ""), error_ ); \
 	}
 
-	TESTCASE( (HD + 44, HD + 1815), ERR_INVALID_REQUEST_PARAMETERS);
-	TESTCASE( (HD + 44, 1815, HD + 1), ERR_INVALID_REQUEST_PARAMETERS);
-	TESTCASE( (HD + 44, HD + 33, HD + 1), ERR_INVALID_REQUEST_PARAMETERS);
+	TESTCASE( (HD + 44, HD + 1815), ERR_INVALID_BIP44_PATH);
+	TESTCASE( (HD + 44, 1815, HD + 1), ERR_INVALID_BIP44_PATH);
+	TESTCASE( (HD + 44, HD + 33, HD + 1), ERR_INVALID_BIP44_PATH);
 #undef TESTCASE
 }
 
 void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expected)
 {
 	PRINTF("testcase_derivePublicKey ");
-	PRINTF_PATH(path, pathLen);
-	PRINTF("\n");
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
+
+	PRINTF_bip44(&pathSpec);
+	PRINTF("\n");
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
@@ -163,14 +160,15 @@ void testPublicKeyDerivation()
 void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_deriveChainCode ");
-	PRINTF_PATH(path, pathLen);
-	PRINTF("\n");
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
+
+	PRINTF_bip44(&pathSpec);
+	PRINTF("\n");
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
@@ -203,11 +201,12 @@ void testChainCodeDerivation()
 void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expected)
 {
 	PRINTF("testcase_deriveAddress ");
-	PRINTF_PATH(path, pathLen);
-	PRINTF("\n");
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
+
+	PRINTF_bip44(&pathSpec);
+	PRINTF("\n");
 
 	uint8_t address[128];
 	os_memset(address, 0, 128);
