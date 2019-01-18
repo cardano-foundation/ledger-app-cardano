@@ -39,6 +39,10 @@ enum {
 	CBOR_TYPE_INDEF_END    = CBOR_TYPE_PRIMITIVES + CBOR_INDEF,
 };
 
+enum {
+	CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING = 24,
+};
+
 typedef struct {
 	uint8_t type;
 	uint8_t width; // Contains number of *additional* bytes carrying the value

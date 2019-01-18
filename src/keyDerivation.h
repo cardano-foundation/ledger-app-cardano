@@ -49,5 +49,11 @@ uint32_t deriveAddress(
         uint8_t* outBuffer, size_t outSize
 );
 
+size_t cborEncodePubkeyAddress(
+        const uint8_t* addressRoot, size_t addressRootSize,
+        uint8_t* outBuffer, size_t outSize
+        /* potential attributes */
+);
+
 void run_key_derivation_test();
 #endif
