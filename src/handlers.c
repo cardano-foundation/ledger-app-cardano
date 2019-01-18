@@ -19,23 +19,23 @@
 
 enum {
 	// 0x0* - app status calls
-	INS_GET_VERSION   = 0x00,
-	INS_SHOW_ABOUT    = 0x02,
+	INS_GET_VERSION       = 0x00,
+	INS_SHOW_ABOUT        = 0x02,
 
 	// 0x1* - public-key/address related
-	INS_GET_PUB_KEY   = 0x10,
-	INS_DERIVE_ADDRESS   = 0x11,
+	INS_GET_PUB_KEY       = 0x10,
+	INS_DERIVE_ADDRESS    = 0x11,
 
 	// 0x2* - signing-transaction related
-	INS_ATTEST_UTXO = 0x20,
+	INS_ATTEST_UTXO       = 0x20,
 
 	#ifdef DEVEL
 	// 0xF* - debug_mode related
-	INS_RUN_TESTS     = 0xF0,
+	INS_RUN_TESTS         = 0xF0,
 	// 0xF1 reserved for INS_SET_HEADLESS_INTERACTION
 	// session key used for attestation
-	INS_GET_ATTEST_KEY = 0xF2,
-	INS_SET_ATTEST_KEY = 0xF3,
+	INS_GET_ATTEST_KEY    = 0xF2,
+	INS_SET_ATTEST_KEY    = 0xF3,
 
 	#endif
 };
