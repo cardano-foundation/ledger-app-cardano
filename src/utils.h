@@ -63,4 +63,29 @@
 
 #define ITERATE(it, arr) for (__typeof__(&(arr[0])) it = BEGIN(arr); it < END(arr); it++)
 
+
+
+// Note(ppershing): following helper macros *UPDATE* ptr
+
+#define BUF_PTR_APPEND_TOKEN(ptr, end, type, value) \
+	{ \
+		STATIC_ASSERT(SIZEOF(*ptr) == 1, "bad pointer type"); \
+		STATIC_ASSERT(SIZEOF(*end) == 1, "bad pointer type"); \
+		ASSERT(ptr <= end); \
+		ptr += cbor_writeToken(type, value, ptr, end - ptr); \
+		ASSERT(ptr <= end); \
+	}
+
+#define BUF_PTR_APPEND_DATA(ptr, end, dataBuffer, dataSize) \
+	{ \
+		STATIC_ASSERT(SIZEOF(*ptr) == 1, "bad pointer type"); \
+		STATIC_ASSERT(SIZEOF(*end) == 1, "bad pointer type"); \
+		ASSERT(ptr <= end); \
+		ASSERT(dataSize < BUFFER_SIZE_PARANOIA); \
+		if (ptr + dataSize > end) THROW(ERR_DATA_TOO_LARGE); \
+		os_memcpy(ptr, dataBuffer, dataSize); \
+		ptr += dataSize; \
+		ASSERT(ptr <= end); \
+	}
+
 #endif
