@@ -17,8 +17,14 @@ enum {
 	SHA3_256_SIZE = 32,
 };
 
+
+enum {
+	HASH_CONTEXT_INITIALIZED_MAGIC = 12345,
+};
+
 #define __CIPHER_DECLARE(CIPHER, cipher, bits) \
 	typedef struct { \
+		uint16_t initialized_magic; \
 		cx_##cipher##_t cx_ctx; \
 	} cipher##_##bits##_context_t;\
 	\
@@ -31,12 +37,14 @@ enum {
 			& ctx->cx_ctx, \
 		CIPHER##_##bits##_SIZE * 8 \
 		);\
+		ctx->initialized_magic = HASH_CONTEXT_INITIALIZED_MAGIC; \
 	} \
 	\
 	inline void cipher##_##bits##_append( \
 		cipher##_##bits##_context_t* ctx, \
 		const uint8_t* inBuffer, size_t inSize \
 	) { \
+		ASSERT(ctx->initialized_magic == HASH_CONTEXT_INITIALIZED_MAGIC); \
 		cx_hash( \
 			& ctx->cx_ctx.header, \
 			0, /* Do not output the hash, yet */ \
@@ -50,6 +58,7 @@ enum {
 		cipher##_##bits##_context_t* ctx, \
 		uint8_t* outBuffer, size_t outSize \
 	) { \
+		ASSERT(ctx->initialized_magic == HASH_CONTEXT_INITIALIZED_MAGIC); \
 		ASSERT(outSize == CIPHER##_##bits##_SIZE); \
 		cx_hash( \
 			& ctx->cx_ctx.header, \
@@ -66,13 +75,13 @@ enum {
 		uint8_t* outBuffer, size_t outSize \
 	) { \
 		ASSERT(inSize < BUFFER_SIZE_PARANOIA); \
-	    ASSERT(outSize == CIPHER##_##bits##_SIZE); \
-	    cipher##_##bits##_context_t ctx; \
-	    cipher##_##bits##_init(&ctx); \
-	    /* Note: This could be done by single cx_hash call */ \
-	    /* But we don't really care */ \
-	    cipher##_##bits##_append(&ctx, inBuffer, inSize); \
-	    cipher##_##bits##_finalize(&ctx, outBuffer, outSize); \
+		ASSERT(outSize == CIPHER##_##bits##_SIZE); \
+		cipher##_##bits##_context_t ctx; \
+		cipher##_##bits##_init(&ctx); \
+		/* Note: This could be done by single cx_hash call */ \
+		/* But we don't really care */ \
+		cipher##_##bits##_append(&ctx, inBuffer, inSize); \
+		cipher##_##bits##_finalize(&ctx, outBuffer, outSize); \
 	}
 
 __CIPHER_DECLARE(BLAKE2B, blake2b, 224)
