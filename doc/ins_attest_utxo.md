@@ -130,21 +130,14 @@ Where
 There are certain transaction validity checks that Ledger app will not (or cannot) check.
 First of all, the App cannot check whether the referred UTxO transaction is actually included in the blockchain.
 On top of that, Ledger relaxes following checks:
-- Transaction max-length check (i.e., that the transaction is shorter than 64KB). 
-  - ❓(VL,IOHK): should we include this check?
+- We skip transaction max-length check (i.e., that the transaction is shorter than 64KB).
 - Address checks. The app treats `Tag(24)` encoded addresses or their checksums as opaque and *does not* check their validity.
-- Amount checks. The app *does not* check whether supplied amounts (and their sum) are valid or not.
-  - ❓(VL, IOHK): should we do at least MAX_ADA check for each amount? Or amount under attestation?
-- Fee checks. The app *does not* verify that there is enough transaction fee.
-- ❓(VL, IOHK): should we do at least check that sum(inputs) > sum(outputs) ?
+- Amount checks. The app *does not* check whether supplied amounts (and their sums) are valid or not.
+- Fee checks. The app *does not* verify that there is enough transaction fee not that sum(inputs) > sum(outputs)
 
-
-We believe these skipped checks *are not necessary* in order to attest UTxO as the attestation's sole purpose is to **bind** together UTxO (i.e., transaction hash + output number) and amount. This can be done whenever main transaction CBOR structure parses correctly. If the attacker supplies wrong transaction data, either
+These skipped checks *are not necessary* in order to attest UTxO as the attestation's sole purpose is to **bind** together UTxO (i.e., transaction hash + output number) and amount. This can be done whenever main transaction CBOR structure parses correctly. If the attacker supplies wrong transaction data, then (during SignTx) either
 1) the Ledger app will show (from the user-perspective) unexpected amounts and the user would not confirm the transaction, or
 2) the Ledger app would show (from the user-perspective) correct amounts but the UTxO has been meddled with. UTxO is, however, referred to by the hash in the transaction under signing and as such, even if Ledger signs such transaction,  *Cardano blockchain nodes* will reject it.
-
-**IOHK vincent/nicolas**: since the transaction size, values of fees, etc. are dynamically updatable, it's probably a bad idea to verify on the ledger side/app. I would consider the addresses as opaque, the validity can be checked on the server side. this also allow a new format more transparently in the future. I don't think it's necessary to add further validity checks like `MAX_ADA`, or `sum(is) > sum(os)`, this will be enforced by the server side anyway.
-
 
 **Signing oracle**
 ❓(IOHK): Check if this isn't an issue.
