@@ -12,6 +12,7 @@ void handleDeriveAddress(
 );
 
 typedef struct {
+	uint16_t responseReadyMagic;
 	bip44_path_t pathSpec;
 	uint8_t addressBuffer[128];
 	size_t addressSize;

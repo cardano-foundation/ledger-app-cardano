@@ -12,6 +12,7 @@
 #include "ux.h"
 #include "io.h"
 #include "uiHelpers.h"
+#include "securityPolicy.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
@@ -20,17 +21,8 @@ static ins_get_ext_pubkey_context_t* ctx = &(instructionState.extPubKeyContext);
 
 // forward declaration
 static void respond_with_extended_public_key();
-static void default_reject();
 
-static void validatePath(const bip44_path_t* pathSpec)
-{
-#define VALIDATE_PATH(cond) if (!(cond)) THROW(ERR_INVALID_BIP44_PATH)
-
-	VALIDATE_PATH(bip44_hasValidPrefix(pathSpec));
-	VALIDATE_PATH(bip44_hasValidAccount(pathSpec));
-#undef VALIDATE_PATH
-};
-
+static int16_t RESPONSE_READY_MAGIC = 12345;
 
 void handleGetExtendedPublicKey(
         uint8_t p1,
@@ -40,6 +32,7 @@ void handleGetExtendedPublicKey(
 {
 	VALIDATE_PARAM(p1 == 0);
 	VALIDATE_PARAM(p2 == 0);
+	ctx->responseReadyMagic = 0;
 
 	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
 
@@ -47,35 +40,39 @@ void handleGetExtendedPublicKey(
 		THROW(ERR_INVALID_DATA);
 	}
 
-	validatePath(&ctx->pathSpec);
+	security_policy_t policy = policyForGetExtendedPublicKey(&ctx->pathSpec);
+
+	if (policy == POLICY_DENY) {
+		THROW(ERR_REJECTED_BY_POLICY);
+	}
 
 	deriveExtendedPublicKey(
 	        & ctx->pathSpec,
 	        & ctx->extPubKey
 	);
 
-	const bool REQUIRE_CONFIRM = false;
-	if (REQUIRE_CONFIRM) {
+	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
+
+	switch(policy) {
+	case POLICY_ALLOW:
+		respond_with_extended_public_key();
+		break;
+	case POLICY_PROMPT_BEFORE_RESPONSE:
 		displayConfirm(
 		        "Export public key?",
 		        "",
 		        respond_with_extended_public_key,
-		        default_reject
+		        defaultReject
 		);
-	} else {
-		respond_with_extended_public_key();
+		break;
+	default:
+		ASSERT(false);
 	}
-}
-
-// TODO(ppershing): move to uiHelpers?
-static void default_reject()
-{
-	io_send_buf(ERR_USER_REJECTED, NULL, 0);
-	ui_idle();
 }
 
 static void respond_with_extended_public_key()
 {
+	ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 	const extendedPublicKey_t* extPubKey = & ctx->extPubKey;
 
 	// Note: we reuse G_io_apdu_buffer!
