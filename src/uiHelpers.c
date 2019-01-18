@@ -210,3 +210,9 @@ void displayConfirm(
 	confirmState->reject = reject;
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
 }
+
+void defaultReject()
+{
+	io_send_buf(ERR_REJECTED_BY_USER, NULL, 0);
+	ui_idle();
+}

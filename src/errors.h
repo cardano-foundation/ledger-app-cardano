@@ -38,10 +38,12 @@ enum {
 	ERR_INVALID_BIP44_PATH         = 0x6E08,
 
 	// User rejected the action
-	ERR_USER_REJECTED              = 0x6E09,
+	ERR_REJECTED_BY_USER           = 0x6E09,
+	// Ledger security policy rejected the action
+	ERR_REJECTED_BY_POLICY         = 0x6E10,
 
 	// end of errors which trigger automatic response
-	_ERR_AUTORESPOND_END           = 0x6E10,
+	_ERR_AUTORESPOND_END           = 0x6E11,
 
 	// Errors below SHOULD NOT be returned to the client
 	// Instead, leaking these to the main() scope

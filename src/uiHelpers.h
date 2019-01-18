@@ -43,4 +43,8 @@ void displayConfirm(
         callback_t* reject
 );
 
+// responds to the host and resets
+// processing
+void defaultReject();
+
 #endif

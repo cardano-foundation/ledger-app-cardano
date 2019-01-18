@@ -12,6 +12,7 @@
 #include "attestKey.h"
 #include "state.h"
 #include "cardano.h"
+#include "securityPolicy.h"
 
 static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
 
@@ -318,33 +319,9 @@ void attestUtxo_sendResponse()
 	io_send_buf(SUCCESS, (uint8_t*) &response, SIZEOF(response));
 }
 
-void handle_attestUtxo(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t* dataBuffer,
-        size_t dataSize
-)
+
+void processNextChunk(uint8_t* dataBuffer, size_t dataSize)
 {
-	VALIDATE_REQUEST_PARAM(p1 == P1_INITIAL || p1 == P1_CONTINUE);
-
-	if (p1 == P1_INITIAL) {
-		VALIDATE_REQUEST_PARAM(p2 == 0);
-		VALIDATE_REQUEST_PARAM(dataSize >= 4);
-
-		uint32_t outputIndex = u4be_read(dataBuffer);
-		parser_init( &ctx->parserState, outputIndex);
-		blake2b_256_init(& ctx->txHashCtx);
-
-		ctx->initializedMagic = ATTEST_INIT_MAGIC;
-		// Skip outputIndex
-		dataBuffer += 4;
-		dataSize -= 4;
-	} else {
-		if (ctx->initializedMagic != ATTEST_INIT_MAGIC) {
-			THROW(ERR_INVALID_STATE);
-		}
-	}
-
 	BEGIN_TRY {
 		TRY {
 			stream_appendData(& ctx->parserState.stream, dataBuffer, dataSize);
@@ -369,4 +346,45 @@ void handle_attestUtxo(
 		FINALLY {
 		}
 	} END_TRY;
+}
+
+
+void handle_attestUtxo(
+        uint8_t p1,
+        uint8_t p2,
+        uint8_t* dataBuffer,
+        size_t dataSize
+)
+{
+	VALIDATE_REQUEST_PARAM(p1 == P1_INITIAL || p1 == P1_CONTINUE);
+
+	if (p1 == P1_INITIAL) {
+		VALIDATE_REQUEST_PARAM(p2 == 0);
+		VALIDATE_REQUEST_PARAM(dataSize >= 4);
+
+		security_policy_t policy = policyForAttestUtxo();
+		if (policy == POLICY_DENY) {
+			THROW(ERR_REJECTED_BY_POLICY);
+		} else if (policy == POLICY_ALLOW) {
+			// pass
+		} else {
+			ASSERT(false); // not implemented
+		}
+
+		uint32_t outputIndex = u4be_read(dataBuffer);
+		parser_init( &ctx->parserState, outputIndex);
+		blake2b_256_init(& ctx->txHashCtx);
+		ctx->initializedMagic = ATTEST_INIT_MAGIC;
+
+		// Skip outputIndex
+		processNextChunk(dataBuffer + 4, dataSize - 4);
+	} else if (p1 == P1_CONTINUE) {
+		if (ctx->initializedMagic != ATTEST_INIT_MAGIC) {
+			THROW(ERR_INVALID_STATE);
+		}
+		processNextChunk(dataBuffer, dataSize);
+	} else {
+		ASSERT(false);
+	}
+
 }
