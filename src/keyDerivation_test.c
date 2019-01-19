@@ -21,7 +21,7 @@ void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t pathLen
 void PRINTF_bip44(const bip44_path_t* pathSpec)
 {
 	char tmp[100];
-	bip44_format(pathSpec, tmp, SIZEOF(tmp));
+	bip44_printToStr(pathSpec, tmp, SIZEOF(tmp));
 	PRINTF("%s", tmp);
 };
 

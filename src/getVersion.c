@@ -48,7 +48,7 @@ void handleShowAboutReject()
 
 void handleScrollConfirm()
 {
-	displayConfirm(
+	ui_displayConfirm(
 	        "Confirm",
 	        "something",
 	        handleShowAboutConfirm,
@@ -66,7 +66,7 @@ void handleShowAbout(
 
 	const char* header = "Header line";
 	const char* text = "This should be a long scrolling text";
-	displayScrollingText(
+	ui_displayScrollingText(
 	        header,
 	        text,
 	        &handleScrollConfirm

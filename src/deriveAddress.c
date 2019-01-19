@@ -43,7 +43,7 @@ void handleDeriveAddress(
 		THROW(ERR_INVALID_DATA);
 	}
 
-	security_policy_t policy = policyForDeriveAddress(&ctx->pathSpec);
+	security_policy_t policy = policyForReturnDeriveAddress(&ctx->pathSpec);
 	if (policy == POLICY_DENY) {
 		THROW(ERR_REJECTED_BY_POLICY);
 	}
@@ -56,21 +56,15 @@ void handleDeriveAddress(
 
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
-	switch(policy) {
-	case POLICY_ALLOW:
-		respond_with_address();
-		break;
-	case POLICY_PROMPT_BEFORE_RESPONSE:
-		displayConfirm(
-		        "Export address?",
-		        "",
-		        respond_with_address,
-		        defaultReject
-		);
-		break;
-	default:
-		ASSERT(false);
-	}
+	char pathStr[100];
+	bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
+	ui_checkUserConsent(
+	        policy,
+	        "Export address?",
+	        pathStr,
+	        respond_with_address,
+	        respond_with_user_reject
+	);
 }
 
 
