@@ -88,4 +88,8 @@
 		ASSERT(ptr <= end); \
 	}
 
+// Note: unused removes unused warning but does not warn if you suddenly
+// start using such variable. deprecated deals with that.
+#define MARK_UNUSED __attribute__ ((unused, deprecated))
+
 #endif

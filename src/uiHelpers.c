@@ -95,7 +95,10 @@ void scroll_right()
 	update_display_content();
 }
 
-static unsigned int ui_scrollingText_button(unsigned int button_mask, unsigned int button_mask_counter)
+static unsigned int ui_scrollingText_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter MARK_UNUSED
+)
 {
 	BEGIN_TRY {
 		TRY {
@@ -183,7 +186,10 @@ static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 	}
 }
 
-static unsigned int ui_confirm_button(unsigned int button_mask, unsigned int button_mask_counter)
+static unsigned int ui_confirm_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter MARK_UNUSED
+)
 {
 	BEGIN_TRY {
 		TRY {
@@ -241,7 +247,10 @@ static const bagl_element_t ui_warning_unusual[] = {
 };
 
 
-static unsigned int ui_warning_unusual_button(unsigned int button_mask, unsigned int button_mask_counter)
+static unsigned int ui_warning_unusual_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter MARK_UNUSED
+)
 {
 
 	switch (button_mask) {
