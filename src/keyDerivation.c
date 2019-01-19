@@ -229,7 +229,7 @@ size_t cborEncodePubkeyAddress(
 	// this way but in the future we might need to refactor this code
 	const uint64_t INNER_SIZE= 33;
 	BUF_PTR_APPEND_TOKEN(ptr, end, CBOR_TYPE_BYTES, INNER_SIZE);
-	uint8_t* innerPtr;
+	uint8_t* innerPtr = ptr;
 	size_t innerSize = cborEncodePubkeyAddressInner(
 	                           addressRoot, addressRootSize,
 	                           ptr, end - ptr
