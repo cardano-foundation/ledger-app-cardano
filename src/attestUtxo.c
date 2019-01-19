@@ -304,18 +304,10 @@ void attestUtxo_sendResponse()
 	u4be_write(response.data.index, ctx->parserState.attestedOutputIndex);
 	u8be_write(response.data.amount, amount);
 
-
-	// attested HMAC
-	uint8_t hmacBuffer[32];
-	hmac_sha256(
-	        attestKeyData.key, SIZEOF(attestKeyData.key),
+	attest_writeHmac(
 	        (uint8_t*) &response.data, SIZEOF(response.data),
-	        hmacBuffer, SIZEOF(hmacBuffer)
+	        response.hmac, SIZEOF(response.hmac)
 	);
-
-	STATIC_ASSERT(SIZEOF(response.hmac) <= SIZEOF(hmacBuffer), "buffer sanity check");
-	os_memmove(response.hmac, hmacBuffer, SIZEOF(response.hmac));
-
 	io_send_buf(SUCCESS, (uint8_t*) &response, SIZEOF(response));
 }
 
