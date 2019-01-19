@@ -80,10 +80,6 @@ SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl
 #   Build    #
 ##############
 build: all
-build: DEFINES += INS_SIGN_TX_FUNC
-build: DEFINES += INS_SET_TX_FUNC
-build: DEFINES += INS_GET_PUBLIC_KEY_FUNC
-build: DEFINES += INS_APP_INFO_FUNC
 build: DEFINES += DEVEL
 
 sign:
