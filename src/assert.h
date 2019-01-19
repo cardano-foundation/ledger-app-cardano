@@ -1,8 +1,7 @@
 #ifndef H_CARDANO_APP_UTIL
 #define H_CARDANO_APP_UTIL
 
-#include <stdint.h>
-#include "errors.h"
+#include "common.h"
 
 // from https://stackoverflow.com/questions/19343205/c-concatenating-file-and-line-macros
 #define _TO_STR1_(x) #x

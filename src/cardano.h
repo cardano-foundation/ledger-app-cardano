@@ -1,7 +1,7 @@
 #ifndef H_CARDANO_APP_CARDANO
 #define H_CARDANO_APP_CARDANO
 
-#include <stdint.h>
+#include "common.h"
 
 enum {
 	CARDANO_INPUT_TYPE_UTXO = 0,

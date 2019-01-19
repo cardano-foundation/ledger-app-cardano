@@ -1,16 +1,9 @@
-#include <os_io_seproxyhal.h>
-#include <stdint.h>
+#include "common.h"
 
-#include "assert.h"
-#include "errors.h"
 #include "getExtendedPublicKey.h"
 #include "keyDerivation.h"
-#include "utils.h"
 #include "endian.h"
 #include "state.h"
-#include "utils.h"
-#include "ux.h"
-#include "io.h"
 #include "uiHelpers.h"
 #include "securityPolicy.h"
 

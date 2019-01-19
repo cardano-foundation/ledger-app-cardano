@@ -1,10 +1,6 @@
-#include <os.h>
+#include "common.h"
 #include "bip44.h"
-#include "errors.h"
-#include "utils.h"
-#include <stdbool.h>
 #include "endian.h"
-#include <string.h>
 
 size_t bip44_parseFromWire(
         bip44_path_t* pathSpec,

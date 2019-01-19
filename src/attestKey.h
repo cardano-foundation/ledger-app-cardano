@@ -1,8 +1,7 @@
 #ifndef H_CARDANO_APP_ATTEST_KEY
 #define H_CARDANO_APP_ATTEST_KEY
 
-#include <stdint.h>
-#include <stddef.h>
+#include "common.h"
 #include <stdbool.h>
 
 static const size_t ATTEST_KEY_SIZE = 32;

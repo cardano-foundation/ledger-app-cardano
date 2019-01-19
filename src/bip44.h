@@ -1,10 +1,7 @@
 #ifndef H_CARDANO_APP_BIP44
 #define H_CARDANO_APP_BIP44
 
-#include <os.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "common.h"
 
 static const uint32_t BIP44_MAX_PATH_LENGTH = 10;
 

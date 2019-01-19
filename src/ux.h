@@ -1,9 +1,7 @@
 #ifndef H_CARDANO_APP_UX
 #define H_CARDANO_APP_UX
 
-#include <stdint.h>
-#include "getVersion.h"
-#include <os_io_seproxyhal.h>
+#include "common.h"
 
 // ux is a magic global variable implicitly referenced by the UX_ macros. Apps
 // should never need to reference it directly.

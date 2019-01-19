@@ -1,8 +1,8 @@
 #ifndef H_CARDANO_APP_HEX_UTILS
 #define H_CARDANO_APP_HEX_UTILS
 
+#include "common.h"
 #include "stream.h"
-#include <stddef.h>
 
 uint8_t hex_parseNibble(const char c);
 

@@ -1,5 +1,5 @@
+#include "common.h"
 #include "crc32.h"
-#include "utils.h"
 
 // Code taken from: https://www.hackersdelight.org/hdcodetxt/crc.c.txt option crc32b
 

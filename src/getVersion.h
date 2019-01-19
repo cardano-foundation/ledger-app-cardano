@@ -2,6 +2,7 @@
 #define H_CARDANO_APP_GET_VERSION
 
 #include "handlers.h"
+#include "common.h"
 
 // Must be in format x.y.z
 #define APPVERSION "0.0.1"

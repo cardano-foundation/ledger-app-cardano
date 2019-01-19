@@ -17,10 +17,8 @@
 
 // This code is slightly modified version of Ripple's code
 
+#include "common.h"
 #include "base58.h"
-#include "assert.h"
-#include "utils.h"
-#include <os.h>
 
 static const uint32_t MAX_BUFFER_SIZE = 124;
 
