@@ -2,23 +2,27 @@
 #define H_CARDANO_APP_UI_HELPERS
 
 #include <stdint.h>
+#include <stddef.h>
+#include "securityPolicy.h"
 
 typedef void callback_t();
 
-#define DISPLAY_TEXT_LEN 32
-#define MAX_TEXT_LEN 200
+static const size_t UI_DISPLAY_TEXT_LEN = 32;
+static const size_t UI_MAX_TEXT_LEN = 200;
 
 typedef struct {
-	char header[DISPLAY_TEXT_LEN + 1];
-	char currentText[DISPLAY_TEXT_LEN + 1];
-	char fullText[MAX_TEXT_LEN + 1];
+	uint16_t initMagic;
+	char header[UI_DISPLAY_TEXT_LEN + 1];
+	char currentText[UI_DISPLAY_TEXT_LEN + 1];
+	char fullText[UI_MAX_TEXT_LEN + 1];
 	uint16_t scrollIndex;
 	callback_t *callback;
 } scrollingState_t;
 
 typedef struct {
-	char header[DISPLAY_TEXT_LEN + 1];
-	char text[DISPLAY_TEXT_LEN + 1];
+	uint16_t initMagic;
+	char header[UI_DISPLAY_TEXT_LEN + 1];
+	char text[UI_DISPLAY_TEXT_LEN + 1];
 	callback_t *confirm;
 	callback_t *reject;
 } confirmState_t;
@@ -31,12 +35,20 @@ typedef union {
 
 void ui_idle(void);
 
-void displayScrollingText(
+void ui_displayScrollingText(
         const char* headerStr,
         const char* bodyStr,
         callback_t* callback);
 
-void displayConfirm(
+void ui_displayConfirm(
+        const char* headerStr,
+        const char* bodyStr,
+        callback_t* confirm,
+        callback_t* reject
+);
+
+void ui_checkUserConsent(
+        security_policy_t policy,
         const char* headerStr,
         const char* bodyStr,
         callback_t* confirm,
@@ -45,6 +57,6 @@ void displayConfirm(
 
 // responds to the host and resets
 // processing
-void defaultReject();
+void respond_with_user_reject();
 
 #endif

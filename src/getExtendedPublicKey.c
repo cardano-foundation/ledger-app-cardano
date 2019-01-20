@@ -53,21 +53,16 @@ void handleGetExtendedPublicKey(
 
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
-	switch(policy) {
-	case POLICY_ALLOW:
-		respond_with_extended_public_key();
-		break;
-	case POLICY_PROMPT_BEFORE_RESPONSE:
-		displayConfirm(
-		        "Export public key?",
-		        "",
-		        respond_with_extended_public_key,
-		        defaultReject
-		);
-		break;
-	default:
-		ASSERT(false);
-	}
+	char pathStr[100];
+	bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
+	ui_checkUserConsent(
+	        policy,
+	        "Export public key?",
+	        pathStr,
+	        respond_with_extended_public_key,
+	        respond_with_user_reject
+	);
+
 }
 
 static void respond_with_extended_public_key()

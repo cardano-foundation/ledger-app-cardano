@@ -113,7 +113,7 @@ bool bip44_containsAddress(const bip44_path_t* pathSpec)
 
 // TODO(ppershing): this function needs to be thoroughly tested
 // on small outputSize
-void bip44_format(const bip44_path_t* pathSpec, char* out, size_t outSize)
+void bip44_printToStr(const bip44_path_t* pathSpec, char* out, size_t outSize)
 {
 	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 	// We have to have space for terminating null

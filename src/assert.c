@@ -14,6 +14,6 @@ void assert(int cond, const char* msgStr)
 {
 	if (cond) return; // everything holds
 
-	displayConfirm("Assertion failed", msgStr, NULL, NULL);
+	ui_displayConfirm("Assertion failed", msgStr, NULL, NULL);
 	THROW(ERR_ASSERT);
 }

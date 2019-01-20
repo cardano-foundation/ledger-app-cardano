@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "getVersion.h"
-
+#include <os_io_seproxyhal.h>
 
 // ux is a magic global variable implicitly referenced by the UX_ macros. Apps
 // should never need to reference it directly.
