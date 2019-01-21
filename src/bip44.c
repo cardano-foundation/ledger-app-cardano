@@ -11,17 +11,15 @@ size_t bip44_parseFromWire(
         uint8_t *dataBuffer, size_t dataSize
 )
 {
-#define VALIDATE(cond) if (!(cond)) THROW(ERR_INVALID_DATA)
-
 	// Ensure we have length
-	VALIDATE(dataSize >= 1);
+	VALIDATE(dataSize >= 1, ERR_INVALID_DATA);
 
 	// Cast length to size_t
 	size_t length = dataBuffer[0];
 
 	// Ensure length is valid
-	VALIDATE(length <= ARRAY_LEN(pathSpec->path));
-	VALIDATE(length * 4 + 1 <= dataSize);
+	VALIDATE(length <= ARRAY_LEN(pathSpec->path), ERR_INVALID_DATA);
+	VALIDATE(length * 4 + 1 <= dataSize, ERR_INVALID_DATA);
 
 	pathSpec->length = length;
 
@@ -31,7 +29,6 @@ size_t bip44_parseFromWire(
 		offset += 4;
 	}
 	return offset;
-#undef VALIDATE
 }
 
 bool isHardened(uint32_t value)
