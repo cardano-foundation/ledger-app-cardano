@@ -37,7 +37,7 @@ void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, size_t data
 	ui_idle();
 }
 
-void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, size_t dataSize)
+void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer MARK_UNUSED, size_t dataSize)
 {
 	#ifndef DEVEL
 	// This call shouldn't be available from non-devel mode

@@ -58,10 +58,11 @@ void handleScrollConfirm()
 }
 
 void handleShowAbout(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t *dataBuffer,
-        size_t dataLength)
+        uint8_t p1 MARK_UNUSED,
+        uint8_t p2 MARK_UNUSED,
+        uint8_t *dataBuffer MARK_UNUSED,
+        size_t dataLength MARK_UNUSED
+)
 {
 
 	const char* header = "Header line";
