@@ -47,7 +47,8 @@
 }
 
 // Helper function to check APDU request parameters
-#define VALIDATE_REQUEST_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
+#define VALIDATE(cond, error) {if (!(cond)) THROW(error);}
+#define VALIDATE_REQUEST_PARAM(cond) VALIDATE(cond, ERR_INVALID_REQUEST_PARAMETERS)
 
 // Helper functions for ranges
 // TODO(ppershing): make more type safe?

@@ -356,11 +356,11 @@ void handle_attestUtxo(
         size_t dataSize
 )
 {
-	VALIDATE_REQUEST_PARAM(p1 == P1_INITIAL || p1 == P1_CONTINUE);
+	VALIDATE(p1 == P1_INITIAL || p1 == P1_CONTINUE, ERR_INVALID_REQUEST_PARAMETERS);
 
 	if (p1 == P1_INITIAL) {
-		VALIDATE_REQUEST_PARAM(p2 == 0);
-		VALIDATE_REQUEST_PARAM(dataSize >= 4);
+		VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+		VALIDATE(dataSize >= 4, ERR_INVALID_DATA);
 
 		security_policy_t policy = policyForAttestUtxo();
 		if (policy == POLICY_DENY) {
