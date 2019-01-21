@@ -19,11 +19,9 @@ typedef union {
 	ins_attest_utxo_context_t attestUtxoContext;
 } instructionState_t;
 
-typedef struct {
-	uint8_t currentInstruction;
-} globalState_t;
+// Note(instructions are uint8_t but we have a special INS_NONE value
+extern int currentInstruction;
 
 extern instructionState_t instructionState;
-extern globalState_t global;
 
 #endif

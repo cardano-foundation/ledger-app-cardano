@@ -340,15 +340,21 @@ void processNextChunk(uint8_t* dataBuffer, size_t dataSize)
 void handle_attestUtxo(
         uint8_t p1,
         uint8_t p2,
-        uint8_t* dataBuffer,
-        size_t dataSize
+        uint8_t* wireDataBuffer,
+        size_t wireDataSize,
+        bool isNewCall
 )
 {
+	if (isNewCall) {
+		os_memset(ctx, 0, SIZEOF(*ctx));
+	}
 	VALIDATE(p1 == P1_INITIAL || p1 == P1_CONTINUE, ERR_INVALID_REQUEST_PARAMETERS);
 
 	if (p1 == P1_INITIAL) {
+		if (!isNewCall) THROW(ERR_INVALID_STATE);
+
 		VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
-		VALIDATE(dataSize >= 4, ERR_INVALID_DATA);
+		VALIDATE(wireDataSize >= 4, ERR_INVALID_DATA);
 
 		security_policy_t policy = policyForAttestUtxo();
 		if (policy == POLICY_DENY) {
@@ -359,18 +365,18 @@ void handle_attestUtxo(
 			ASSERT(false); // not implemented
 		}
 
-		uint32_t outputIndex = u4be_read(dataBuffer);
+		uint32_t outputIndex = u4be_read(wireDataBuffer);
 		parser_init( &ctx->parserState, outputIndex);
 		blake2b_256_init(& ctx->txHashCtx);
 		ctx->initializedMagic = ATTEST_INIT_MAGIC;
 
 		// Skip outputIndex
-		processNextChunk(dataBuffer + 4, dataSize - 4);
+		processNextChunk(wireDataBuffer + 4, wireDataSize - 4);
 	} else if (p1 == P1_CONTINUE) {
-		if (ctx->initializedMagic != ATTEST_INIT_MAGIC) {
-			THROW(ERR_INVALID_STATE);
-		}
-		processNextChunk(dataBuffer, dataSize);
+		if (isNewCall) THROW(ERR_INVALID_STATE);
+
+		ASSERT(ctx->initializedMagic == ATTEST_INIT_MAGIC);
+		processNextChunk(wireDataBuffer, wireDataSize);
 	} else {
 		ASSERT(false);
 	}

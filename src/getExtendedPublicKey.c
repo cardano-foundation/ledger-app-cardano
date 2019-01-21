@@ -20,32 +20,43 @@ static int16_t RESPONSE_READY_MAGIC = 12345;
 void handleGetExtendedPublicKey(
         uint8_t p1,
         uint8_t p2,
-        uint8_t *dataBuffer,
-        size_t dataSize)
+        uint8_t *wireDataBuffer,
+        size_t wireDataSize,
+        bool isNewCall
+)
 {
-	VALIDATE_PARAM(p1 == 0);
-	VALIDATE_PARAM(p2 == 0);
+	// Initialize state
+	if (isNewCall) {
+		os_memset(ctx, 0, SIZEOF(*ctx));
+	}
 	ctx->responseReadyMagic = 0;
 
-	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, dataBuffer, dataSize);
+	// Validate params
+	VALIDATE_PARAM(p1 == 0);
+	VALIDATE_PARAM(p2 == 0);
 
-	if (parsedSize != dataSize) {
+	// Parse wire
+	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, wireDataBuffer, wireDataSize);
+
+	if (parsedSize != wireDataSize) {
 		THROW(ERR_INVALID_DATA);
 	}
 
+	// Check security policy
 	security_policy_t policy = policyForGetExtendedPublicKey(&ctx->pathSpec);
 
 	if (policy == POLICY_DENY) {
 		THROW(ERR_REJECTED_BY_POLICY);
 	}
 
+	// Calculation
 	deriveExtendedPublicKey(
 	        & ctx->pathSpec,
 	        & ctx->extPubKey
 	);
-
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
+	// Response
 	char pathStr[100];
 	bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
 	ui_checkUserConsent(

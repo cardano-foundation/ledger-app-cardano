@@ -115,6 +115,7 @@
 #include "menu.h"
 #include "assert.h"
 #include "io.h"
+#include "endian.h"
 
 // These are global variables declared in ux.h. They can't be defined there
 // because multiple files include ux.h; they need to be defined in exactly one
@@ -124,6 +125,7 @@
 
 ux_state_t ux;
 
+static const int INS_NONE = -1;
 
 // ui_idle displays the main menu. Note that your app isn't required to use a
 // menu as its idle screen; you can define your own completely custom screen.
@@ -132,24 +134,11 @@ void ui_idle(void)
 	// The first argument is the starting index within menu_main, and the last
 	// argument is a preprocessor; I've never seen an app that uses either
 	// argument.
-	global.currentInstruction = 0;
+	currentInstruction = INS_NONE;
 	UX_MENU_DISPLAY(0, menu_main, NULL);
 }
 
-// TODO(ppershing): decide in which file we should keep this + convert to enum value
-#define CLA          0xD7
-
-// These are the offsets of various parts of a request APDU packet. INS
-// identifies the requested command (see above), and P1 and P2 are parameters
-// to the command.
-enum {
-	OFFSET_CLA   = 0x00,
-	OFFSET_INS   = 0x01,
-	OFFSET_P1    = 0x02,
-	OFFSET_P2    = 0x03,
-	OFFSET_LC    = 0x04,
-	OFFSET_CDATA = 0x05,
-};
+static const uint8_t CLA = 0xD7;
 
 // This is the main loop that reads and writes APDUs. It receives request
 // APDUs from the computer, looks up the corresponding command handler, and
@@ -190,34 +179,81 @@ static void cardano_main(void)
 				{
 					THROW(EXCEPTION_IO_RESET);
 				}
-				// We should have CLA INS P1 P2 Lc
-				if (rx < 5)
+
+				// Note(ppershing): unsafe to access before checks
+				struct {
+					uint8_t cla[1];
+					uint8_t ins[1];
+					uint8_t p1[1];
+					uint8_t p2[1];
+					uint8_t lc[1];
+				}* wireHeader = (void*) G_io_apdu_buffer;
+
+				if (rx < SIZEOF(*wireHeader))
 				{
 					THROW(ERR_MALFORMED_REQUEST_HEADER);
 				}
-				if (G_io_apdu_buffer[OFFSET_CLA] != CLA)
+				// check that data is safe to access
+
+				if (u1be_read(wireHeader->lc) + SIZEOF(*wireHeader) != rx)
+				{
+					THROW(ERR_MALFORMED_REQUEST_HEADER);
+				}
+				uint8_t* data = G_io_apdu_buffer + SIZEOF(*wireHeader);
+
+				// Reinterpret data in machine endian.
+				// Note(ppershing): this is not needed unless
+				// somebody changes byte widths
+				struct {
+					uint8_t cla;
+					uint8_t ins;
+					uint8_t p1;
+					uint8_t p2;
+					uint8_t lc;
+				} parsedHeader = {
+					.cla  = u1be_read(wireHeader->cla),
+					.ins  = u1be_read(wireHeader->ins),
+					.p1   = u1be_read(wireHeader->p1),
+					.p2   = u1be_read(wireHeader->p2),
+					.lc   = u1be_read(wireHeader->lc),
+				};
+
+				STATIC_ASSERT(SIZEOF(*wireHeader) == SIZEOF(parsedHeader), "header size mismatch");
+
+				if (parsedHeader.cla != CLA)
 				{
 					THROW(ERR_BAD_CLA);
 				}
-				// Bad data size
-				if (G_io_apdu_buffer[OFFSET_LC] + 5 != rx)
-				{
-					THROW(ERR_MALFORMED_REQUEST_HEADER);
 
-				}
+
 				// Lookup and call the requested command handler.
-				handler_fn_t *handlerFn = lookupHandler(G_io_apdu_buffer[OFFSET_INS]);
+				handler_fn_t *handlerFn = lookupHandler(parsedHeader.ins);
 				if (!handlerFn)
 				{
 					THROW(ERR_UNKNOWN_INS);
 				}
+
+				bool isNewCall = false;
+				if (currentInstruction == INS_NONE)
+				{
+					os_memset(&instructionState, 0, SIZEOF(instructionState));
+					isNewCall = true;
+					currentInstruction = parsedHeader.ins;
+				} else
+				{
+					if (currentInstruction != parsedHeader.ins) {
+						THROW(ERR_STILL_IN_CALL);
+					}
+				}
+
+
 				// Note: handlerFn is responsible for calling io_send
 				// either during its call or subsequent UI actions
-				handlerFn(G_io_apdu_buffer[OFFSET_P1],
-				          G_io_apdu_buffer[OFFSET_P2],
-				          G_io_apdu_buffer + OFFSET_CDATA,
-				          G_io_apdu_buffer[OFFSET_LC]
-				         );
+				handlerFn(parsedHeader.p1,
+				          parsedHeader.p2,
+				          data,
+				          parsedHeader.lc,
+				          isNewCall);
 				flags = IO_ASYNCH_REPLY;
 			}
 			CATCH(EXCEPTION_IO_RESET)
