@@ -1,12 +1,8 @@
+#include "common.h"
 #include "attestUtxo.h"
-#include "assert.h"
-#include <os.h>
 #include "cbor.h"
 #include "test_utils.h"
 #include "endian.h"
-#include "io.h"
-#include "ux.h"
-#include "utils.h"
 #include "hash.h"
 #include "hmac.h"
 #include "attestKey.h"

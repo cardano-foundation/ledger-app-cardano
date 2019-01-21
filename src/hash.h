@@ -1,9 +1,7 @@
 #ifndef H_CARDANO_APP_BLAKE2B
 #define H_CARDANO_APP_BLAKE2B
 
-#include <os.h>
-#include "assert.h"
-#include "utils.h"
+#include "common.h"
 
 // This file provides convenience functions for using firmware hashing api
 

@@ -1,10 +1,5 @@
+#include "common.h"
 #include "attestKey.h"
-#include <os.h>
-#include "assert.h"
-#include <stdbool.h>
-#include "io.h"
-#include "ux.h"
-#include "utils.h"
 #include "hmac.h"
 
 static uint8_t P1_UNUSED = 0x00;

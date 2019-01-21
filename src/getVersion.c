@@ -1,15 +1,9 @@
-#include <os_io_seproxyhal.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
+#include "common.h"
+#include "handlers.h"
 
 #include "uiHelpers.h"
 #include "getVersion.h"
 #include "getExtendedPublicKey.h"
-#include "errors.h"
-#include "io.h"
-#include "assert.h"
-#include "utils.h"
 
 // handleGetVersion is the entry point for the getVersion command. It
 // unconditionally sends the app version.

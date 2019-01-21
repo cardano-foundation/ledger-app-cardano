@@ -1,9 +1,5 @@
-#include <os_io_seproxyhal.h>
-#include <os.h>
-#include <string.h>
-
+#include "common.h"
 #include "assert.h"
-#include "io.h"
 #include "uiHelpers.h"
 
 // Note(ppershing): Right now suitable for debugging only.

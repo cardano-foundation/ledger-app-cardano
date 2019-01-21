@@ -1,8 +1,8 @@
 #ifndef H_CARDANO_APP_DERIVE_ADDRESS
 #define H_CARDANO_APP_DERIVE_ADDRESS
 
-#include <os.h>
-#include "keyDerivation.h"
+#include "common.h"
+#include "bip44.h"
 
 void handleDeriveAddress(
         uint8_t p1,

@@ -1,10 +1,8 @@
 #ifndef H_CARDANO_APP_ATTEST_UTXO
 #define H_CARDANO_APP_ATTEST_UTXO
-#include <os.h>
-#include <stdint.h>
-#include <stdbool.h>
+
+#include "common.h"
 #include "stream.h"
-#include "assert.h"
 #include "hash.h"
 
 // Note: For the safety concerns, we start enums
