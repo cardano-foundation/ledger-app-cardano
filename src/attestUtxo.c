@@ -292,19 +292,19 @@ void attestUtxo_sendResponse()
 			uint8_t amount[8];
 		} data;
 		uint8_t hmac[16];
-	} response;
+	} wireResponse;
 
-	STATIC_ASSERT(SIZEOF(response) == 32+4+8+16, "response is packed");
+	STATIC_ASSERT(SIZEOF(wireResponse) == 32+4+8+16, "response is packed");
 
-	blake2b_256_finalize(&ctx ->txHashCtx, response.data.txHash, SIZEOF(response.data.txHash));
-	u4be_write(response.data.index, ctx->parserState.attestedOutputIndex);
-	u8be_write(response.data.amount, amount);
+	blake2b_256_finalize(&ctx ->txHashCtx, wireResponse.data.txHash, SIZEOF(wireResponse.data.txHash));
+	u4be_write(wireResponse.data.index, ctx->parserState.attestedOutputIndex);
+	u8be_write(wireResponse.data.amount, amount);
 
 	attest_writeHmac(
-	        (uint8_t*) &response.data, SIZEOF(response.data),
-	        response.hmac, SIZEOF(response.hmac)
+	        (uint8_t*) &wireResponse.data, SIZEOF(wireResponse.data),
+	        wireResponse.hmac, SIZEOF(wireResponse.hmac)
 	);
-	io_send_buf(SUCCESS, (uint8_t*) &response, SIZEOF(response));
+	io_send_buf(SUCCESS, (uint8_t*) &wireResponse, SIZEOF(wireResponse));
 }
 
 
