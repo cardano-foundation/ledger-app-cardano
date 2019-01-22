@@ -10,6 +10,7 @@
 #include "hash.h"
 #include "attestUtxo.h"
 #include "keyDerivation.h"
+#include "addressUtils.h"
 #include "crc32.h"
 #include "hmac.h"
 #include "txHashBuilder.h"
@@ -33,6 +34,7 @@ void handleRunTests(
 		run_hash_test();
 		run_test_attestUtxo();
 		run_key_derivation_test();
+		run_address_utils_test();
 		run_crc32_test();
 		run_hmac_test();
 		PRINTF("All tests done\n");
