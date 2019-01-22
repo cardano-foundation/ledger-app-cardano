@@ -2,8 +2,15 @@
 #include "attestKey.h"
 #include "hmac.h"
 
-static uint8_t P1_UNUSED = 0x00;
-static uint8_t P2_UNUSED = 0x00;
+static const uint8_t P1_UNUSED = 0x00;
+static const uint8_t P2_UNUSED = 0x00;
+
+static const size_t ATTEST_KEY_SIZE = 32;
+
+typedef struct {
+	uint8_t key[ATTEST_KEY_SIZE];
+} attestKeyData_t;
+
 
 // Global data
 attestKeyData_t attestKeyData;
@@ -12,7 +19,6 @@ attestKeyData_t attestKeyData;
 STATIC_ASSERT(sizeof(attestKeyData.key) == ATTEST_KEY_SIZE, "bad ATTEST_KEY_SIZE");
 
 
-static size_t ATTEST_HMAC_SIZE = 16;
 
 void attest_writeHmac(
         const uint8_t* data, uint8_t dataSize,
@@ -54,32 +60,34 @@ void attestKey_initialize()
 	cx_rng(attestKeyData.key, ATTEST_KEY_SIZE);
 }
 
-void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer, size_t dataSize)
+#ifdef DEVEL
+void handleSetAttestKey(
+        uint8_t p1, uint8_t p2,
+        uint8_t* wireBuffer, size_t wireSize,
+        bool isNewCall MARK_UNUSED
+)
 {
-	#ifndef DEVEL
-	// This call shouldn't be available from non-devel mode
-	ASSERT(false);
-	#endif
-	VALIDATE_REQUEST_PARAM(p1 == P1_UNUSED);
-	VALIDATE_REQUEST_PARAM(p2 == P2_UNUSED);
-	VALIDATE_REQUEST_PARAM(dataSize == ATTEST_KEY_SIZE);
+	VALIDATE(p1 == P1_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(p2 == P2_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(wireSize == ATTEST_KEY_SIZE, ERR_INVALID_DATA);
 
-	os_memmove(attestKeyData.key, dataBuffer, ATTEST_KEY_SIZE);
+	os_memmove(attestKeyData.key, wireBuffer, ATTEST_KEY_SIZE);
 	io_send_buf(SUCCESS, NULL, 0);
 	ui_idle();
 }
 
-void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t* dataBuffer MARK_UNUSED, size_t dataSize)
+void handleGetAttestKey(
+        uint8_t p1, uint8_t p2,
+        uint8_t* wireBuffer MARK_UNUSED, size_t wireSize,
+        bool isNewCall MARK_UNUSED
+)
 {
-	#ifndef DEVEL
-	// This call shouldn't be available from non-devel mode
-	ASSERT(false);
-	#endif
 
-	VALIDATE_REQUEST_PARAM(p1 == P1_UNUSED);
-	VALIDATE_REQUEST_PARAM(p2 == P2_UNUSED);
-	VALIDATE_REQUEST_PARAM(dataSize == 0);
+	VALIDATE(p1 == P1_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(p2 == P2_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(wireSize == 0, ERR_INVALID_DATA);
 
 	io_send_buf(SUCCESS, attestKeyData.key, ATTEST_KEY_SIZE);
 	ui_idle();
 }
+#endif

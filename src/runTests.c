@@ -1,10 +1,9 @@
+#include "common.h"
+
 #include "runTests.h"
-#include "errors.h"
-#include "io.h"
 #include "stream.h"
 #include "cbor.h"
 #include "endian.h"
-#include "assert.h"
 #include "base58.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -12,16 +11,15 @@
 #include "attestUtxo.h"
 #include "keyDerivation.h"
 #include "crc32.h"
-#include <stdbool.h>
-#include <os.h>
 #include "hmac.h"
-#include "ux.h"
 
 void handleRunTests(
         uint8_t p1 MARK_UNUSED,
         uint8_t p2 MARK_UNUSED,
-        uint8_t *dataBuffer MARK_UNUSED,
-        size_t dataLength MARK_UNUSED)
+        uint8_t *wireBuffer MARK_UNUSED,
+        size_t wireSize MARK_UNUSED,
+        bool isNewCall MARK_UNUSED
+)
 {
 	BEGIN_ASSERT_NOEXCEPT {
 		PRINTF("Running tests\n");

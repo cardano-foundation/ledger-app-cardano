@@ -3,13 +3,9 @@
 
 #include "common.h"
 #include "bip44.h"
+#include "handlers.h"
 
-void handleDeriveAddress(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t *dataBuffer,
-        size_t dataLength
-);
+handler_fn_t handleDeriveAddress;
 
 typedef struct {
 	uint16_t responseReadyMagic;

@@ -2,20 +2,18 @@
 #define H_CARDANO_APP_ATTEST_KEY
 
 #include "common.h"
-#include <stdbool.h>
 
-static const size_t ATTEST_KEY_SIZE = 32;
-
-typedef struct {
-	uint8_t key[ATTEST_KEY_SIZE];
-} attestKeyData_t;
+#ifdef DEVEL
+#include "handlers.h"
+handler_fn_t handleGetAttestKey;
+handler_fn_t handleSetAttestKey;
+#endif
 
 void attestKey_initialize();
 
-#ifdef DEVEL
-void handleGetAttestKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, size_t dataSize);
-void handleSetAttestKey(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, size_t dataSize);
-#endif
+
+
+static const size_t ATTEST_HMAC_SIZE = 16;
 
 void attest_writeHmac(
         const uint8_t* data, uint8_t dataSize,

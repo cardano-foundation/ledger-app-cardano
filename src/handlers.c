@@ -43,14 +43,6 @@ enum {
 
 handler_fn_t* lookupHandler(uint8_t ins)
 {
-	if (global.currentInstruction && global.currentInstruction != ins) {
-		THROW(ERR_STILL_IN_CALL);
-	}
-	if (!global.currentInstruction) {
-		global.currentInstruction = ins;
-		os_memset(&instructionState, 0, sizeof(instructionState));
-	}
-
 	switch (ins) {
 
 	case INS_GET_VERSION:

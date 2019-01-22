@@ -4,6 +4,7 @@
 #include "common.h"
 #include "stream.h"
 #include "hash.h"
+#include "handlers.h"
 
 // Note: For the safety concerns, we start enums
 // at non-overlapping ranges
@@ -96,12 +97,7 @@ void parser_init(attest_utxo_parser_state_t *state, int outputIndex);
 
 uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state);
 
-void handle_attestUtxo(
-        uint8_t p1,
-        uint8_t p2,
-        uint8_t* dataBuffer,
-        size_t dataLength
-);
+handler_fn_t handle_attestUtxo;
 
 void run_test_attestUtxo();
 
