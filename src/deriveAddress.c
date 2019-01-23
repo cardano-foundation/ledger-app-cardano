@@ -1,12 +1,12 @@
 #include "common.h"
 #include "deriveAddress.h"
-#include "crc32.h"
-#include "cbor.h"
 #include "keyDerivation.h"
 #include "endian.h"
 #include "state.h"
 #include "securityPolicy.h"
 #include "uiHelpers.h"
+#include "addressUtils.h"
+#include "base58.h"
 
 #define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
 
@@ -49,9 +49,19 @@ void handleDeriveAddress(
 		THROW(ERR_REJECTED_BY_POLICY);
 	}
 
-	ctx->addressSize = deriveAddress(
-	                           & ctx->pathSpec,
-	                           & ctx->addressBuffer[0],
+	// Calculation
+	uint8_t rawAddressBuffer[100];
+	size_t rawAddressSize = deriveAddress(
+	                                &ctx->pathSpec,
+	                                rawAddressBuffer,
+	                                SIZEOF(rawAddressBuffer)
+	                        );
+	// base58-encode
+
+	ctx->addressSize = encode_base58(
+	                           rawAddressBuffer,
+	                           rawAddressSize,
+	                           ctx->addressBuffer,
 	                           SIZEOF(ctx->addressBuffer)
 	                   );
 

@@ -11,16 +11,16 @@
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
 #define UNWRAP(...) __VA_ARGS__
 
-void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
+static void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t pathLength)
 {
 	pathSpec->length = pathLength;
 	os_memmove(pathSpec->path, pathArray, pathLength * 4);
 }
 
-
-void PRINTF_bip44(const bip44_path_t* pathSpec)
+static void PRINTF_bip44(const bip44_path_t* pathSpec)
 {
 	char tmp[100];
+	SIZEOF(*pathSpec);
 	bip44_printToStr(pathSpec, tmp, SIZEOF(tmp));
 	PRINTF("%s", tmp);
 };
@@ -35,11 +35,12 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	PRINTF("\n");
 
 	uint8_t expected[64];
-	parseHexString(expectedHex, expected, SIZEOF(expected));
+	size_t expectedSize = parseHexString(expectedHex, expected, SIZEOF(expected));
+
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
-	EXPECT_EQ_BYTES(expected, privateKey.d, SIZEOF(expected));
+	EXPECT_EQ_BYTES(expected, privateKey.d, expectedSize);
 }
 
 void testPrivateKeyDerivation()
@@ -90,10 +91,10 @@ void testPrivateKeyDerivation()
 #define TESTCASE(path_, error_) \
 	{ \
 	    uint32_t path[] = { UNWRAP path_ }; \
-	    EXPECT_THROWS( testcase_derivePrivateKey(path, ARRAY_LEN(path), ""), error_ ); \
+	    EXPECT_THROWS(testcase_derivePrivateKey(path, ARRAY_LEN(path), ""), error_ ); \
 	}
 
-	TESTCASE( (HD + 44, HD + 1815), ERR_INVALID_BIP44_PATH);
+	TESTCASE( (HD + 43, HD + 1815), ERR_INVALID_BIP44_PATH);
 	TESTCASE( (HD + 44, 1815, HD + 1), ERR_INVALID_BIP44_PATH);
 	TESTCASE( (HD + 44, HD + 33, HD + 1), ERR_INVALID_BIP44_PATH);
 #undef TESTCASE
@@ -198,50 +199,6 @@ void testChainCodeDerivation()
 #undef TESTCASE
 }
 
-void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expected)
-{
-	PRINTF("testcase_deriveAddress ");
-
-	bip44_path_t pathSpec;
-	pathSpec_init(&pathSpec, path, pathLen);
-
-	PRINTF_bip44(&pathSpec);
-	PRINTF("\n");
-
-	uint8_t address[128];
-	os_memset(address, 0, 128);
-	uint32_t length = deriveAddress(&pathSpec, address, SIZEOF(address));
-
-	address[length] = 0;
-
-	EXPECT_EQ(length, strlen(expected));
-	EXPECT_EQ_BYTES(address, expected, length);
-}
-
-void testAddressDerivation()
-{
-#define TESTCASE(path_, expected_) \
-	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
-	}
-
-
-	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, 55),
-	        "Ae2tdPwUPEZEXaRTix2HTUK2MwuQbRvuPjmjBGFbhBg1VU5e7rGabXepb5Q"
-	);
-	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26),
-	        "Ae2tdPwUPEZ4BF2hi7DZC6V3fsvT7pKPm8Yg1yEyXGcTFhGYST4MGChhvy1"
-	);
-
-	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26, 32, 54, 61),
-	        "Ae2tdPwUPEZ9Gnw58m5cssQm3YNvvZQYHntLLj999XZdp7okWztXFAyFsBw"
-	);
-#undef TESTCASE
-}
 
 void run_key_derivation_test()
 {
@@ -251,5 +208,4 @@ void run_key_derivation_test()
 	testPrivateKeyDerivation();
 	testPublicKeyDerivation();
 	testChainCodeDerivation();
-	testAddressDerivation();
 }

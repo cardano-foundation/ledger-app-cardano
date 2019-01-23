@@ -1,9 +1,8 @@
 #ifndef H_CARDANO_APP_KEY_DERIVATION
 #define H_CARDANO_APP_KEY_DERIVATION
 
-#include <os.h>
+#include "common.h"
 #include "handlers.h"
-#include <stdbool.h>
 #include "bip44.h"
 
 
@@ -44,16 +43,6 @@ void extractRawPublicKey(
         uint8_t* outBuffer, size_t outSize
 );
 
-uint32_t deriveAddress(
-        const bip44_path_t* pathSpec,
-        uint8_t* outBuffer, size_t outSize
-);
-
-size_t cborEncodePubkeyAddress(
-        const uint8_t* addressRoot, size_t addressRootSize,
-        uint8_t* outBuffer, size_t outSize
-        /* potential attributes */
-);
 
 void run_key_derivation_test();
 #endif
