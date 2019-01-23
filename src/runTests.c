@@ -14,6 +14,7 @@
 #include "crc32.h"
 #include "hmac.h"
 #include "txHashBuilder.h"
+#include "textUtils.h"
 
 void handleRunTests(
         uint8_t p1 MARK_UNUSED,
@@ -25,6 +26,7 @@ void handleRunTests(
 {
 	BEGIN_ASSERT_NOEXCEPT {
 		PRINTF("Running tests\n");
+		run_textUtils_test();
 		run_txHashBuilder_test();
 		run_endian_test();
 		run_hex_test();
