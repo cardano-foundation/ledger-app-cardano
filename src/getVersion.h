@@ -8,6 +8,5 @@
 #define APPVERSION "0.0.1"
 
 handler_fn_t handleGetVersion;
-handler_fn_t handleShowAbout;
 
 #endif // H_GET_VERSION
