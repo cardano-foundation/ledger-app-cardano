@@ -45,13 +45,12 @@ handler_fn_t* lookupHandler(uint8_t ins)
 	switch (ins) {
 
 	case INS_GET_VERSION:
-		return handleGetVersion;
+		return getVersion_handleAPDU;
 
 	case INS_GET_PUB_KEY:
-		return handleGetExtendedPublicKey;
+		return getExtendedPublicKey_handleAPDU;
 	case INS_DERIVE_ADDRESS:
-		return handleDeriveAddress;
-
+		return deriveAddress_handleAPDU;
 
 	case INS_ATTEST_UTXO:
 		return handle_attestUtxo;

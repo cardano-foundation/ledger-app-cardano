@@ -18,7 +18,7 @@ static void respond_with_address();
 static ins_derive_address_context_t* ctx = &(instructionState.deriveAddressContext);
 
 
-void handleDeriveAddress(
+void deriveAddress_handleAPDU(
         uint8_t p1,
         uint8_t p2,
         uint8_t *wireDataBuffer,

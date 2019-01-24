@@ -7,7 +7,7 @@
 
 // handleGetVersion is the entry point for the getVersion command. It
 // unconditionally sends the app version.
-void handleGetVersion(
+void getVersion_handleAPDU(
         uint8_t p1,
         uint8_t p2,
         uint8_t *wireDataBuffer MARK_UNUSED,

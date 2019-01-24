@@ -17,7 +17,7 @@ static void respond_with_extended_public_key();
 
 static int16_t RESPONSE_READY_MAGIC = 12345;
 
-void handleGetExtendedPublicKey(
+void getExtendedPublicKey_handleAPDU(
         uint8_t p1,
         uint8_t p2,
         uint8_t *wireDataBuffer,
