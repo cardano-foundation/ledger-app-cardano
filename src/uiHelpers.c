@@ -29,7 +29,7 @@ enum {
 	INIT_MAGIC_CONFIRM = 5432,
 };
 
-STATIC_ASSERT(sizeof(uint8_t) == sizeof(char), "bad char size");
+STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
 
 // {{{ scrollingText
 static const bagl_element_t ui_scrollingText[] = {
