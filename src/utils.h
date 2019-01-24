@@ -41,13 +41,19 @@
 // The best way is to provide an expected type and make sure expected and
 // inferred type have the same size.
 #define MEMCLEAR(ptr, expected_type) \
-{ \
-    STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), "bad memclear parameters"); \
-    os_memset(ptr, 0, sizeof(expected_type)); \
-}
+	do { \
+		STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), "bad memclear parameters"); \
+		os_memset(ptr, 0, sizeof(expected_type)); \
+	} while(0)
 
 // Helper function to check APDU request parameters
-#define VALIDATE(cond, error) {if (!(cond)) THROW(error);}
+#define VALIDATE(cond, error) \
+	do {\
+		if (!(cond)) { \
+			PRINTF("Validation Error in %s: %d\n", __FILE__, __LINE__); \
+			THROW(error); \
+		} \
+	} while(0)
 
 // Helper functions for ranges
 // TODO(ppershing): make more type safe?
