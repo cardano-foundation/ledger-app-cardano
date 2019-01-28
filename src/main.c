@@ -131,10 +131,10 @@ static const int INS_NONE = -1;
 // menu as its idle screen; you can define your own completely custom screen.
 void ui_idle(void)
 {
+	currentInstruction = INS_NONE;
 	// The first argument is the starting index within menu_main, and the last
 	// argument is a preprocessor; I've never seen an app that uses either
 	// argument.
-	currentInstruction = INS_NONE;
 	UX_MENU_DISPLAY(0, menu_main, NULL);
 }
 
@@ -149,9 +149,6 @@ static const uint8_t CLA = 0xD7;
 // and sent in the next io_exchange call.
 static void cardano_main(void)
 {
-	// Mark the transaction context as uninitialized.
-	//global.calcTxnHashContext.initialized = false;
-
 	volatile unsigned int rx = 0;
 	volatile unsigned int tx = 0;
 	volatile unsigned int flags = 0;
@@ -181,53 +178,37 @@ static void cardano_main(void)
 				}
 
 				// Note(ppershing): unsafe to access before checks
-				struct {
-					uint8_t cla[1];
-					uint8_t ins[1];
-					uint8_t p1[1];
-					uint8_t p2[1];
-					uint8_t lc[1];
-				}* wireHeader = (void*) G_io_apdu_buffer;
-
-				if (rx < SIZEOF(*wireHeader))
-				{
-					THROW(ERR_MALFORMED_REQUEST_HEADER);
-				}
-				// check that data is safe to access
-
-				if (u1be_read(wireHeader->lc) + SIZEOF(*wireHeader) != rx)
-				{
-					THROW(ERR_MALFORMED_REQUEST_HEADER);
-				}
-				uint8_t* data = G_io_apdu_buffer + SIZEOF(*wireHeader);
-
-				// Reinterpret data in machine endian.
-				// Note(ppershing): this is not needed unless
-				// somebody changes byte widths
+				// Warning(ppershing): in case of unlikely change of APDU format
+				// make sure you read wider values as big endian
 				struct {
 					uint8_t cla;
 					uint8_t ins;
 					uint8_t p1;
 					uint8_t p2;
 					uint8_t lc;
-				} parsedHeader = {
-					.cla  = u1be_read(wireHeader->cla),
-					.ins  = u1be_read(wireHeader->ins),
-					.p1   = u1be_read(wireHeader->p1),
-					.p2   = u1be_read(wireHeader->p2),
-					.lc   = u1be_read(wireHeader->lc),
-				};
+				}* header = (void*) G_io_apdu_buffer;
 
-				STATIC_ASSERT(SIZEOF(*wireHeader) == SIZEOF(parsedHeader), "header size mismatch");
+				if (rx < SIZEOF(*header))
+				{
+					THROW(ERR_MALFORMED_REQUEST_HEADER);
+				}
+				// check that data is safe to access
 
-				if (parsedHeader.cla != CLA)
+				if (header->lc + SIZEOF(*header) != rx)
+				{
+					THROW(ERR_MALFORMED_REQUEST_HEADER);
+				}
+				uint8_t* data = G_io_apdu_buffer + SIZEOF(*header);
+
+
+				if (header->cla != CLA)
 				{
 					THROW(ERR_BAD_CLA);
 				}
 
 
 				// Lookup and call the requested command handler.
-				handler_fn_t *handlerFn = lookupHandler(parsedHeader.ins);
+				handler_fn_t *handlerFn = lookupHandler(header->ins);
 				if (!handlerFn)
 				{
 					THROW(ERR_UNKNOWN_INS);
@@ -238,10 +219,10 @@ static void cardano_main(void)
 				{
 					os_memset(&instructionState, 0, SIZEOF(instructionState));
 					isNewCall = true;
-					currentInstruction = parsedHeader.ins;
+					currentInstruction = header->ins;
 				} else
 				{
-					if (currentInstruction != parsedHeader.ins) {
+					if (currentInstruction != header->ins) {
 						THROW(ERR_STILL_IN_CALL);
 					}
 				}
@@ -249,10 +230,10 @@ static void cardano_main(void)
 
 				// Note: handlerFn is responsible for calling io_send
 				// either during its call or subsequent UI actions
-				handlerFn(parsedHeader.p1,
-				          parsedHeader.p2,
+				handlerFn(header->p1,
+				          header->p2,
 				          data,
-				          parsedHeader.lc,
+				          header->lc,
 				          isNewCall);
 				flags = IO_ASYNCH_REPLY;
 			}
