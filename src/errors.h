@@ -54,6 +54,7 @@ enum {
 
 	// Internal errors
 	ERR_ASSERT                = 0x4700,
+	ERR_NOT_IMPLEMENTED       = 0x4701,
 
 	// stream
 	ERR_NOT_ENOUGH_INPUT      = 0x4710,

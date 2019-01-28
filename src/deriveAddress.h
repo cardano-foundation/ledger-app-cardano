@@ -10,8 +10,11 @@ handler_fn_t deriveAddress_handleAPDU;
 typedef struct {
 	uint16_t responseReadyMagic;
 	bip44_path_t pathSpec;
-	uint8_t addressBuffer[128];
-	size_t addressSize;
+	struct {
+		uint8_t buffer[128];
+		size_t size;
+	} address;
+	int ui_step;
 } ins_derive_address_context_t;
 
 #endif
