@@ -26,7 +26,7 @@ static const char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghi
 
 size_t encode_base58(
         const uint8_t* inBuffer, size_t inSize,
-        uint8_t* outBuffer, size_t maxOutSize
+        char* outStr, size_t outMaxSize
 )
 {
 	uint8_t tmpBuffer[MAX_BUFFER_SIZE];
@@ -35,6 +35,7 @@ size_t encode_base58(
 	size_t zeroCount = 0;
 
 	ASSERT(inSize <= SIZEOF(tmpBuffer));
+	ASSERT(outMaxSize < BUFFER_SIZE_PARANOIA);
 
 	os_memmove(tmpBuffer, inBuffer, inSize);
 
@@ -56,18 +57,21 @@ size_t encode_base58(
 		if (tmpBuffer[startAt] == 0) {
 			++startAt;
 		}
+		ASSERT((0 < j) && (j <= SIZEOF(buffer)));
 		buffer[--j] = BASE58ALPHABET[remainder];
 	}
 	while ((j < (2 * inSize)) && (buffer[j] == BASE58ALPHABET[0])) {
 		++j;
 	}
 	while (zeroCount-- > 0) {
+		ASSERT((0 < j) && (j <= SIZEOF(buffer)));
 		buffer[--j] = BASE58ALPHABET[0];
 	}
-	inSize = 2 * inSize - j;
+	size_t outSize = 2 * inSize - j;
 
-	ASSERT(inSize <= maxOutSize);
+	ASSERT(outSize < outMaxSize);
 
-	os_memmove(outBuffer, (buffer + j), inSize);
-	return inSize;
+	os_memmove(outStr, (buffer + j), outSize);
+	outStr[outSize] = 0;
+	return outSize;
 }
