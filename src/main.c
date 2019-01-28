@@ -244,6 +244,10 @@ static void cardano_main(void)
 			CATCH(ERR_ASSERT)
 			{
 				// Note(ppershing): assertions should not auto-respond
+				#ifndef DEVEL
+				// Reset device
+				io_seproxyhal_se_reset();
+				#endif
 			}
 			CATCH_OTHER(e)
 			{
@@ -252,12 +256,11 @@ static void cardano_main(void)
 					flags = IO_ASYNCH_REPLY;
 					ui_idle();
 				} else {
-					// Note(ppershing): remaining errors should
-					// stop the execution
-
-					// TODO(ppershing): test if this really stops
-					// responding to APDUs
-					flags = IO_ASYNCH_REPLY;
+					PRINTF("Uncaught error %x", (unsigned) e);
+					#ifndef DEVEL
+					// Reset device
+					io_seproxyhal_se_reset();
+					#endif
 				}
 			}
 			FINALLY {
