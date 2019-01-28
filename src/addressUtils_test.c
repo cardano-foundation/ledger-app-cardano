@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "addressUtils.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -70,3 +72,5 @@ void run_address_utils_test()
 {
 	testAddressDerivation();
 }
+
+#endif

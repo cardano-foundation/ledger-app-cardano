@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include <os.h>
 #include "stream.h"
 #include "test_utils.h"
@@ -146,3 +148,5 @@ void run_hmac_test()
 	);
 	*/
 }
+
+#endif

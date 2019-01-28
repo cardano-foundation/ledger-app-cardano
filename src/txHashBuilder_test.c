@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "common.h"
 #include "txHashBuilder.h"
 #include "hex_utils.h"
@@ -93,3 +95,5 @@ void run_txHashBuilder_test()
 
 	EXPECT_EQ_BYTES(result, expected, 32);
 }
+
+#endif

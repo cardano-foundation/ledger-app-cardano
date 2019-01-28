@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "endian.h"
 #include "assert.h"
 #include "test_utils.h"
@@ -62,3 +64,5 @@ void run_endian_test()
 	run_read_test();
 	run_read_write_test();
 }
+
+#endif

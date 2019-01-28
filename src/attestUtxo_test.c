@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include <os.h>
 #include "attestUtxo.h"
 #include "errors.h"
@@ -72,3 +74,5 @@ void run_test_attestUtxo()
 		test_attest(it->txChunksHex, it->chunksLen, it->outputIndex, it->expectedAmount);
 	}
 }
+
+#endif

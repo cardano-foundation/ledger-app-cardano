@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "keyDerivation.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -209,3 +211,5 @@ void run_key_derivation_test()
 	testPublicKeyDerivation();
 	testChainCodeDerivation();
 }
+
+#endif

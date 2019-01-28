@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "common.h"
 
 #include "runTests.h"
@@ -45,3 +47,5 @@ void handleRunTests(
 	io_send_buf(SUCCESS, NULL, 0);
 	ui_idle();
 }
+
+#endif

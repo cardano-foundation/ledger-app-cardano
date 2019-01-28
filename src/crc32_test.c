@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "crc32.h"
 #include "test_utils.h"
 #include "utils.h"
@@ -35,3 +37,5 @@ void run_crc32_test()
 		EXPECT_EQ(result, it->expected);
 	}
 }
+
+#endif

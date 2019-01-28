@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "stream.h"
 #include <os.h>
 #include <stdbool.h>
@@ -94,3 +96,5 @@ void run_stream_test()
 {
 	_run_stream_test(&ctx->s);
 }
+
+#endif
