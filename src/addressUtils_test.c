@@ -46,8 +46,8 @@ void testAddressDerivation()
 {
 #define TESTCASE(path_, expected_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
 	}
 
 
