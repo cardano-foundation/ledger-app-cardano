@@ -98,4 +98,11 @@
 // start using such variable. deprecated deals with that.
 #define MARK_UNUSED __attribute__ ((unused, deprecated))
 
+#define TRACE(...) \
+	do { \
+		PRINTF("[%s:%d] ", __func__, __LINE__); \
+		PRINTF("" __VA_ARGS__); \
+		PRINTF("\n"); \
+	} while(0)
+
 #endif

@@ -31,7 +31,6 @@ enum {
 
 STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
 
-// {{{ scrollingText
 static const bagl_element_t ui_scrollingText[] = {
 	UI_BACKGROUND(),
 	UI_ICON_LEFT(ID_ICON_GO_LEFT, BAGL_GLYPH_ICON_LEFT),
@@ -45,15 +44,17 @@ static const bagl_element_t ui_scrollingText[] = {
 
 static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *element)
 {
-	ASSERT(scrollingState->initMagic == INIT_MAGIC_SCROLLER);
+	scrollingState_t* ctx = scrollingState;
+	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
+
 	switch (element->component.userid) {
 	case ID_ICON_GO_LEFT:
-		return (scrollingState->scrollIndex == 0)
+		return (ctx->scrollIndex == 0)
 		       ? NULL
 		       : element;
 	case ID_ICON_GO_RIGHT:
-		return (scrollingState->scrollIndex + UI_DISPLAY_TEXT_LEN
-		        >= strlen(scrollingState->fullText))
+		return (ctx->scrollIndex + SIZEOF(ctx->currentText)
+		        >= strlen(ctx->fullText) + 1)
 		       ? NULL
 		       : element;
 	default:
@@ -62,37 +63,82 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 	}
 }
 
-
-void update_display_content()
+void scroll_update_display_content()
 {
-	ASSERT(scrollingState->initMagic == INIT_MAGIC_SCROLLER);
-	ASSERT(scrollingState->currentText[UI_DISPLAY_TEXT_LEN] == '\0');
-	ASSERT(scrollingState->scrollIndex + UI_DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
+	scrollingState_t* ctx = scrollingState;
+	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
+	ASSERT(ctx->currentText[SIZEOF(ctx->currentText) - 1] == '\0');
+	ASSERT(ctx->scrollIndex + SIZEOF(ctx->currentText) <= SIZEOF(ctx->fullText));
 	os_memmove(
-	        scrollingState->currentText,
-	        scrollingState->fullText + scrollingState->scrollIndex,
-	        UI_DISPLAY_TEXT_LEN
+	        ctx->currentText,
+	        ctx->fullText + ctx->scrollIndex,
+	        SIZEOF(ctx->currentText) - 1
 	);
 	UX_REDISPLAY();
 }
 
 void scroll_left()
 {
-	ASSERT(scrollingState->initMagic == INIT_MAGIC_SCROLLER);
-	if (scrollingState->scrollIndex > 0) {
-		scrollingState->scrollIndex--;
+	scrollingState_t* ctx = scrollingState;
+	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
+	if (ctx->scrollIndex > 0) {
+		ctx->scrollIndex--;
+		scroll_update_display_content();
 	}
-	update_display_content();
 }
 
 void scroll_right()
 {
-	ASSERT(scrollingState->initMagic == INIT_MAGIC_SCROLLER);
-	if (scrollingState->scrollIndex
-	    < strlen(scrollingState->fullText) - UI_DISPLAY_TEXT_LEN) {
+	scrollingState_t* ctx = scrollingState;
+	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
+	if (ctx->scrollIndex + SIZEOF(ctx->currentText) < 1 + strlen(ctx->fullText)) {
 		scrollingState->scrollIndex++;
+		scroll_update_display_content();
 	}
-	update_display_content();
+}
+
+
+void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
+{
+	cb->state = CALLBACK_NOT_RUN;
+	cb->confirm = confirm;
+	cb->reject = reject;
+}
+
+void uiCallback_confirm(ui_callback_t* cb)
+{
+	if (!cb->confirm) return;
+
+	switch(cb->state) {
+	case CALLBACK_NOT_RUN:
+		// Note: needs to be done before resolving in case it throws
+		cb->state = CALLBACK_RUN;
+		cb->confirm();
+		break;
+	case CALLBACK_RUN:
+		// Ignore
+		break;
+	default:
+		ASSERT(false);
+	}
+}
+
+void uiCallback_reject(ui_callback_t* cb)
+{
+	if (!cb->reject) return;
+
+	switch(cb->state) {
+	case CALLBACK_NOT_RUN:
+		// Note: needs to be done before resolving in case it throws
+		cb->state = CALLBACK_RUN;
+		cb->reject();
+		break;
+	case CALLBACK_RUN:
+		// Ignore
+		break;
+	default:
+		ASSERT(false);
+	}
 }
 
 static unsigned int ui_scrollingText_button(
@@ -100,9 +146,10 @@ static unsigned int ui_scrollingText_button(
         unsigned int button_mask_counter MARK_UNUSED
 )
 {
+	scrollingState_t* ctx = scrollingState;
 	BEGIN_TRY {
 		TRY {
-			ASSERT(scrollingState->initMagic == INIT_MAGIC_SCROLLER);
+			ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
 			switch (button_mask)
 			{
 			case BUTTON_LEFT:
@@ -116,9 +163,16 @@ static unsigned int ui_scrollingText_button(
 				break;
 
 			case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: // PROCEED
-				scrollingState->callback();
+				uiCallback_confirm(&ctx->callback);
 				break;
 			}
+		}
+		CATCH_OTHER(e)
+		{
+			TRACE("Error %d\n", (int) e);
+			#ifndef DEVEL
+			io_seproxyhal_se_reset();
+			#endif
 		}
 		FINALLY {
 		}
@@ -131,37 +185,35 @@ static unsigned int ui_scrollingText_button(
 void ui_displayScrollingText(
         const char* headerStr,
         const char* bodyStr,
-        callback_t* callback)
+        ui_callback_fn_t* callback)
 {
+	scrollingState_t* ctx = scrollingState;
 	size_t header_len = strlen(headerStr);
-	size_t text_len = strlen(bodyStr);
+	size_t body_len = strlen(bodyStr);
 	// sanity checks
-	ASSERT(header_len < SIZEOF(scrollingState->header));
-	ASSERT(text_len < SIZEOF(scrollingState->fullText));
+	ASSERT(header_len < SIZEOF(ctx->header));
+	ASSERT(body_len < SIZEOF(ctx->fullText));
 
 	// clear all memory
-	os_memset(&displayState, 0, SIZEOF(displayState));
+	os_memset(ctx, 0, SIZEOF(*ctx));
 
 	// Copy data
-	os_memmove(scrollingState->header, headerStr, header_len);
-	os_memmove(scrollingState->fullText, bodyStr, text_len);
-	STATIC_ASSERT(UI_DISPLAY_TEXT_LEN < SIZEOF(scrollingState->currentText), "overflow check");
+	os_memmove(ctx->header, headerStr, header_len);
+	os_memmove(ctx->fullText, bodyStr, body_len);
 
-	// Note(ppershing): due to previous clearing of memory
-	// this also works with cases where
-	// strlen(fullText) < DISPLAY_TEXT_LEN
+	ctx->scrollIndex = 0;
 
+	os_memmove(
+	        ctx->currentText,
+	        ctx->fullText,
+	        SIZEOF(ctx->currentText) - 1
+	);
 
-	ASSERT(scrollingState->scrollIndex + UI_DISPLAY_TEXT_LEN < SIZEOF(scrollingState->fullText));
-
-	os_memmove(scrollingState->currentText, scrollingState->fullText + scrollingState->scrollIndex, UI_DISPLAY_TEXT_LEN);
-
-	scrollingState->callback = callback;
-	scrollingState->initMagic = INIT_MAGIC_SCROLLER;
+	uiCallback_init(&ctx->callback, callback, NULL);
+	ctx->initMagic = INIT_MAGIC_SCROLLER;
 	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
 }
 
-// }}}
 
 
 static const bagl_element_t ui_confirm[] = {
@@ -174,12 +226,14 @@ static const bagl_element_t ui_confirm[] = {
 
 static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 {
-	ASSERT(confirmState->initMagic == INIT_MAGIC_CONFIRM);
+	confirmState_t* ctx = confirmState;
+
+	ASSERT(ctx->initMagic == INIT_MAGIC_CONFIRM);
 	switch (element->component.userid) {
 	case ID_ICON_REJECT:
-		return (confirmState->reject == NULL) ? NULL : element;
+		return ctx->callback.reject ? element : NULL;
 	case ID_ICON_CONFIRM:
-		return (confirmState->confirm == NULL) ? NULL : element;
+		return ctx->callback.confirm ? element : NULL;
 	default:
 		// Always display all other elements.
 		return element;
@@ -197,17 +251,20 @@ static unsigned int ui_confirm_button(
 			switch (button_mask)
 			{
 			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT
-				if (confirmState->reject) {
-					confirmState->reject();
-				}
+				uiCallback_reject(&confirmState->callback);
 				break;
 
 			case BUTTON_EVT_RELEASED | BUTTON_RIGHT: // APPROVE
-				if (confirmState->confirm) {
-					confirmState->confirm();
-				}
+				uiCallback_confirm(&confirmState->callback);
 				break;
 			}
+		}
+		CATCH_OTHER(e)
+		{
+			TRACE("Error %d\n", (int) e);
+			#ifndef DEVEL
+			io_seproxyhal_se_reset();
+			#endif
 		}
 		FINALLY {
 		}
@@ -219,8 +276,8 @@ static unsigned int ui_confirm_button(
 void ui_displayConfirm(
         const char* headerStr,
         const char* bodyStr,
-        callback_t* confirm,
-        callback_t* reject)
+        ui_callback_fn_t* confirm,
+        ui_callback_fn_t* reject)
 {
 	size_t header_len = strlen(headerStr);
 	size_t text_len = strlen(bodyStr);
@@ -230,101 +287,19 @@ void ui_displayConfirm(
 
 	// clear all memory
 	os_memset(&displayState, 0, SIZEOF(displayState));
+	confirmState_t* ctx = confirmState;
 
 	// Copy data
-	os_memmove(confirmState->header, headerStr, header_len + 1);
-	os_memmove(confirmState->text, bodyStr, text_len + 1);
-	confirmState->confirm = confirm;
-	confirmState->reject = reject;
-	confirmState->initMagic = INIT_MAGIC_CONFIRM;
+	os_memmove(ctx->header, headerStr, header_len + 1);
+	os_memmove(ctx->text, bodyStr, text_len + 1);
+
+	uiCallback_init(&ctx->callback, confirm, reject);
+	ctx->initMagic = INIT_MAGIC_CONFIRM;
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
-}
-
-static const bagl_element_t ui_warning_unusual[] = {
-	UI_BACKGROUND(),
-	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, "Unusual request."),
-	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, "Reject if unsure!"),
-};
-
-
-static unsigned int ui_warning_unusual_button(
-        unsigned int button_mask,
-        unsigned int button_mask_counter MARK_UNUSED
-)
-{
-
-	switch (button_mask) {
-	case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: // PROCEED
-		UX_DISPLAY(ui_confirm, ui_prepro_confirm);
-		break;
-	}
-	return 0;
-}
-
-void ui_displayWarningAndConfirm(
-        const char* headerStr,
-        const char* bodyStr,
-        callback_t* confirm,
-        callback_t* reject)
-{
-	size_t header_len = strlen(headerStr);
-	size_t text_len = strlen(bodyStr);
-	// sanity checks, keep 1 byte for null terminator
-	ASSERT(header_len < SIZEOF(confirmState->header));
-	ASSERT(text_len < SIZEOF(confirmState->text));
-
-	// clear all memory
-	os_memset(&displayState, 0, SIZEOF(displayState));
-
-	// Copy data
-	os_memmove(confirmState->header, headerStr, header_len + 1);
-	os_memmove(confirmState->text, bodyStr, text_len + 1);
-	confirmState->confirm = confirm;
-	confirmState->reject = reject;
-	confirmState->initMagic = INIT_MAGIC_CONFIRM;
-	UX_DISPLAY(ui_warning_unusual, NULL);
 }
 
 void respond_with_user_reject()
 {
 	io_send_buf(ERR_REJECTED_BY_USER, NULL, 0);
 	ui_idle();
-}
-
-
-
-void ui_checkUserConsent(
-        security_policy_t policy,
-        const char* headerStr,
-        const char* textStr,
-        callback_t* onConfirm,
-        callback_t* onReject
-)
-{
-	switch (policy) {
-	case POLICY_DENY:
-		onReject();
-		break;
-	case POLICY_ALLOW:
-		onConfirm();
-		break;
-	case POLICY_PROMPT_BEFORE_RESPONSE:
-		ui_displayConfirm(
-		        headerStr,
-		        textStr,
-		        onConfirm,
-		        onReject
-		);
-		break;
-	case POLICY_PROMPT_WARN_UNUSUAL:
-		ui_displayWarningAndConfirm(
-		        headerStr,
-		        textStr,
-		        onConfirm,
-		        onReject
-		);
-		break;
-	default:
-		ASSERT(false);
-	}
 }
