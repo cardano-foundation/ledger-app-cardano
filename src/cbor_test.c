@@ -56,7 +56,7 @@ static void test_cbor_peek_token()
 		PRINTF("test_cbor_peek_token %s\n", PTR_PIC(it->hex));
 		stream_init(& ctx->s);
 		stream_appendFromHexString(& ctx->s, PTR_PIC(it->hex));
-		token_t res = cbor_peekToken(& ctx->s);
+		cbor_token_t res = cbor_peekToken(& ctx->s);
 		EXPECT_EQ(res.type, it->type);
 		EXPECT_EQ(res.width, it->width);
 		EXPECT_EQ(res.value, it->value);
@@ -131,12 +131,13 @@ static void test_cbor_serialization()
 
 	ITERATE(it, testVectors) {
 		PRINTF("test_cbor_serialization %s\n", PTR_PIC(it->hex));
-		stream_init(& ctx->s);
-		uint8_t buf[50];
-		size_t len = parseHexString(PTR_PIC(it->hex), buf, SIZEOF(buf));
+		uint8_t expected[50];
+		size_t expectedSize = parseHexString(PTR_PIC(it->hex), expected, SIZEOF(expected));
+		uint8_t buffer[50];
+		size_t bufferSize = cbor_writeToken(it->type, it->value, buffer, SIZEOF(buffer));
 		cbor_appendToken(& ctx->s, it->type, it->value);
-		EXPECT_EQ(stream_availableBytes(& ctx->s), len);
-		EXPECT_EQ_BYTES(stream_head(& ctx->s), buf, len);
+		EXPECT_EQ(bufferSize, expectedSize);
+		EXPECT_EQ_BYTES(buffer, expected, expectedSize);
 	}
 
 	// Check invalid type

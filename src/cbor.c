@@ -16,11 +16,14 @@ static const uint64_t VALUE_MIN_W2 = (uint64_t) 1 << 8;
 static const uint64_t VALUE_MIN_W4 = (uint64_t) 1 << 16;
 static const uint64_t VALUE_MIN_W8 = (uint64_t) 1 << 32;
 
-token_t cbor_peekToken(const stream_t* stream)
+
+cbor_token_t cbor_parseToken(const uint8_t* buf, size_t size)
 {
 
-	const uint8_t tag = stream_peekByte(stream);
-	token_t result;
+#define ENSURE_AVAILABLE_BYTES(x) VALIDATE(x <= size, ERR_NOT_ENOUGH_INPUT);
+	ENSURE_AVAILABLE_BYTES(1);
+	const uint8_t tag = buf[0];
+	cbor_token_t result;
 
 	// tag extensions first
 	if (tag == CBOR_TYPE_ARRAY_INDEF || tag == CBOR_TYPE_INDEF_END) {
@@ -52,34 +55,34 @@ token_t cbor_peekToken(const stream_t* stream)
 		return result;
 	}
 
-	const uint8_t* buf = stream_head(stream) + 1;
+	// shift buffer
 	// Holds minimum value for a given byte-width.
 	// Anything below this is not canonical CBOR as
 	// it could be represented by a shorter CBOR notation
 	uint64_t limit_min;
 	switch (val) {
 	case 24:
-		stream_ensureAvailableBytes(stream, 1 + 1);
+		ENSURE_AVAILABLE_BYTES(1 + 1);
 		result.width = 1;
-		result.value = u1be_read(buf);
+		result.value = u1be_read(buf + 1);
 		limit_min = VALUE_MIN_W1;
 		break;
 	case 25:
-		stream_ensureAvailableBytes(stream, 1 + 2);
+		ENSURE_AVAILABLE_BYTES(1 + 2);
 		result.width = 2;
-		result.value = u2be_read(buf);
+		result.value = u2be_read(buf + 1);
 		limit_min = VALUE_MIN_W2;
 		break;
 	case 26:
-		stream_ensureAvailableBytes(stream, 1 + 4);
+		ENSURE_AVAILABLE_BYTES(1 + 4);
 		result.width = 4;
-		result.value = u4be_read(buf);
+		result.value = u4be_read(buf + 1);
 		limit_min = VALUE_MIN_W4;
 		break;
 	case 27:
-		stream_ensureAvailableBytes(stream, 1 + 8);
+		ENSURE_AVAILABLE_BYTES(1 + 8);
 		result.width = 8;
-		result.value = u8be_read(buf);
+		result.value = u8be_read(buf + 1);
 		limit_min = VALUE_MIN_W8;
 		break;
 	default:
@@ -95,15 +98,20 @@ token_t cbor_peekToken(const stream_t* stream)
 	}
 
 	return result;
+#undef ENSURE_AVAILABLE_BYTES
 }
+
+cbor_token_t cbor_peekToken(const stream_t* stream)
+{
+	return cbor_parseToken(stream_head(stream), stream_availableBytes(stream));
+};
 
 // TODO(ppershing): this naming is confusing for CBOR_TYPE_BYTES!
 void cbor_advanceToken(stream_t* stream)
 {
-	token_t token = cbor_peekToken(stream);
+	cbor_token_t token = cbor_peekToken(stream);
 	stream_advancePos(stream, 1 + token.width);
 }
-
 
 size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* buffer, size_t bufferSize)
 {
@@ -167,7 +175,7 @@ size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* buffer, size_t buf
 
 void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 {
-	uint8_t buf[1+8]; // 1 for preamble, 8 for possible uint64 value data
+	uint8_t buf[1 + 8]; // 1 for preamble, 8 for possible uint64 value data
 	size_t bufLen = cbor_writeToken(type, value, buf, SIZEOF(buf));
 	stream_appendData(stream, buf, bufLen);
 }
@@ -175,7 +183,7 @@ void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value)
 // Expect & consume CBOR token with specific type and value
 void cbor_takeTokenWithValue(stream_t* stream, uint8_t expectedType, uint64_t expectedValue)
 {
-	const token_t token = cbor_peekToken(stream);
+	const cbor_token_t token = cbor_peekToken(stream);
 	if (token.type != expectedType || token.value != expectedValue) {
 		THROW(ERR_UNEXPECTED_TOKEN);
 	}
@@ -185,7 +193,7 @@ void cbor_takeTokenWithValue(stream_t* stream, uint8_t expectedType, uint64_t ex
 // Expect & consume CBOR token with specific type, return value
 uint64_t cbor_takeToken(stream_t* stream, uint8_t expectedType)
 {
-	const token_t token = cbor_peekToken(stream);
+	const cbor_token_t token = cbor_peekToken(stream);
 	if (token.type != expectedType) {
 		THROW(ERR_UNEXPECTED_TOKEN);
 	}
@@ -196,6 +204,6 @@ uint64_t cbor_takeToken(stream_t* stream, uint8_t expectedType)
 // Is next CBOR token indefinite array/map end?
 bool cbor_peekNextIsIndefEnd(stream_t* stream)
 {
-	token_t head = cbor_peekToken(stream);
+	cbor_token_t head = cbor_peekToken(stream);
 	return (head.type == CBOR_TYPE_INDEF_END);
 }
