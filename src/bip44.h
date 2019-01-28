@@ -28,19 +28,23 @@ enum {
 	BIP44_I_ACCOUNT = 2,
 	BIP44_I_CHAIN = 3,
 	BIP44_I_ADDRESS = 4,
+	BIP44_I_REST = 5,
 };
 
 
 // Checks for /44'/1815'/account'
-bool bip44_hasValidPrefix(const bip44_path_t* pathSpec);
+bool bip44_hasValidCardanoPrefix(const bip44_path_t* pathSpec);
 
 bool bip44_containsAccount(const bip44_path_t* pathSpec);
-bool bip44_hasValidAccount(const bip44_path_t* pathSpec);
+bool bip44_hasReasonableAccount(const bip44_path_t* pathSpec);
 
 bool bip44_containsChainType(const bip44_path_t* pathSpec);
 bool bip44_hasValidChainType(const bip44_path_t* pathSpec);
 
 bool bip44_containsAddress(const bip44_path_t* pathSpec);
+bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec);
+
+bool bip44_containsMoreThanAddress(const bip44_path_t* pathSpec);
 
 bool isHardened(uint32_t value);
 
