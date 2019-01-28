@@ -19,7 +19,7 @@ void derivePrivateKey(
         privateKey_t* privateKey
 )
 {
-	if (!bip44_hasValidPrefix(pathSpec)) {
+	if (!bip44_hasValidCardanoPrefix(pathSpec)) {
 		THROW(ERR_INVALID_BIP44_PATH);
 	}
 	// Sanity check
