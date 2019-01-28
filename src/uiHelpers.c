@@ -107,7 +107,7 @@ void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_f
 
 void uiCallback_confirm(ui_callback_t* cb)
 {
-	if (cb->confirm == NULL) return;
+	if (!cb->confirm) return;
 
 	switch(cb->state) {
 	case CALLBACK_NOT_RUN:
@@ -125,7 +125,7 @@ void uiCallback_confirm(ui_callback_t* cb)
 
 void uiCallback_reject(ui_callback_t* cb)
 {
-	if (cb->reject == NULL) return;
+	if (!cb->reject) return;
 
 	switch(cb->state) {
 	case CALLBACK_NOT_RUN:
@@ -231,9 +231,9 @@ static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 	ASSERT(ctx->initMagic == INIT_MAGIC_CONFIRM);
 	switch (element->component.userid) {
 	case ID_ICON_REJECT:
-		return (ctx->callback.reject != NULL) ? element : NULL;
+		return ctx->callback.reject ? element : NULL;
 	case ID_ICON_CONFIRM:
-		return (ctx->callback.confirm != NULL) ? element : NULL;
+		return ctx->callback.confirm ? element : NULL;
 	default:
 		// Always display all other elements.
 		return element;
