@@ -12,10 +12,17 @@
 static ins_get_ext_pubkey_context_t* ctx = &(instructionState.extPubKeyContext);
 
 
-// forward declaration
-static void respond_with_extended_public_key();
-
 static int16_t RESPONSE_READY_MAGIC = 12345;
+
+// forward declaration
+static void getExtendedPublicKey_ui_runStep();
+enum {
+	UI_STEP_WARNING = 100,
+	UI_STEP_DISPLAY_PATH,
+	UI_STEP_CONFIRM,
+	UI_STEP_RESPOND,
+	UI_STEP_INVALID,
+};
 
 void getExtendedPublicKey_handleAPDU(
         uint8_t p1,
@@ -56,36 +63,73 @@ void getExtendedPublicKey_handleAPDU(
 	);
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
-	// Response
-	char pathStr[100];
-	bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
-	ui_checkUserConsent(
-	        policy,
-	        "Export public key?",
-	        pathStr,
-	        respond_with_extended_public_key,
-	        respond_with_user_reject
-	);
-
+	switch (policy) {
+	case POLICY_PROMPT_WARN_UNUSUAL: {
+		ctx->ui_step = UI_STEP_WARNING;
+		break;
+	}
+	case POLICY_PROMPT_BEFORE_RESPONSE: {
+		ctx->ui_step = UI_STEP_DISPLAY_PATH;
+		break;
+	}
+	case POLICY_ALLOW: {
+		ctx->ui_step = UI_STEP_RESPOND;
+		break;
+	}
+	default:
+		ASSERT(false);
+	}
+	getExtendedPublicKey_ui_runStep();
 }
 
-static void respond_with_extended_public_key()
+static void getExtendedPublicKey_ui_runStep()
 {
-	ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
-	const extendedPublicKey_t* extPubKey = & ctx->extPubKey;
+	ui_callback_fn_t* this_fn = getExtendedPublicKey_ui_runStep;
+	int nextStep = UI_STEP_INVALID;
 
-	// Note: we reuse G_io_apdu_buffer!
-	uint8_t* responseBuffer = G_io_apdu_buffer;
-	size_t responseMaxSize = SIZEOF(G_io_apdu_buffer);
+	switch (ctx->ui_step) {
+	case UI_STEP_WARNING: {
+		ui_displayScrollingText(
+		        "Unusual request",
+		        "Proceed with care",
+		        this_fn
+		);
+		nextStep  = UI_STEP_DISPLAY_PATH;
+		break;
+	}
+	case UI_STEP_DISPLAY_PATH: {
+		// Response
+		char pathStr[100];
+		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr) );
 
-	STATIC_ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE, "bad extended public key size");
+		ui_displayScrollingText(
+		        "Export public key",
+		        pathStr,
+		        this_fn
+		);
+		nextStep = UI_STEP_CONFIRM;
+		break;
+	}
+	case UI_STEP_CONFIRM: {
+		ui_displayConfirm(
+		        "Confirm export",
+		        "public key?",
+		        this_fn,
+		        respond_with_user_reject
+		);
+		nextStep = UI_STEP_RESPOND;
+		break;
+	}
+	case UI_STEP_RESPOND: {
+		ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 
-	size_t outSize = 1 + EXTENDED_PUBKEY_SIZE;
-	ASSERT(outSize <= responseMaxSize);
-
-	u1be_write(responseBuffer, EXTENDED_PUBKEY_SIZE);
-	os_memmove(responseBuffer + 1, extPubKey, SIZEOF(*extPubKey));
-
-	io_send_buf(SUCCESS, responseBuffer, outSize);
-	ui_idle();
+		io_send_buf(SUCCESS, (uint8_t*) &ctx->extPubKey, SIZEOF(ctx->extPubKey));
+		ui_idle();
+		nextStep = UI_STEP_INVALID;
+		break;
+	}
+	default:
+		ASSERT(false);
+	}
+	ctx->ui_step = nextStep;
 }

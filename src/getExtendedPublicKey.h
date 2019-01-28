@@ -12,6 +12,7 @@ typedef struct {
 	int16_t responseReadyMagic;
 	bip44_path_t pathSpec;
 	extendedPublicKey_t extPubKey;
+	int ui_step;
 } ins_get_ext_pubkey_context_t;
 
 #endif

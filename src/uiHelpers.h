@@ -5,7 +5,9 @@
 #include <stddef.h>
 #include "securityPolicy.h"
 
-typedef void callback_t();
+typedef void callback_t(); // legacy
+typedef void ui_callback_fn_t();
+
 
 static const size_t UI_DISPLAY_TEXT_LEN = 32;
 static const size_t UI_MAX_TEXT_LEN = 200;
