@@ -1,9 +1,7 @@
 #ifndef H_CARDANO_APP_CBOR
 #define H_CARDANO_APP_CBOR
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "common.h"
 #include "stream.h"
 
 // temporary handy values
@@ -47,9 +45,11 @@ typedef struct {
 	uint8_t type;
 	uint8_t width; // Contains number of *additional* bytes carrying the value
 	uint64_t value;
-} token_t;
+} cbor_token_t;
 
-token_t cbor_peekToken(const stream_t* s);
+typedef cbor_token_t token_t; // legacy
+
+cbor_token_t cbor_peekToken(const stream_t* s);
 void cbor_advanceToken(stream_t* s);
 
 void cbor_appendToken(stream_t* stream, uint8_t type, uint64_t value);
@@ -65,6 +65,9 @@ uint64_t cbor_takeToken(stream_t* stream, uint8_t expectedType);
 
 // Is next CBOR token indefinite array/map end?
 bool cbor_peekNextIsIndefEnd(stream_t* stream);
+
+cbor_token_t cbor_parseToken(const uint8_t* buf, size_t size);
+
 
 void run_cbor_test();
 #endif
