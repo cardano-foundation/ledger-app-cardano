@@ -10,16 +10,16 @@
 #include <string.h>
 #include "utils.h"
 
-void testcase_base58(const char* inputHex, const char* expectedHex)
+void testcase_base58(const char* inputHex, const char* expectedStr)
 {
 	PRINTF("testcase_base58: %s\n", inputHex);
 	uint8_t inputBuffer[100];
 	size_t inputSize;
 	inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
-	uint8_t outputBuffer[100];
-	size_t outputSize = encode_base58(inputBuffer, inputSize, outputBuffer, SIZEOF(outputBuffer));
-	EXPECT_EQ(outputSize, strlen(expectedHex));
-	EXPECT_EQ_BYTES(expectedHex, outputBuffer, outputSize);
+	char outputStr[100];
+	size_t outputLen = encode_base58(inputBuffer, inputSize, outputStr, SIZEOF(outputStr));
+	EXPECT_EQ(outputLen, strlen(expectedStr));
+	EXPECT_EQ_BYTES(expectedStr, outputStr, outputLen + 1);
 }
 
 void run_base58_test()

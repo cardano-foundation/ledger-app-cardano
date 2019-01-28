@@ -6,7 +6,7 @@
 
 size_t encode_base58(
         const uint8_t *inBuffer, size_t inSize,
-        uint8_t *outBuffer, size_t maxOutSize
+        char *outStr, size_t outMaxSize
 );
 
 void run_base58_test();
