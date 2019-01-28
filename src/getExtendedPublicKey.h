@@ -6,7 +6,7 @@
 #include "bip44.h"
 #include "keyDerivation.h"
 
-handler_fn_t handleGetExtendedPublicKey;
+handler_fn_t getExtendedPublicKey_handleAPDU;
 
 typedef struct {
 	int16_t responseReadyMagic;

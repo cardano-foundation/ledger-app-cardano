@@ -18,7 +18,7 @@ static const uint32_t HARDENED_BIP32 = ((uint32_t) 1 << 31);
 
 size_t bip44_parseFromWire(
         bip44_path_t* pathSpec,
-        uint8_t* dataBuffer, size_t dataSize
+        const uint8_t* dataBuffer, size_t dataSize
 );
 
 // Indexes into pathSpec

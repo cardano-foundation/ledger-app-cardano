@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "cbor.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -158,3 +160,5 @@ void run_cbor_test()
 	test_cbor_parse_noncanonical();
 	test_cbor_serialization();
 }
+
+#endif

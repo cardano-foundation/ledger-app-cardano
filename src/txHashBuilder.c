@@ -7,10 +7,10 @@
 
 // Syntactic sugar
 #define BUILDER_APPEND_CBOR(type, value) \
-    blake2b_256_append_cbor(&builder->txHash, type, value)
+	blake2b_256_append_cbor(&builder->txHash, type, value)
 
 #define BUILDER_APPEND_DATA(buffer, bufferSize) \
-    blake2b_256_append(&builder->txHash, buffer, bufferSize)
+	blake2b_256_append(&builder->txHash, buffer, bufferSize)
 
 
 void blake2b_256_append_cbor(

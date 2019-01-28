@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "stream.h"
 #include <os.h>
 #include <stdbool.h>
@@ -22,7 +24,7 @@ void _run_stream_test(stream_t* s)
 
 
 	// [1, 2, 3, 4]
-	const uint8_t data[] = {1,2,3,4};
+	const uint8_t data[] = {1, 2, 3, 4};
 	stream_appendData(s, data, 4);
 	{
 
@@ -94,3 +96,5 @@ void run_stream_test()
 {
 	_run_stream_test(&ctx->s);
 }
+
+#endif

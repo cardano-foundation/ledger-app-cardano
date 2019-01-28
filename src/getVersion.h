@@ -7,7 +7,6 @@
 // Must be in format x.y.z
 #define APPVERSION "0.0.1"
 
-handler_fn_t handleGetVersion;
-handler_fn_t handleShowAbout;
+handler_fn_t getVersion_handleAPDU;
 
 #endif // H_GET_VERSION

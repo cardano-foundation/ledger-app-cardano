@@ -20,7 +20,6 @@
 enum {
 	// 0x0* - app status calls
 	INS_GET_VERSION       = 0x00,
-	INS_SHOW_ABOUT        = 0x02,
 
 	// 0x1* - public-key/address related
 	INS_GET_PUB_KEY       = 0x10,
@@ -46,15 +45,12 @@ handler_fn_t* lookupHandler(uint8_t ins)
 	switch (ins) {
 
 	case INS_GET_VERSION:
-		return handleGetVersion;
-	case INS_SHOW_ABOUT:
-		return handleShowAbout;
+		return getVersion_handleAPDU;
 
 	case INS_GET_PUB_KEY:
-		return handleGetExtendedPublicKey;
+		return getExtendedPublicKey_handleAPDU;
 	case INS_DERIVE_ADDRESS:
-		return handleDeriveAddress;
-
+		return deriveAddress_handleAPDU;
 
 	case INS_ATTEST_UTXO:
 		return handle_attestUtxo;

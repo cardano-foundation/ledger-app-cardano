@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "keyDerivation.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -50,8 +52,8 @@ void testPrivateKeyDerivation()
 
 #define TESTCASE(path_, expectedHex_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePrivateKey(path, ARRAY_LEN(path), expectedHex_); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		testcase_derivePrivateKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 
@@ -66,7 +68,7 @@ void testPrivateKeyDerivation()
 	);
 
 	TESTCASE(
-	        (HD + 44, HD+ 1815, HD + 1, HD + 55 ),
+	        (HD + 44, HD + 1815, HD + 1, HD + 55 ),
 
 	        "38996766f3a49d987f37b694d170eef5866397f71fe0c50108f4b3db27e69d41"
 	        "54a57702a5bf1fde836fa243f7009e665e4e902a70699ee5e82187afc425cc6a"
@@ -90,8 +92,8 @@ void testPrivateKeyDerivation()
 
 #define TESTCASE(path_, error_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    EXPECT_THROWS(testcase_derivePrivateKey(path, ARRAY_LEN(path), ""), error_ ); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		EXPECT_THROWS(testcase_derivePrivateKey(path, ARRAY_LEN(path), ""), error_ ); \
 	}
 
 	TESTCASE( (HD + 43, HD + 1815), ERR_INVALID_BIP44_PATH);
@@ -127,8 +129,8 @@ void testPublicKeyDerivation()
 {
 #define TESTCASE(path_, expectedHex_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_derivePublicKey(path, ARRAY_LEN(path), expectedHex_); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		testcase_derivePublicKey(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(
@@ -182,8 +184,8 @@ void testChainCodeDerivation()
 {
 #define TESTCASE(path_, expectedHex_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveChainCode(path, ARRAY_LEN(path), expectedHex_); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		testcase_deriveChainCode(path, ARRAY_LEN(path), expectedHex_); \
 	}
 
 	TESTCASE(
@@ -209,3 +211,5 @@ void run_key_derivation_test()
 	testPublicKeyDerivation();
 	testChainCodeDerivation();
 }
+
+#endif

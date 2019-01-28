@@ -4,7 +4,7 @@
 
 size_t bip44_parseFromWire(
         bip44_path_t* pathSpec,
-        uint8_t *dataBuffer, size_t dataSize
+        const uint8_t *dataBuffer, size_t dataSize
 )
 {
 	// Ensure we have length

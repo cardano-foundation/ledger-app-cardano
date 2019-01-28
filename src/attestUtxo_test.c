@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include <os.h>
 #include "attestUtxo.h"
 #include "errors.h"
@@ -15,7 +17,7 @@ void test_attest(const char** txChunksHex, uint32_t numChunks, uint32_t outputIn
 	attest_utxo_parser_state_t state;
 
 	parser_init(&state, outputIndex);
-	for (unsigned i =0; i < numChunks; i++) {
+	for (unsigned i = 0; i < numChunks; i++) {
 		stream_appendFromHexString(& state.stream, PTR_PIC(txChunksHex[i]));
 		BEGIN_TRY {
 			TRY {
@@ -72,3 +74,5 @@ void run_test_attestUtxo()
 		test_attest(it->txChunksHex, it->chunksLen, it->outputIndex, it->expectedAmount);
 	}
 }
+
+#endif

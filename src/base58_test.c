@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include <os.h>
 #include <stdbool.h>
 #include "assert.h"
@@ -56,3 +58,5 @@ void run_base58_test()
 		testcase_base58(PTR_PIC(it->inputHex), PTR_PIC(it->expectedHex));
 	}
 }
+
+#endif

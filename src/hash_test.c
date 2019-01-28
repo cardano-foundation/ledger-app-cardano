@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "cbor.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -106,3 +108,5 @@ void run_hash_test()
 {
 	run_blake2b_test();
 }
+
+#endif

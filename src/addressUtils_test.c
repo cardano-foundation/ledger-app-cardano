@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "addressUtils.h"
 #include "test_utils.h"
 #include "hex_utils.h"
@@ -44,8 +46,8 @@ void testAddressDerivation()
 {
 #define TESTCASE(path_, expected_) \
 	{ \
-	    uint32_t path[] = { UNWRAP path_ }; \
-	    testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
+		uint32_t path[] = { UNWRAP path_ }; \
+		testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
 	}
 
 
@@ -70,3 +72,5 @@ void run_address_utils_test()
 {
 	testAddressDerivation();
 }
+
+#endif

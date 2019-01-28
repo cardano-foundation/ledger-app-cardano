@@ -5,7 +5,7 @@
 #include "bip44.h"
 #include "handlers.h"
 
-handler_fn_t handleDeriveAddress;
+handler_fn_t deriveAddress_handleAPDU;
 
 typedef struct {
 	uint16_t responseReadyMagic;

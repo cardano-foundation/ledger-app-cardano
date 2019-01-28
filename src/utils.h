@@ -8,24 +8,24 @@
 // Does not compile if x is pointer of some kind
 // See http://zubplot.blogspot.com/2015/01/gcc-is-wonderful-better-arraysize-macro.html
 #define ARRAY_NOT_A_PTR(x) \
-     (sizeof(__typeof__(int[1 - 2 * \
-           !!__builtin_types_compatible_p(__typeof__(x), \
-                 __typeof__(&x[0]))])) * 0)
+	(sizeof(__typeof__(int[1 - 2 * \
+	                         !!__builtin_types_compatible_p(__typeof__(x), \
+	                               __typeof__(&x[0]))])) * 0)
 
 
 // Safe array length, does not compile if you accidentally supply a pointer
 #define ARRAY_LEN(arr) \
-    (sizeof(arr) / sizeof((arr)[0]) + ARRAY_NOT_A_PTR(arr))
+	(sizeof(arr) / sizeof((arr)[0]) + ARRAY_NOT_A_PTR(arr))
 
 // Does not compile if x *might* be a pointer of some kind
 // Might produce false positives on small structs...
 // Note: ARRAY_NOT_A_PTR does not compile if arg is a struct so this is a workaround
 #define SIZEOF_NOT_A_PTR(var) \
-    (sizeof(__typeof(int[0 - (sizeof(var) == sizeof((void *)0))])) * 0)
+	(sizeof(__typeof(int[0 - (sizeof(var) == sizeof((void *)0))])) * 0)
 
 // Safe version of SIZEOF, does not compile if you accidentally supply a pointer
 #define SIZEOF(var) \
-    (sizeof(var) + SIZEOF_NOT_A_PTR(var))
+	(sizeof(var) + SIZEOF_NOT_A_PTR(var))
 
 
 // Given that memset is root of many problems, a bit of paranoia is good.
@@ -41,14 +41,19 @@
 // The best way is to provide an expected type and make sure expected and
 // inferred type have the same size.
 #define MEMCLEAR(ptr, expected_type) \
-{ \
-    STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), "bad memclear parameters"); \
-    os_memset(ptr, 0, sizeof(expected_type)); \
-}
+	do { \
+		STATIC_ASSERT(sizeof(expected_type) == sizeof(*(ptr)), "bad memclear parameters"); \
+		os_memset(ptr, 0, sizeof(expected_type)); \
+	} while(0)
 
 // Helper function to check APDU request parameters
-#define VALIDATE(cond, error) {if (!(cond)) THROW(error);}
-#define VALIDATE_REQUEST_PARAM(cond) VALIDATE(cond, ERR_INVALID_REQUEST_PARAMETERS)
+#define VALIDATE(cond, error) \
+	do {\
+		if (!(cond)) { \
+			PRINTF("Validation Error in %s: %d\n", __FILE__, __LINE__); \
+			THROW(error); \
+		} \
+	} while(0)
 
 // Helper functions for ranges
 // TODO(ppershing): make more type safe?

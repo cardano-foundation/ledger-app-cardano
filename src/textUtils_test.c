@@ -1,3 +1,5 @@
+#ifdef DEVEL
+
 #include "common.h"
 #include "textUtils.h"
 #include "test_utils.h"
@@ -44,3 +46,5 @@ void run_textUtils_test()
 {
 	test_formatAda();
 }
+
+#endif
