@@ -25,6 +25,13 @@ size_t deriveRawAddress(
         uint8_t* outBuffer, size_t outSize
 );
 
+// Note: validates boxing
+// TODO(ppershing): should we just return a pointer view?
+size_t unboxChecksummedAddress(
+        const uint8_t* addressBuffer, size_t addressSize,
+        uint8_t* outputBuffer, size_t outputSize
+);
+
 void run_address_utils_test();
 
 #endif

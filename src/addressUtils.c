@@ -101,6 +101,57 @@ size_t cborPackRawAddressWithChecksum(
 	return view_processedSize(&output);
 }
 
+// TODO(ppershing): unite parsing with attestUtxo streams ...
+
+// TODO(ppershing): Should we somehow deal with not enough input currently
+// throwing ERR_NOT_ENOUGH_INPUT instead of ERR_INVALID_DATA?
+static uint64_t parseToken(read_view_t* view, uint8_t type)
+{
+	const cbor_token_t token = view_readToken(view);
+	VALIDATE(token.type == type, ERR_INVALID_DATA);
+	return token.value;
+}
+
+static void parseTokenWithValue(read_view_t* view, uint8_t type, uint64_t value)
+{
+	const cbor_token_t token = view_readToken(view);
+	VALIDATE(token.type == type, ERR_INVALID_DATA);
+	VALIDATE(token.value  == value, ERR_INVALID_DATA);
+}
+
+
+size_t unboxChecksummedAddress(
+        const uint8_t* addressBuffer, size_t addressSize,
+        uint8_t* outputBuffer, size_t outputSize
+)
+{
+	ASSERT(addressSize < BUFFER_SIZE_PARANOIA);
+	ASSERT(outputSize < BUFFER_SIZE_PARANOIA);
+
+	read_view_t view = make_read_view(addressBuffer, addressBuffer + addressSize);
+
+	parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 2);
+
+	parseTokenWithValue(&view, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
+
+	uint64_t unboxedSize = parseToken(&view, CBOR_TYPE_BYTES);
+
+	const uint8_t* unboxedBuffer = view.ptr;
+	// overflow pre-check, should not be needed with view_skipBytes but ...
+	VALIDATE(unboxedSize < BUFFER_SIZE_PARANOIA, ERR_INVALID_DATA);
+	VALIDATE(unboxedSize <= view_remainingSize(&view), ERR_INVALID_DATA);
+
+	view_skipBytes(&view, unboxedSize);
+
+	uint32_t checksum = crc32(unboxedBuffer, unboxedSize);
+
+	parseTokenWithValue(&view, CBOR_TYPE_UNSIGNED, checksum);
+	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
+
+	VALIDATE(unboxedSize <= outputSize, ERR_DATA_TOO_LARGE);
+	os_memmove(outputBuffer, unboxedBuffer, unboxedSize);
+	return unboxedSize;
+}
 
 
 size_t deriveRawAddress(
