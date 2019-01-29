@@ -103,6 +103,25 @@ static inline cbor_token_t view_readToken(read_view_t* view)
 #define VIEW_REMAINING_TO_TUPLE_BUF_SIZE(view) (view)->ptr, view_remainingSize(view)
 #define VIEW_PROCESSED_TO_TUPLE_BUF_SIZE(view) (view)->begin, view_processedSize(view)
 
+typedef uint8_t uint_width1_t;
+typedef uint16_t uint_width2_t;
+typedef uint32_t uint_width4_t;
+typedef uint64_t uint_width8_t;
+
+#define __DEFINE_VIEW_parse_ube(width) \
+	static inline uint_width##width##_t parse_u##width##be(read_view_t* view) { \
+		VALIDATE(view_remainingSize(view) >= width, ERR_NOT_ENOUGH_INPUT); \
+		uint_width##width##_t result = u##width##be_read(view->ptr); \
+		view->ptr += width; \
+		return result; \
+	};
+
+
+
+__DEFINE_VIEW_parse_ube(1)
+__DEFINE_VIEW_parse_ube(2)
+__DEFINE_VIEW_parse_ube(4)
+__DEFINE_VIEW_parse_ube(8)
 
 
 #endif

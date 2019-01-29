@@ -12,6 +12,7 @@
 #include "state.h"
 #include "errors.h"
 #include "deriveAddress.h"
+#include "signTx.h"
 
 // The APDU protocol uses a single-byte instruction code (INS) to specify
 // which command should be executed. We'll use this code to dispatch on a
@@ -27,6 +28,7 @@ enum {
 
 	// 0x2* - signing-transaction related
 	INS_ATTEST_UTXO       = 0x20,
+	INS_SIGN_TX           = 0x21,
 
 	#ifdef DEVEL
 	// 0xF* - debug_mode related
@@ -54,6 +56,9 @@ handler_fn_t* lookupHandler(uint8_t ins)
 
 	case INS_ATTEST_UTXO:
 		return handle_attestUtxo;
+
+	case INS_SIGN_TX:
+		return signTx_handleAPDU;
 
 // *INDENT-OFF* astyle has problems with #define inside switch
 #ifdef DEVEL
