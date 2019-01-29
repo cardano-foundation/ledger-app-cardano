@@ -4,6 +4,7 @@
 #include "cbor.h"
 #include "cardano.h"
 #include "crc32.h"
+#include "bufView.h"
 
 // Syntactic sugar
 #define BUILDER_APPEND_CBOR(type, value) \
@@ -52,26 +53,25 @@ size_t cborEncodeUtxoInner(
 	ASSERT(utxoHashSize == 32);
 	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 
-	uint8_t* ptr = outBuffer;
-	uint8_t* end = outBuffer + outSize;
+	write_view_t out = make_write_view(outBuffer, outBuffer + outSize);
+
 
 	// Array(2)[
 	//   Bytes(32)[tx hash],
 	//   Unsigned[output number]
 	// ]
 	{
-		BUF_PTR_APPEND_TOKEN(ptr, end, CBOR_TYPE_ARRAY, 2);
+		view_appendToken(&out, CBOR_TYPE_ARRAY, 2);
 		{
 			// Note: No tag because hash is not cbor
-			BUF_PTR_APPEND_TOKEN(ptr, end, CBOR_TYPE_BYTES, utxoHashSize);
-			BUF_PTR_APPEND_DATA(ptr, end, utxoHashBuffer, utxoHashSize);
+			view_appendToken(&out, CBOR_TYPE_BYTES, utxoHashSize);
+			view_appendData(&out, utxoHashBuffer, utxoHashSize);
 		} {
-			BUF_PTR_APPEND_TOKEN(ptr, end, CBOR_TYPE_UNSIGNED, utxoIndex);
+			view_appendToken(&out, CBOR_TYPE_UNSIGNED, utxoIndex);
 		}
 	}
 
-	ASSERT(ptr <= end);
-	return ptr - outBuffer;
+	return view_processedSize(&out);
 }
 
 void txHashBuilder_addUtxoInput(
