@@ -294,7 +294,7 @@ void attestUtxo_sendResponse()
 		uint8_t hmac[16];
 	} wireResponse;
 
-	STATIC_ASSERT(SIZEOF(wireResponse) == 32+4+8+16, "response is packed");
+	STATIC_ASSERT(SIZEOF(wireResponse) == 32 + 4 + 8 + 16, "response is packed");
 
 	blake2b_256_finalize(&ctx ->txHashCtx, wireResponse.data.txHash, SIZEOF(wireResponse.data.txHash));
 	u4be_write(wireResponse.data.index, ctx->parserState.attestedOutputIndex);

@@ -64,6 +64,8 @@ void ui_checkUserConsent(
         ui_callback_fn_t* reject
 );
 
+void ui_displayBusy();
+
 // responds to the host and resets
 // processing
 void respond_with_user_reject();
