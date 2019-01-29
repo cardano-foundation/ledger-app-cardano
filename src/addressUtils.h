@@ -4,7 +4,7 @@
 #include "common.h"
 #include "bip44.h"
 
-uint32_t deriveAddress(
+size_t deriveAddress(
         const bip44_path_t* pathSpec,
         uint8_t* outBuffer, size_t outSize
 );
@@ -20,7 +20,7 @@ size_t cborPackRawAddressWithChecksum(
         uint8_t* outputBuffer, size_t outputSize
 );
 
-uint32_t deriveAddress(
+size_t deriveRawAddress(
         const bip44_path_t* pathSpec,
         uint8_t* outBuffer, size_t outSize
 );

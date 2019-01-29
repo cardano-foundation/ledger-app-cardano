@@ -102,29 +102,8 @@ size_t cborPackRawAddressWithChecksum(
 }
 
 
-size_t cborEncodePubkeyAddress(
-        const uint8_t* addressRoot, size_t addressRootSize,
-        uint8_t* outBuffer, size_t outSize
-        /* potential attributes */
-)
-{
-	ASSERT(addressRootSize == 28); // should be result of blake2b_224
-	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 
-	uint8_t rawAddressBuffer[40];
-	size_t rawAddressSize = cborEncodePubkeyAddressInner(
-	                                addressRoot, addressRootSize,
-	                                rawAddressBuffer, SIZEOF(rawAddressBuffer)
-	                        );
-
-	return cborPackRawAddressWithChecksum(
-	               rawAddressBuffer, rawAddressSize,
-	               outBuffer, outSize
-	       );
-}
-
-
-uint32_t deriveAddress(
+size_t deriveRawAddress(
         const bip44_path_t* pathSpec,
         uint8_t* outBuffer, size_t outSize
 )
@@ -141,8 +120,26 @@ uint32_t deriveAddress(
 		);
 	}
 
-	size_t addressSize = cborEncodePubkeyAddress(
-	                             addressRoot, SIZEOF(addressRoot),
-	                             outBuffer, outSize);
-	return addressSize;
+	return cborEncodePubkeyAddressInner(
+	               addressRoot, SIZEOF(addressRoot),
+	               outBuffer, outSize
+	       );
+}
+
+size_t deriveAddress(
+        const bip44_path_t* pathSpec,
+        uint8_t* outBuffer, size_t outSize
+)
+{
+	uint8_t rawAddressBuffer[40];
+	size_t rawAddressSize = deriveRawAddress(
+	                                pathSpec,
+	                                rawAddressBuffer, SIZEOF(rawAddressBuffer)
+	                        );
+
+	return cborPackRawAddressWithChecksum(
+	               rawAddressBuffer, rawAddressSize,
+	               outBuffer, outSize
+	       );
+
 }
