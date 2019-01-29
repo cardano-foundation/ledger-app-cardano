@@ -31,6 +31,19 @@ enum {
 
 STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
 
+static const bagl_element_t ui_busy[] = {
+	UI_BACKGROUND(),
+	UI_TEXT(ID_UNSPECIFIED, 0, 20, 128, "..."),
+};
+
+static unsigned int ui_busy_button(
+        unsigned int button_mask MARK_UNUSED,
+        unsigned int button_mask_counter MARK_UNUSED
+)
+{
+	return 0;
+}
+
 static const bagl_element_t ui_scrollingText[] = {
 	UI_BACKGROUND(),
 	UI_ICON_LEFT(ID_ICON_GO_LEFT, BAGL_GLYPH_ICON_LEFT),
@@ -271,6 +284,11 @@ static unsigned int ui_confirm_button(
 	}
 	END_TRY;
 	return 0;
+}
+
+void ui_displayBusy()
+{
+	UX_DISPLAY(ui_busy, NULL);
 }
 
 void ui_displayConfirm(
