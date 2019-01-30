@@ -41,10 +41,7 @@ void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wire
 
 	// Check security policy
 	security_policy_t policy = policyForReturnDeriveAddress(&ctx->pathSpec);
-
-	if (policy == POLICY_DENY) {
-		THROW(ERR_REJECTED_BY_POLICY);
-	}
+	ENSURE_NOT_DENIED(policy);
 
 	ctx->address.size = deriveAddress(
 	                            &ctx->pathSpec,
@@ -157,10 +154,7 @@ void deriveAddress_handleDisplay(uint8_t p2, uint8_t* wireDataBuffer, size_t wir
 
 	// Check security policy
 	security_policy_t policy = policyForShowDeriveAddress(&ctx->pathSpec);
-
-	if (policy == POLICY_DENY) {
-		THROW(ERR_REJECTED_BY_POLICY);
-	}
+	ENSURE_NOT_DENIED(policy);
 
 	ctx->address.size = deriveAddress(
 	                            &ctx->pathSpec,

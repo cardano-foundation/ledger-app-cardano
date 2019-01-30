@@ -1,105 +1,135 @@
 #include "securityPolicy.h"
 
+// Warning: following helper macros assume "pathSpec" in the context
+
+// Helper macros
+
+static inline bool has_cardano_prefix_and_any_account(const bip44_path_t* pathSpec)
+{
+	return bip44_hasValidCardanoPrefix(pathSpec) &&
+	       bip44_containsAccount(pathSpec);
+}
+
+static inline bool has_valid_change_and_any_address(const bip44_path_t* pathSpec)
+{
+	return bip44_hasValidChainType(pathSpec) &&
+	       bip44_containsAddress(pathSpec);
+}
+
+// Both account and address are from small brute-forcable range
+static inline bool has_reasonable_account_and_address(const bip44_path_t* pathSpec)
+{
+	return bip44_hasReasonableAccount(pathSpec) &&
+	       bip44_hasReasonableAddress(pathSpec);
+}
+
+static inline bool is_too_deep(const bip44_path_t* pathSpec)
+{
+	return bip44_containsMoreThanAddress(pathSpec);
+}
+
+#define DENY_IF(expr) if (expr) return POLICY_DENY;
+#define WARN_IF(expr) if (expr) return POLICY_PROMPT_WARN_UNUSUAL;
+#define PROMPT_IF(expr) if (expr) return POLICY_PROMPT_BEFORE_RESPONSE;
+#define ALLOW_IF(expr) if (expr) return POLICY_ALLOW;
+#define SHOW_IF(expr) if (expr) return POLICY_SHOW_BEFORE_RESPONSE;
+
+// Get extended public key and return it to the host
 security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec)
 {
-	if (!bip44_hasValidCardanoPrefix(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAccount(pathSpec)) return POLICY_DENY;
+	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
 
-	if (!bip44_hasReasonableAccount(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-
+	WARN_IF(!bip44_hasReasonableAccount(pathSpec));
 	// Normally extPubKey is asked only for an account
-	if (bip44_containsChainType(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
+	WARN_IF(bip44_containsChainType(pathSpec));
 
-	return POLICY_PROMPT_BEFORE_RESPONSE;
+	PROMPT_IF(true);
 }
 
-
+// Derive address and return it to the host
 security_policy_t policyForReturnDeriveAddress(const bip44_path_t* pathSpec)
 {
-	if (!bip44_hasValidCardanoPrefix(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAccount(pathSpec)) return POLICY_DENY;
-	if (!bip44_hasValidChainType(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAddress(pathSpec)) return POLICY_DENY;
+	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
+	DENY_IF(!has_valid_change_and_any_address(pathSpec));
 
-	if (!bip44_hasReasonableAccount(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (!bip44_hasReasonableAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (bip44_containsMoreThanAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
+	WARN_IF(!has_reasonable_account_and_address(pathSpec))
+	WARN_IF(is_too_deep(pathSpec));
 
-	return POLICY_PROMPT_BEFORE_RESPONSE;
+	PROMPT_IF(true);
 }
 
+// Derive address and show it to the user
 security_policy_t policyForShowDeriveAddress(const bip44_path_t* pathSpec)
 {
-	if (!bip44_hasValidCardanoPrefix(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAccount(pathSpec)) return POLICY_DENY;
-	if (!bip44_hasValidChainType(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAddress(pathSpec)) return POLICY_DENY;
+	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
+	DENY_IF(!has_valid_change_and_any_address(pathSpec));
 
-	if (!bip44_hasReasonableAccount(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (!bip44_hasReasonableAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (bip44_containsMoreThanAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
+	WARN_IF(!has_reasonable_account_and_address(pathSpec))
+	WARN_IF(is_too_deep(pathSpec));
 
-	return POLICY_SHOW_BEFORE_RESPONSE;
+	SHOW_IF(true);
 }
 
-
+// Attest UTxO and return it to the host
 security_policy_t policyForAttestUtxo()
 {
-	return POLICY_ALLOW;
+	// We always allow attesting UTxO without user interaction (there is no security implication for doing this)
+	ALLOW_IF(true);
 }
 
 
-
+// Initiate transaction signing
 security_policy_t policyForSignTxInit()
 {
-	return POLICY_PROMPT_BEFORE_RESPONSE;
+	// Could be switched to POLICY_ALLOW to skip initial "new transaction" question
+	PROMPT_IF(true);
 }
 
+// For each transaction UTxO input
 security_policy_t policyForSignTxInput()
 {
-	return POLICY_ALLOW;
+	// No need to check (attested) tx inputs
+	ALLOW_IF(true);
 }
 
+// For each transaction (third-party) address output
 security_policy_t policyForSignTxOutputAddress(
         const uint8_t* rawAddressBuffer MARK_UNUSED, size_t rawAddressSize MARK_UNUSED
 )
 {
-	return POLICY_SHOW_BEFORE_RESPONSE;
+	// We always show third-party output addresses
+	SHOW_IF(true);
 }
 
+// For each transaction change (Ledger's) output
 security_policy_t policyForSignTxOutputPath(const bip44_path_t* pathSpec)
 {
-	if (!bip44_hasValidCardanoPrefix(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAccount(pathSpec)) return POLICY_DENY;
+	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
+	DENY_IF(!has_valid_change_and_any_address(pathSpec));
 
-	if (!bip44_hasValidChainType(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAddress(pathSpec)) return POLICY_DENY;
+	WARN_IF(!has_reasonable_account_and_address(pathSpec))
+	WARN_IF(is_too_deep(pathSpec));
 
-	// Note: we don't need warning as these will be displayed as addresses, not paths
-	if (!bip44_hasReasonableAccount(pathSpec)) return POLICY_SHOW_BEFORE_RESPONSE;
-	if (!bip44_hasReasonableAddress(pathSpec)) return POLICY_SHOW_BEFORE_RESPONSE;
-	if (bip44_containsMoreThanAddress(pathSpec)) return POLICY_SHOW_BEFORE_RESPONSE;
-
-	return POLICY_ALLOW;
+	ALLOW_IF(true);
 }
 
+// For transaction fee
 security_policy_t policyForSignTxFee(uint64_t fee MARK_UNUSED)
 {
-	return POLICY_SHOW_BEFORE_RESPONSE;
+	SHOW_IF(true);
 }
 
+// For each transaction witness
+// Note: witnesses reveal public key of an address
+// and Ledger *does not* check whether they correspond to previously declared UTxOs
 security_policy_t policyForSignTxWitness(const bip44_path_t* pathSpec)
 {
-	PRINTF("policy for sign tx witness\n");
-	if (!bip44_hasValidCardanoPrefix(pathSpec)) return POLICY_DENY;
-	if (!bip44_containsAccount(pathSpec)) return POLICY_DENY;
+	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
+	DENY_IF(!has_valid_change_and_any_address(pathSpec));
 
-	// Perhaps these could be relaxed?
-	if (!bip44_hasReasonableAccount(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (!bip44_hasValidChainType(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-	if (!bip44_containsAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
+	// Perhaps we can relax these?
+	WARN_IF(!has_reasonable_account_and_address(pathSpec))
+	WARN_IF(is_too_deep(pathSpec));
 
-	if (bip44_containsMoreThanAddress(pathSpec)) return POLICY_PROMPT_WARN_UNUSUAL;
-
-	return POLICY_ALLOW;
+	ALLOW_IF(true);
 }
