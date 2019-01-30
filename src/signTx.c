@@ -284,9 +284,8 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 		                 );
 
 		policy =  policyForSignTxOutputAddress(rawAddressBuffer, rawAddressSize);
-		if (policy == POLICY_DENY) {
-			THROW(ERR_REJECTED_BY_POLICY);
-		}
+		TRACE("Policy: %d", (int) policy);
+		THROW_IF_DENY(policy);
 		break;
 	}
 	case SIGN_TX_OUTPUT_TYPE_PATH: {
@@ -297,11 +296,10 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 
 
 		// todo security policy
+		TRACE("Policy: %d", (int) policy);
 		policy = policyForSignTxOutputPath(&ctx->currentPath);
 		// here we need to check early so that we don't run derivation step
-		if (policy == POLICY_DENY) {
-			THROW(ERR_REJECTED_BY_POLICY);
-		}
+		THROW_IF_DENY(policy);
 		rawAddressSize = deriveRawAddress(
 		                         &ctx->currentPath,
 		                         rawAddressBuffer, SIZEOF(rawAddressBuffer)
