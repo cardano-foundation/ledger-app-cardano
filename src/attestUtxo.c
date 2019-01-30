@@ -301,6 +301,7 @@ void attestUtxo_sendResponse()
 	u8be_write(wireResponse.data.amount, amount);
 
 	attest_writeHmac(
+	        ATTEST_PURPOSE_BIND_UTXO_AMOUNT,
 	        (uint8_t*) &wireResponse.data, SIZEOF(wireResponse.data),
 	        wireResponse.hmac, SIZEOF(wireResponse.hmac)
 	);

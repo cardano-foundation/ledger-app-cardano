@@ -179,6 +179,7 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 		VALIDATE(wireDataSize == 1 + SIZEOF(*wireUtxo), ERR_INVALID_DATA);
 
 		if (!attest_isCorrectHmac(
+		            ATTEST_PURPOSE_BIND_UTXO_AMOUNT,
 		            (uint8_t*) &wireUtxo->data, SIZEOF(wireUtxo->data),
 		            wireUtxo->hmac, SIZEOF(wireUtxo->hmac)
 		    )) {
