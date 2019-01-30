@@ -51,7 +51,7 @@ void getExtendedPublicKey_handleAPDU(
 
 	// Check security policy
 	security_policy_t policy = policyForGetExtendedPublicKey(&ctx->pathSpec);
-	THROW_IF_DENY(policy);
+	ENSURE_NOT_DENIED(policy);
 
 	// Calculation
 	deriveExtendedPublicKey(

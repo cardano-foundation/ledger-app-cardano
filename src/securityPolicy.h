@@ -25,7 +25,7 @@ security_policy_t policyForSignTxOutputPath(const bip44_path_t* pathSpec);
 security_policy_t policyForSignTxFee(uint64_t fee );
 security_policy_t policyForSignTxWitness(const bip44_path_t* pathSpec);
 
-static inline void THROW_IF_DENY(security_policy_t policy)
+static inline void ENSURE_NOT_DENIED(security_policy_t policy)
 {
 	if (policy == POLICY_DENY) {
 		THROW(ERR_REJECTED_BY_POLICY);
