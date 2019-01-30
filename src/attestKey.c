@@ -21,10 +21,16 @@ STATIC_ASSERT(sizeof(attestKeyData.key) == ATTEST_KEY_SIZE, "bad ATTEST_KEY_SIZE
 
 
 void attest_writeHmac(
+        attest_purpose_t purpose,
         const uint8_t* data, uint8_t dataSize,
         uint8_t* hmac, uint8_t hmacSize
 )
 {
+	if (purpose != ATTEST_PURPOSE_BIND_UTXO_AMOUNT) {
+		// Once implemented, purpose *must* become part of the HMAC
+		// as we need to avoid cross-purpose replay attacks
+		THROW(ERR_NOT_IMPLEMENTED);
+	}
 	ASSERT(hmacSize = ATTEST_HMAC_SIZE);
 	// attested HMAC
 	uint8_t tmpBuffer[32];
@@ -41,6 +47,7 @@ void attest_writeHmac(
 
 // Todo: this could be done in a better way
 bool attest_isCorrectHmac(
+        attest_purpose_t purpose,
         const uint8_t* data, uint8_t dataSize,
         uint8_t* hmac, uint8_t hmacSize
 )
@@ -49,7 +56,7 @@ bool attest_isCorrectHmac(
 
 	ASSERT(hmacSize == ATTEST_HMAC_SIZE);
 
-	attest_writeHmac(data, dataSize, tmpBuffer, SIZEOF(tmpBuffer));
+	attest_writeHmac(purpose, data, dataSize, tmpBuffer, SIZEOF(tmpBuffer));
 	return os_memcmp(hmac, tmpBuffer, SIZEOF(tmpBuffer)) == 0;
 }
 
