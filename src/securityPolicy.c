@@ -31,7 +31,7 @@ static inline bool is_too_deep(const bip44_path_t* pathSpec)
 #define DENY_IF(expr) if (expr) return POLICY_DENY;
 #define WARN_IF(expr) if (expr) return POLICY_PROMPT_WARN_UNUSUAL;
 #define PROMPT_IF(expr) if (expr) return POLICY_PROMPT_BEFORE_RESPONSE;
-#define ALLOW_IF(expr) if (expr) return POLICY_ALLOW;
+#define ALLOW_IF(expr) if (expr) return POLICY_ALLOW_WITHOUT_PROMPT;
 #define SHOW_IF(expr) if (expr) return POLICY_SHOW_BEFORE_RESPONSE;
 
 // Get extended public key and return it to the host
@@ -81,7 +81,7 @@ security_policy_t policyForAttestUtxo()
 // Initiate transaction signing
 security_policy_t policyForSignTxInit()
 {
-	// Could be switched to POLICY_ALLOW to skip initial "new transaction" question
+	// Could be switched to POLICY_ALLOW_WITHOUT_PROMPT to skip initial "new transaction" question
 	PROMPT_IF(true);
 }
 

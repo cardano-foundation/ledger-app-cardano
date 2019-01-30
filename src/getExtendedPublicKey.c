@@ -61,18 +61,11 @@ void getExtendedPublicKey_handleAPDU(
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
 	switch (policy) {
-	case POLICY_PROMPT_WARN_UNUSUAL: {
-		ctx->ui_step = UI_STEP_WARNING;
-		break;
-	}
-	case POLICY_PROMPT_BEFORE_RESPONSE: {
-		ctx->ui_step = UI_STEP_DISPLAY_PATH;
-		break;
-	}
-	case POLICY_ALLOW: {
-		ctx->ui_step = UI_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(policy, step) case policy: {ctx->ui_step = step; break;}
+		CASE(POLICY_PROMPT_WARN_UNUSUAL,    UI_STEP_WARNING);
+		CASE(POLICY_PROMPT_BEFORE_RESPONSE, UI_STEP_DISPLAY_PATH);
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT,   UI_STEP_RESPOND);
+#	undef   CASE
 	default:
 		ASSERT(false);
 	}

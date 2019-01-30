@@ -94,14 +94,10 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 
 	security_policy_t policy = policyForSignTxInit();
 	switch (policy) {
-	case POLICY_PROMPT_BEFORE_RESPONSE: {
-		ctx->ui_step = HANDLE_INIT_STEP_CONFIRM;
-		break;
-	}
-	case POLICY_ALLOW: {
-		ctx->ui_step = HANDLE_INIT_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+		CASE(POLICY_PROMPT_BEFORE_RESPONSE, HANDLE_INIT_STEP_CONFIRM);
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT,   HANDLE_INIT_STEP_RESPOND);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -207,10 +203,9 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 	security_policy_t policy = policyForSignTxInput();
 
 	switch (policy) {
-	case POLICY_ALLOW: {
-		ctx->ui_step = HANDLE_INPUT_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT, HANDLE_INPUT_STEP_RESPOND);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -328,14 +323,10 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 	                           );
 
 	switch (policy) {
-	case POLICY_SHOW_BEFORE_RESPONSE: {
-		ctx->ui_step = HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT;
-		break;
-	}
-	case POLICY_ALLOW: {
-		ctx->ui_step = HANDLE_OUTPUT_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+		CASE(POLICY_SHOW_BEFORE_RESPONSE, HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT);
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT, HANDLE_OUTPUT_STEP_RESPOND);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -427,10 +418,9 @@ static void signTx_handleConfirmAPDU(uint8_t p2, uint8_t* dataBuffer MARK_UNUSED
 
 	security_policy_t policy = policyForSignTxFee(ctx->currentAmount);
 	switch (policy) {
-	case POLICY_SHOW_BEFORE_RESPONSE: {
-		ctx->ui_step = HANDLE_CONFIRM_STEP_DISPLAY_FEE;
-		break;
-	}
+#	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+		CASE(POLICY_SHOW_BEFORE_RESPONSE, HANDLE_CONFIRM_STEP_DISPLAY_FEE);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -501,9 +491,7 @@ static void signTx_handleWitnessAPDU(uint8_t p2, uint8_t* dataBuffer, size_t dat
 	VALIDATE(parsedSize == dataSize, ERR_INVALID_DATA);
 
 	security_policy_t policy = policyForSignTxWitness(&ctx->currentPath);
-	if (policy == POLICY_DENY) {
-		THROW(ERR_REJECTED_BY_POLICY);
-	}
+	ENSURE_NOT_DENIED(policy);
 
 	TRACE("getTxWitness");
 	getTxWitness(
@@ -514,14 +502,10 @@ static void signTx_handleWitnessAPDU(uint8_t p2, uint8_t* dataBuffer, size_t dat
 
 	TRACE("policy %d", (int) policy);
 	switch (policy) {
-	case POLICY_PROMPT_WARN_UNUSUAL: {
-		ctx->ui_step = HANDLE_WITNESS_STEP_WARNING;
-		break;
-	}
-	case POLICY_ALLOW: {
-		ctx->ui_step = HANDLE_WITNESS_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+		CASE(POLICY_PROMPT_WARN_UNUSUAL,  HANDLE_WITNESS_STEP_WARNING);
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT, HANDLE_WITNESS_STEP_RESPOND);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -591,30 +575,14 @@ typedef void subhandler_fn_t(uint8_t p2, uint8_t* dataBuffer, size_t dataSize);
 
 subhandler_fn_t* lookup_subhandler(uint8_t p1)
 {
-	enum {
-		P1_INIT      = 0x01,
-		P1_INPUTS    = 0x02,
-		P1_OUTPUTS   = 0x03,
-		P1_CONFIRM   = 0x04,
-		P1_WITNESSES = 0x05,
-	};
-
 	switch(p1) {
-	case P1_INIT: {
-		return signTx_handleInitAPDU;
-	}
-	case P1_INPUTS: {
-		return signTx_handleInputAPDU;
-	}
-	case P1_OUTPUTS: {
-		return signTx_handleOutputAPDU;
-	}
-	case P1_CONFIRM: {
-		return signTx_handleConfirmAPDU;
-	}
-	case P1_WITNESSES: {
-		return signTx_handleWitnessAPDU;
-	}
+#	define  CASE(  P1, HANDLER) case P1: return HANDLER;
+		CASE(0x01, signTx_handleInitAPDU);
+		CASE(0x02, signTx_handleInputAPDU);
+		CASE(0x03, signTx_handleOutputAPDU);
+		CASE(0x04, signTx_handleConfirmAPDU);
+		CASE(0x05, signTx_handleWitnessAPDU);
+#	undef   CASE
 	default:
 		return NULL;
 	}

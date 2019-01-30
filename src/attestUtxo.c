@@ -359,7 +359,7 @@ void handle_attestUtxo(
 		security_policy_t policy = policyForAttestUtxo();
 		if (policy == POLICY_DENY) {
 			THROW(ERR_REJECTED_BY_POLICY);
-		} else if (policy == POLICY_ALLOW) {
+		} else if (policy == POLICY_ALLOW_WITHOUT_PROMPT) {
 			// pass
 		} else {
 			ASSERT(false); // not implemented
