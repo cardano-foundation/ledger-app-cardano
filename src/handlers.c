@@ -17,62 +17,29 @@
 // The APDU protocol uses a single-byte instruction code (INS) to specify
 // which command should be executed. We'll use this code to dispatch on a
 // table of function pointers.
-
-enum {
-	// 0x0* - app status calls
-	INS_GET_VERSION       = 0x00,
-
-	// 0x1* - public-key/address related
-	INS_GET_PUB_KEY       = 0x10,
-	INS_DERIVE_ADDRESS    = 0x11,
-
-	// 0x2* - signing-transaction related
-	INS_ATTEST_UTXO       = 0x20,
-	INS_SIGN_TX           = 0x21,
-
-	#ifdef DEVEL
-	// 0xF* - debug_mode related
-	INS_RUN_TESTS         = 0xF0,
-	// 0xF1 reserved for INS_SET_HEADLESS_INTERACTION
-	// session key used for attestation
-	INS_GET_ATTEST_KEY    = 0xF2,
-	INS_SET_ATTEST_KEY    = 0xF3,
-
-	#endif
-};
-
-
 handler_fn_t* lookupHandler(uint8_t ins)
 {
 	switch (ins) {
+#	define  CASE(INS, HANDLER) case INS: return HANDLER;
+		// 0x0* -  app status calls
+		CASE(0x00, getVersion_handleAPDU);
 
-	case INS_GET_VERSION:
-		return getVersion_handleAPDU;
+		// 0x1* -  public-key/address related
+		CASE(0x10, getExtendedPublicKey_handleAPDU);
+		CASE(0x11, deriveAddress_handleAPDU);
 
-	case INS_GET_PUB_KEY:
-		return getExtendedPublicKey_handleAPDU;
-	case INS_DERIVE_ADDRESS:
-		return deriveAddress_handleAPDU;
+		// 0x2* -  signing-transaction related
+		CASE(0x20, handle_attestUtxo);
+		CASE(0x21, signTx_handleAPDU);
 
-	case INS_ATTEST_UTXO:
-		return handle_attestUtxo;
-
-	case INS_SIGN_TX:
-		return signTx_handleAPDU;
-
-// *INDENT-OFF* astyle has problems with #define inside switch
-#ifdef DEVEL
-	case INS_RUN_TESTS:
-		return handleRunTests;
-
-	case INS_GET_ATTEST_KEY:
-		return handleGetAttestKey;
-
-	case INS_SET_ATTEST_KEY:
-		return handleSetAttestKey;
-#endif
-// *INDENT-ON*
-
+		#ifdef DEVEL
+		// 0xF* -  debug_mode related
+		CASE(0xF0, handleRunTests);
+		//   0xF1  reserved for INS_SET_HEADLESS_INTERACTION
+		CASE(0xF2, handleGetAttestKey);
+		CASE(0xF3, handleSetAttestKey);
+		#endif
+#	undef   CASE
 	default:
 		return NULL;
 	}

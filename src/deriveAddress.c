@@ -51,18 +51,11 @@ void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wire
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
 	switch (policy) {
-	case POLICY_PROMPT_WARN_UNUSUAL: {
-		ctx->ui_step = RETURN_UI_STEP_WARNING;
-		break;
-	}
-	case POLICY_PROMPT_BEFORE_RESPONSE: {
-		ctx->ui_step = RETURN_UI_STEP_PATH;
-		break;
-	}
-	case POLICY_ALLOW: {
-		ctx->ui_step = RETURN_UI_STEP_RESPOND;
-		break;
-	}
+#	define  CASE(POLICY, STEP) case POLICY: {ctx->ui_step=STEP; break;}
+		CASE(POLICY_PROMPT_WARN_UNUSUAL,    RETURN_UI_STEP_WARNING);
+		CASE(POLICY_PROMPT_BEFORE_RESPONSE, RETURN_UI_STEP_PATH);
+		CASE(POLICY_ALLOW_WITHOUT_PROMPT,   RETURN_UI_STEP_RESPOND);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -164,14 +157,10 @@ void deriveAddress_handleDisplay(uint8_t p2, uint8_t* wireDataBuffer, size_t wir
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 
 	switch (policy) {
-	case POLICY_PROMPT_WARN_UNUSUAL: {
-		ctx->ui_step = DISPLAY_UI_STEP_WARNING;
-		break;
-	}
-	case POLICY_SHOW_BEFORE_RESPONSE: {
-		ctx->ui_step = DISPLAY_UI_STEP_INSTRUCTIONS;
-		break;
-	}
+#	define  CASE(policy, step) case policy: {ctx->ui_step=step; break;}
+		CASE(POLICY_PROMPT_WARN_UNUSUAL,  DISPLAY_UI_STEP_WARNING);
+		CASE(POLICY_SHOW_BEFORE_RESPONSE, DISPLAY_UI_STEP_INSTRUCTIONS);
+#	undef   CASE
 	default:
 		THROW(ERR_NOT_IMPLEMENTED);
 	}
@@ -259,12 +248,10 @@ void deriveAddress_handleAPDU(
 	}
 	ctx->responseReadyMagic = 0;
 	switch (p1) {
-	case P1_RETURN: {
-		return deriveAddress_handleReturn(p2, wireDataBuffer, wireDataSize);
-	}
-	case P1_DISPLAY: {
-		return deriveAddress_handleDisplay(p2, wireDataBuffer, wireDataSize);
-	}
+#	define  CASE(P1, HANDLER_FN) case P1: {HANDLER_FN(p2, wireDataBuffer, wireDataSize); break;}
+		CASE(P1_RETURN,  deriveAddress_handleReturn);
+		CASE(P1_DISPLAY, deriveAddress_handleDisplay);
+#	undef  CASE
 	default:
 		THROW(ERR_INVALID_REQUEST_PARAMETERS);
 	}
