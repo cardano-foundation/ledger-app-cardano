@@ -345,7 +345,7 @@ void processNextChunk(uint8_t* dataBuffer, size_t dataSize)
 }
 
 
-void handle_attestUtxo(
+void attestUTxO_handleAPDU(
         uint8_t p1,
         uint8_t p2,
         uint8_t* wireDataBuffer,

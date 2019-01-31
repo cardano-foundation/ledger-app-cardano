@@ -97,7 +97,7 @@ void parser_init(attest_utxo_parser_state_t *state, int outputIndex);
 
 uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state);
 
-handler_fn_t handle_attestUtxo;
+handler_fn_t attestUTxO_handleAPDU;
 
 void run_test_attestUtxo();
 
