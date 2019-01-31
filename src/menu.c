@@ -39,7 +39,7 @@ static const ux_menu_entry_t menu_about[] = {
 };
 
 const ux_menu_entry_t menu_main[] = {
-	#ifdef DEVEL
+	#if defined(DEVEL) || defined(HEADLESS)
 	{NULL, NULL, 0, NULL, "Warning:", "DEVEL version!", 0, 0},
 	#else
 	{NULL, NULL, 0, NULL, "Waiting for", "commands...", 0, 0},

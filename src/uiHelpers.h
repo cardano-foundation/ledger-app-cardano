@@ -27,6 +27,9 @@ typedef struct {
 	char fullText[200];
 	size_t scrollIndex;
 	ui_callback_t callback;
+	#ifdef HEADLESS
+	bool headlessShouldRespond;
+	#endif
 } scrollingState_t;
 
 typedef struct {
@@ -34,6 +37,9 @@ typedef struct {
 	char header[30];
 	char text[30];
 	ui_callback_t callback;
+	#ifdef HEADLESS
+	bool headlessShouldRespond;
+	#endif
 } confirmState_t;
 
 typedef union {

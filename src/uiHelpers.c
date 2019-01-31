@@ -16,12 +16,27 @@ static displayState_t displayState;
 static scrollingState_t* scrollingState = &(displayState.scrolling);
 static confirmState_t* confirmState = &(displayState.confirm);
 
+#ifdef HEADLESS
+static int HEADLESS_DELAY = 100;
+#define HEADLESS_UI_ELEMENT() \
+	{ \
+		{ \
+			BAGL_LABELINE,ID_HEADLESS, 0, 12, 128, \
+			12,0,0,0,0xFFFFFF,0, \
+			BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_LEFT,0 \
+		}, \
+		"HEADLESS ",0,0,0,NULL,NULL,NULL \
+	}
+#endif
+
 enum {
 	ID_UNSPECIFIED = 0x00,
 	ID_ICON_GO_LEFT = 0x01,
 	ID_ICON_GO_RIGHT = 0x02,
 	ID_ICON_CONFIRM = 0x03,
 	ID_ICON_REJECT = 0x04,
+
+	ID_HEADLESS = 0xff,
 };
 
 enum {
@@ -53,7 +68,16 @@ static const bagl_element_t ui_scrollingText[] = {
 
 	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, &displayState.scrolling.header),
 	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, &displayState.scrolling.currentText),
+	#ifdef HEADLESS
+	HEADLESS_UI_ELEMENT(),
+	#endif
 };
+
+// forward
+static unsigned int ui_scrollingText_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter MARK_UNUSED
+);
 
 static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *element)
 {
@@ -70,6 +94,19 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 		        >= strlen(ctx->fullText) + 1)
 		       ? NULL
 		       : element;
+	case ID_HEADLESS:
+		#ifdef HEADLESS
+		if (ctx->headlessShouldRespond) {
+			TRACE("HEADLESS response");
+			ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
+		} else {
+			ctx->headlessShouldRespond = true;
+			UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
+		}
+		return element;
+		#else
+		ASSERT(false);
+		#endif
 	default:
 		// Always display all other elements.
 		return element;
@@ -235,7 +272,16 @@ static const bagl_element_t ui_confirm[] = {
 	UI_ICON_RIGHT(ID_ICON_CONFIRM, BAGL_GLYPH_ICON_CHECK),
 	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, displayState.confirm.header),
 	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, displayState.confirm.text),
+	#ifdef HEADLESS
+	HEADLESS_UI_ELEMENT(),
+	#endif
 };
+
+// Forward
+static unsigned int ui_confirm_button(
+        unsigned int button_mask,
+        unsigned int button_mask_counter MARK_UNUSED
+);
 
 static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 {
@@ -247,6 +293,20 @@ static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 		return ctx->callback.reject ? element : NULL;
 	case ID_ICON_CONFIRM:
 		return ctx->callback.confirm ? element : NULL;
+	case ID_HEADLESS:
+		#ifdef HEADLESS
+		if (ctx->headlessShouldRespond) {
+			TRACE("HEADLESS response");
+			ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
+		} else {
+			ctx->headlessShouldRespond = true;
+			TRACE("HEADLESS set timeout");
+			UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
+		}
+		return element;
+		#else
+		ASSERT(false);
+		#endif
 	default:
 		// Always display all other elements.
 		return element;
