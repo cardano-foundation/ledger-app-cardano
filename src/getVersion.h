@@ -5,8 +5,9 @@
 #include "common.h"
 
 // Must be in format x.y.z
-#define APPVERSION "0.0.1"
-
+#ifndef APPVERSION
+#error "Missing -DAPPVERSION=x.y.z in Makefile"
+#endif
 handler_fn_t getVersion_handleAPDU;
 
 #endif // H_GET_VERSION
