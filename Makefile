@@ -27,12 +27,10 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
+APPVERSION = "1.0.0"
+
 APP_LOAD_PARAMS =--appFlags 0 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
-APPVERSION_M=0
-APPVERSION_N=1
-APPVERSION_P=2
-APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ICONNAME=icon.gif
 ################
@@ -44,26 +42,46 @@ all: default
 # Platform #
 ############
 DEFINES += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
-DEFINES += HAVE_BAGL HAVE_SPRINTF HAVE_PRINTF PRINTF=screen_printf
+DEFINES += HAVE_BAGL HAVE_SPRINTF
+DEFINES += APPVERSION=\"$(APPVERSION)\"
+
+## Devel-related
+DEFINES += HAVE_PRINTF PRINTF=screen_printf
+
+## USB HID?
 DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
-DEFINES += VERSION=\"$(APPVERSION)\"
-DEFINES += LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
+
+## USB U2F
+DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"ADA\" USB_SEGMENT_SIZE=64 
+
+## Protect stack overflows
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
+
+
+DEFINES += RESET_ON_CRASH
+## Use developer build
+#DEFINES += DEVEL
+DEFINES += HEADLESS
+
 
 ##############
 #  Compiler  #
 ##############
 #GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 #CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-CC       := $(CLANGPATH)clang
 
-#CFLAGS   += -O0
-CFLAGS   += -O3 -Os
+CC       := $(CLANGPATH)clang
+CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS  += -O3 -Os
+
+LDFLAGS  += -O3 -Os -Wall
 LDLIBS   += -lm -lgcc -lc
+
+##Enable to strip debug info from app
+#LDFLAGS  += -Wl,-s
+
 
 ##################
 #  Dependencies  #
@@ -74,13 +92,12 @@ include $(BOLOS_SDK)/Makefile.glyphs
 
 ### computed variables
 APP_SOURCE_PATH  += src
-SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl
+SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl lib_u2f
 
 ##############
 #   Build    #
 ##############
 build: all
-build: DEFINES += DEVEL
 
 sign:
 	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig

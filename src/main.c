@@ -244,7 +244,7 @@ static void cardano_main(void)
 			CATCH(ERR_ASSERT)
 			{
 				// Note(ppershing): assertions should not auto-respond
-				#ifndef DEVEL
+				#ifdef RESET_ON_CRASH
 				// Reset device
 				io_seproxyhal_se_reset();
 				#endif
@@ -257,7 +257,7 @@ static void cardano_main(void)
 					ui_idle();
 				} else {
 					PRINTF("Uncaught error %x", (unsigned) e);
-					#ifndef DEVEL
+					#ifdef RESET_ON_CRASH
 					// Reset device
 					io_seproxyhal_se_reset();
 					#endif
