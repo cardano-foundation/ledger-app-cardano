@@ -107,8 +107,10 @@ security_policy_t policyForSignTxOutputPath(const bip44_path_t* pathSpec)
 	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
 	DENY_IF(!has_valid_change_and_any_address(pathSpec));
 
-	WARN_IF(!has_reasonable_account_and_address(pathSpec))
-	WARN_IF(is_too_deep(pathSpec));
+	// Note: we use SHOW_IF to display these unusual requests
+	// as 3-rd party addresses
+	SHOW_IF(!has_reasonable_account_and_address(pathSpec))
+	SHOW_IF(is_too_deep(pathSpec));
 
 	ALLOW_IF(true);
 }

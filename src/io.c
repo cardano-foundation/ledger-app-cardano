@@ -67,7 +67,14 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 		break;
 
 	case SEPROXYHAL_TAG_TICKER_EVENT:
-		UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
+		UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+			#ifdef HEADLESS
+			if (UX_ALLOWED)
+			{
+				UX_REDISPLAY();
+			}
+			#endif
+		});
 		break;
 
 	default:
