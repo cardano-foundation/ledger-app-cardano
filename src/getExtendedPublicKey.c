@@ -7,8 +7,6 @@
 #include "uiHelpers.h"
 #include "securityPolicy.h"
 
-#define VALIDATE_PARAM(cond) if (!(cond)) THROW(ERR_INVALID_REQUEST_PARAMETERS)
-
 static ins_get_ext_pubkey_context_t* ctx = &(instructionState.extPubKeyContext);
 
 
@@ -39,8 +37,8 @@ void getExtendedPublicKey_handleAPDU(
 	ctx->responseReadyMagic = 0;
 
 	// Validate params
-	VALIDATE_PARAM(p1 == 0);
-	VALIDATE_PARAM(p2 == 0);
+	VALIDATE(p1 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
 
 	// Parse wire
 	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, wireDataBuffer, wireDataSize);

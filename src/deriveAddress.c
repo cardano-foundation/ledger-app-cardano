@@ -13,8 +13,8 @@ static int16_t RESPONSE_READY_MAGIC = 11223;
 static ins_derive_address_context_t* ctx = &(instructionState.deriveAddressContext);
 
 enum {
-	P1_RETURN = 1,
-	P1_DISPLAY = 2,
+	P1_RETURN  = 0x01,
+	P1_DISPLAY = 0x02,
 };
 
 // forward declarations
