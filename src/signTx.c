@@ -191,7 +191,8 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 		uint32_t parsedIndex = u4be_read(wireUtxo->data.index);
 		uint64_t parsedAmount = u8be_read(wireUtxo->data.amount);
 
-		TRACE("Input amount %llu", (unsigned long long)parsedAmount);
+		// Note(ppershing): Ledger doesn't have uint64_t printing, this is better than nothing
+		TRACE("Input amount %u.%06u", (unsigned) (parsedAmount / 1000000), (unsigned) (parsedAmount % 1000000));
 		amountSum_incrementBy(&ctx->sumAmountInputs, parsedAmount);
 
 		TRACE("Adding input to tx hash");
@@ -260,7 +261,7 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 	// Read data preamble
 	uint64_t amount = parse_u8be(&view);
 	uint8_t outputType = parse_u1be(&view);
-	TRACE("Amount: %llu", (unsigned long long) amount);
+	TRACE("Amount: %u.%06u", (unsigned) (amount / 1000000), (unsigned)(amount % 1000000));
 
 	amountSum_incrementBy(&ctx->sumAmountOutputs, amount);
 	ctx->currentAmount = amount;
