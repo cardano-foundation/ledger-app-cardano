@@ -2,3 +2,5 @@
 --indent-preproc-cond
 --indent-continuation=2
 --indent=tab
+--pad-oper
+--indent-preprocessor
