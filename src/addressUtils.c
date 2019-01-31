@@ -18,20 +18,27 @@ void addressRootFromExtPubKey(
 	uint8_t cborBuffer[64 + 10];
 	write_view_t cbor = make_write_view(cborBuffer, END(cborBuffer));
 
-
-	// [0, [0, publicKey:chainCode], Map(0)]
-	// TODO(ppershing): what are the first two 0 constants?
-	view_appendToken(&cbor, CBOR_TYPE_ARRAY, 3);
-	view_appendToken(&cbor, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
-
-	// enter inner array
-	view_appendToken(&cbor, CBOR_TYPE_ARRAY, 2);
-	view_appendToken(&cbor, CBOR_TYPE_UNSIGNED, 0 /* this seems to be hardcoded to 0*/);
-	view_appendToken(&cbor, CBOR_TYPE_BYTES, EXTENDED_PUBKEY_SIZE);
-	view_appendData(&cbor, (const uint8_t*) extPubKey, EXTENDED_PUBKEY_SIZE);
-	// exit inner array
-
-	view_appendToken(&cbor, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
+	{
+		// [0, [0, publicKey:chainCode], Map(0)]
+		// TODO(ppershing): what are the first two 0 constants?
+		view_appendToken(&cbor, CBOR_TYPE_ARRAY, 3);
+		{
+			view_appendToken(&cbor, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
+		}
+		{
+			view_appendToken(&cbor, CBOR_TYPE_ARRAY, 2);
+			{
+				view_appendToken(&cbor, CBOR_TYPE_UNSIGNED, 0 /* this seems to be hardcoded to 0*/);
+			}
+			{
+				view_appendToken(&cbor, CBOR_TYPE_BYTES, EXTENDED_PUBKEY_SIZE);
+				view_appendData(&cbor, (const uint8_t*) extPubKey, EXTENDED_PUBKEY_SIZE);
+			}
+		}
+		{
+			view_appendToken(&cbor, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
+		}
+	}
 
 	// cborBuffer is hashed twice. First by sha3_256 and then by blake2b_224
 	uint8_t cborShaHash[32];
@@ -56,19 +63,19 @@ size_t cborEncodePubkeyAddressInner(
 	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 
 	write_view_t out = make_write_view(outBuffer, outBuffer + outSize);
-
-	// 2nd level
-	view_appendToken(&out, CBOR_TYPE_ARRAY, 3);
 	{
-		// 1
-		view_appendToken(&out, CBOR_TYPE_BYTES, addressRootSize);
-		view_appendData(&out, addressRoot, addressRootSize);
-	} {
-		// 2
-		view_appendToken(&out, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
-	} {
-		// 3
-		view_appendToken(&out, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
+		view_appendToken(&out, CBOR_TYPE_ARRAY, 3);
+		{
+			// 1
+			view_appendToken(&out, CBOR_TYPE_BYTES, addressRootSize);
+			view_appendData(&out, addressRoot, addressRootSize);
+		} {
+			// 2
+			view_appendToken(&out, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
+		} {
+			// 3
+			view_appendToken(&out, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
+		}
 	}
 	return view_processedSize(&out);
 }
@@ -84,19 +91,21 @@ size_t cborPackRawAddressWithChecksum(
 
 	write_view_t output = make_write_view(outputBuffer, outputBuffer + outputSize);
 
-	// Format is
-	// Array[
-	//     tag(24):bytes(rawAddress),
-	//     crc32(rawAddress)
-	// ]
-	view_appendToken(&output, CBOR_TYPE_ARRAY, 2);
 	{
-		view_appendToken(&output, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
-		view_appendToken(&output, CBOR_TYPE_BYTES, rawAddressSize);
-		view_appendData(&output, rawAddressBuffer, rawAddressSize);
-	} {
-		uint32_t checksum = crc32(rawAddressBuffer, rawAddressSize);
-		view_appendToken(&output, CBOR_TYPE_UNSIGNED, checksum);
+		// Format is
+		// Array[
+		//     tag(24):bytes(rawAddress),
+		//     crc32(rawAddress)
+		// ]
+		view_appendToken(&output, CBOR_TYPE_ARRAY, 2);
+		{
+			view_appendToken(&output, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
+			view_appendToken(&output, CBOR_TYPE_BYTES, rawAddressSize);
+			view_appendData(&output, rawAddressBuffer, rawAddressSize);
+		} {
+			uint32_t checksum = crc32(rawAddressBuffer, rawAddressSize);
+			view_appendToken(&output, CBOR_TYPE_UNSIGNED, checksum);
+		}
 	}
 	return view_processedSize(&output);
 }
@@ -130,22 +139,29 @@ size_t unboxChecksummedAddress(
 
 	read_view_t view = make_read_view(addressBuffer, addressBuffer + addressSize);
 
-	parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 2);
+	uint32_t checksum;
+	uint64_t unboxedSize;
+	const uint8_t* unboxedBuffer;
+	{
+		parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 2);
+		{
+			parseTokenWithValue(&view, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
 
-	parseTokenWithValue(&view, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
+			unboxedSize = parseToken(&view, CBOR_TYPE_BYTES);
 
-	uint64_t unboxedSize = parseToken(&view, CBOR_TYPE_BYTES);
+			unboxedBuffer = view.ptr;
+			// overflow pre-check, should not be needed with view_skipBytes but ...
+			VALIDATE(unboxedSize < BUFFER_SIZE_PARANOIA, ERR_INVALID_DATA);
+			VALIDATE(unboxedSize <= view_remainingSize(&view), ERR_INVALID_DATA);
 
-	const uint8_t* unboxedBuffer = view.ptr;
-	// overflow pre-check, should not be needed with view_skipBytes but ...
-	VALIDATE(unboxedSize < BUFFER_SIZE_PARANOIA, ERR_INVALID_DATA);
-	VALIDATE(unboxedSize <= view_remainingSize(&view), ERR_INVALID_DATA);
+			view_skipBytes(&view, unboxedSize);
+		}
+		{
+			checksum = crc32(unboxedBuffer, unboxedSize);
+			parseTokenWithValue(&view, CBOR_TYPE_UNSIGNED, checksum);
+		}
+	}
 
-	view_skipBytes(&view, unboxedSize);
-
-	uint32_t checksum = crc32(unboxedBuffer, unboxedSize);
-
-	parseTokenWithValue(&view, CBOR_TYPE_UNSIGNED, checksum);
 	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
 
 	VALIDATE(unboxedSize <= outputSize, ERR_DATA_TOO_LARGE);
