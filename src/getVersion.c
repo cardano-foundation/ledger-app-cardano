@@ -5,6 +5,12 @@
 #include "getVersion.h"
 #include "getExtendedPublicKey.h"
 
+
+enum {
+	FLAG_DEVEL = 1,
+
+};
+
 void getVersion_handleAPDU(
         uint8_t p1,
         uint8_t p2,
@@ -28,10 +34,18 @@ void getVersion_handleAPDU(
 		uint8_t major;
 		uint8_t minor;
 		uint8_t patch;
-	} response;
-	response.major = APPVERSION[0] - '0';
-	response.minor = APPVERSION[2] - '0';
-	response.patch = APPVERSION[4] - '0';
-	io_send_buf(SUCCESS, (uint8_t *) &response, SIZEOF(response));
+		uint8_t flags;
+	} response = {
+		.major = APPVERSION[0] - '0',
+		.minor = APPVERSION[2] - '0',
+		.patch = APPVERSION[4] - '0',
+		.flags = 0,
+	};
+
+	#ifdef DEVEL
+	response.flags |= FLAG_DEVEL;
+	#endif
+
+	io_send_buf(SUCCESS, (uint8_t *) &response, sizeof(response));
 	ui_idle();
 }

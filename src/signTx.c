@@ -107,12 +107,12 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 // Simple for now
 static void signTx_handleInit_ui_runStep()
 {
+	TRACE("Step %d", ctx->ui_step);
 	ui_callback_fn_t* this_fn = signTx_handleInit_ui_runStep;
 	int nextStep = HANDLE_INIT_STEP_INVALID;
 
 	switch(ctx->ui_step) {
 	case HANDLE_INIT_STEP_CONFIRM: {
-		TRACE();
 		ui_displayConfirm(
 		        "Start new",
 		        "transaction?",
@@ -191,7 +191,7 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 		uint32_t parsedIndex = u4be_read(wireUtxo->data.index);
 		uint64_t parsedAmount = u8be_read(wireUtxo->data.amount);
 
-		TRACE("Input amount %d %d", (int)(parsedAmount / 1000000), (int)(parsedAmount % 1000000));
+		TRACE("Input amount %llu", (unsigned long long)parsedAmount);
 		amountSum_incrementBy(&ctx->sumAmountInputs, parsedAmount);
 
 		TRACE("Adding input to tx hash");
@@ -260,7 +260,7 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 	// Read data preamble
 	uint64_t amount = parse_u8be(&view);
 	uint8_t outputType = parse_u1be(&view);
-	TRACE("Amount: %ull", (unsigned long long) amount);
+	TRACE("Amount: %llu", (unsigned long long) amount);
 
 	amountSum_incrementBy(&ctx->sumAmountOutputs, amount);
 	ctx->currentAmount = amount;
@@ -290,11 +290,8 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 		                                   VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
 		VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
 
-
-		// todo security policy
-		TRACE("Policy: %d", (int) policy);
 		policy = policyForSignTxOutputPath(&ctx->currentPath);
-		// here we need to check early so that we don't run derivation step
+		TRACE("Policy: %d", (int) policy);
 		ENSURE_NOT_DENIED(policy);
 		rawAddressSize = deriveRawAddress(
 		                         &ctx->currentPath,
@@ -316,7 +313,6 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 	        amount
 	);
 
-	TRACE("cborPackRawAddressWithChecksum");
 	ctx->currentAddress.size = cborPackRawAddressWithChecksum(
 	                                   rawAddressBuffer, rawAddressSize,
 	                                   ctx->currentAddress.buffer,

@@ -29,7 +29,7 @@ handler_fn_t* lookupHandler(uint8_t ins)
 		CASE(0x11, deriveAddress_handleAPDU);
 
 		// 0x2* -  signing-transaction related
-		CASE(0x20, handle_attestUtxo);
+		CASE(0x20, attestUTxO_handleAPDU);
 		CASE(0x21, signTx_handleAPDU);
 
 		#ifdef DEVEL
