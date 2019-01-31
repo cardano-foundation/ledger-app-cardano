@@ -12,15 +12,22 @@
 
 static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
 
+static inline uint64_t uint64_min(uint64_t x, uint64_t y)
+{
+	return (x < y) ? x : y;
+}
+
+
 // We do not parse addresses, just keep streaming over then
 void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 	stream_ensureAvailableBytes(stream, 1); // We have to consume at least something
-	uint64_t bytesToConsume = stream_availableBytes(stream);
-	if (bytesToConsume > state->addressDataRemainingBytes) {
-		bytesToConsume = state->addressDataRemainingBytes;
-	}
+	uint64_t bytesToConsume =
+	        uint64_min(
+	                stream_availableBytes(stream),
+	                state->addressDataRemainingBytes
+	        );
 	stream_advancePos(stream, bytesToConsume);
 	state->addressDataRemainingBytes -= bytesToConsume;
 }
