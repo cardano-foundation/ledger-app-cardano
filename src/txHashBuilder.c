@@ -131,8 +131,11 @@ void txHashBuilder_addOutput(
 	ASSERT(builder->state == TX_HASH_BUILDER_IN_OUTPUTS);
 
 	// Array(2)[
-	//    Tag(24):Bytes[raw address],
-	//    Unsigned[checksum]
+	//   Array(2)[
+	//      Tag(24):Bytes[raw address],
+	//      Unsigned[checksum]
+	//   ],
+	//   Unsigned[amount]
 	// ]
 	{
 		BUILDER_APPEND_CBOR(CBOR_TYPE_ARRAY, 2);
