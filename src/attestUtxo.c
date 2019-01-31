@@ -9,6 +9,7 @@
 #include "state.h"
 #include "cardano.h"
 #include "securityPolicy.h"
+#include "uiHelpers.h"
 
 static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
 
@@ -36,204 +37,225 @@ void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 void parser_advanceInputState(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
-	switch (state->inputState) {
 
-	case INPUT_PARSING_NOT_STARTED:
-		state->inputState = INPUT_EXPECT_PREAMBLE;
-		break;
+// Note(ppershing): Foolowing macros are ugly and break about any sane macro rule
+// We use them to make the rest of the code way more clearer than it would be otherwise...
 
-	case INPUT_EXPECT_PREAMBLE:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
-		state->inputState = INPUT_EXPECT_TYPE;
-		break;
+// Warning: There is one important rule -- code between TRANSITION_TO *must* be atomic
+// if throwing ERR_NOT_ENOUGH_INPUT (or manage its side-effect manually).
+// If the code wants to yield before transition, it can use break/return statement
+// Otherwise it implicitly yields at every transition
 
-	case INPUT_EXPECT_TYPE:
+// Note(ppershing): As strange as it seems, switch cases *can* be mixed inside scopes.
+// See https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+// Here we use scopes to layout CBOR parsing level
+
+// Sidenote: PARSER_BEGIN && PARSER_END have unmatched braces. This is a intended as
+// it forces reasonable indentation
+#define PARSER_BEGIN switch (state->inputState) { case INPUT_PARSING_NOT_STARTED:
+#define PARSER_END   default: ASSERT(false); }
+#define TRANSITION_TO(NEXT_STATE) state->inputState = NEXT_STATE; break; case NEXT_STATE:
+
+	// Array(2)[
+	//    Unsigned[0],
+	//    Tag(24):Bytes[utxo cbor]
+	// ]
+	PARSER_BEGIN;
+
+	TRANSITION_TO(INPUT_EXPECT_PREAMBLE);
+
+	cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
+	{
+		TRANSITION_TO(INPUT_EXPECT_TYPE);
+
 		cbor_takeTokenWithValue(stream, CBOR_TYPE_UNSIGNED, CARDANO_INPUT_TYPE_UTXO);
-		state->inputState = INPUT_EXPECT_TAG;
-		break;
+	}
+	{
+		TRANSITION_TO(INPUT_EXPECT_TAG);
 
-	case INPUT_EXPECT_TAG:
 		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
-		state->inputState = INPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
-		break;
 
-	case INPUT_EXPECT_ADDRESS_DATA_PREAMBLE:
+		TRANSITION_TO(INPUT_EXPECT_ADDRESS_DATA_PREAMBLE);
 
-		// Warning: Following two lines have to happen
-		// exactly in this order as takeCborBytesPreamble might throw
 		state->addressDataRemainingBytes = cbor_takeToken(stream, CBOR_TYPE_BYTES);
 
-		state->inputState = INPUT_IN_ADDRESS_DATA;
-		break;
+		TRANSITION_TO(INPUT_IN_ADDRESS_DATA);
 
-	case INPUT_IN_ADDRESS_DATA:
-		if (state->addressDataRemainingBytes == 0) {
-			state->inputState = INPUT_FINISHED;
-		} else {
+		if (state->addressDataRemainingBytes != 0) {
 			parser_skipThroughAddressBytes(state);
+			// Warning: this break has to be here as we might not skip through
+			// all bytes in one go
+			break;
 		}
-		break;
-
-	case INPUT_FINISHED:
-		// should be handled by the caller
-		ASSERT(false);
-
-	default:
-		// unknown state
-		ASSERT(false);
 
 	}
+	TRANSITION_TO(INPUT_FINISHED);
+	{
+		// should be handled by the caller
+		ASSERT(false);
+	}
+
+	PARSER_END;
+
+#undef  PARSER_BEGIN
+#undef  PARSER_END
+#undef  TRANSITION_TO
 }
 
 // Makes one step on the transaction Output parser
 void parser_advanceOutputState(attest_utxo_parser_state_t* state)
 {
-	stream_t* stream = & state->stream;
-	switch(state-> outputState) {
+	stream_t* stream = &state->stream;
 
-	case OUTPUT_PARSING_NOT_STARTED:
-		state->outputState = OUTPUT_EXPECT_PREAMBLE;
-		break;
+// Note(ppershing): see note above for parser macros
+#define PARSER_BEGIN switch (state->outputState) { case OUTPUT_PARSING_NOT_STARTED:
+#define PARSER_END   default: ASSERT(false); }
+#define TRANSITION_TO(NEXT_STATE) state->outputState = NEXT_STATE; break; case NEXT_STATE:
 
-	case OUTPUT_EXPECT_PREAMBLE:
+	// Array(2)[
+	//   Array(2)[
+	//      Tag(24):Bytes[raw address],
+	//      Unsigned[checksum]
+	//   ],
+	//   Unsigned[amount]
+	// ]
+	PARSER_BEGIN;
+
+	TRANSITION_TO(OUTPUT_EXPECT_PREAMBLE);
+
+	cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
+
+	{
+		TRANSITION_TO(OUTPUT_EXPECT_ADDRESS_PREAMBLE);
+
 		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
-		state->outputState = OUTPUT_EXPECT_ADDRESS_PREAMBLE;
-		break;
 
-	case OUTPUT_EXPECT_ADDRESS_PREAMBLE:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 2);
-		state->outputState = OUTPUT_EXPECT_ADDRESS_TAG;
-		break;
-
-	case OUTPUT_EXPECT_ADDRESS_TAG:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
-		state->outputState = OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE;
-		break;
-
-	case OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE:
-		// Warning: Following two lines have to happen
-		// exactly in this order as takeCborBytesPreamble might throw
-		state->addressDataRemainingBytes = cbor_takeToken(stream, CBOR_TYPE_BYTES);
-
-		state->outputState = OUTPUT_IN_ADDRESS_DATA;
-		break;
-
-	case OUTPUT_IN_ADDRESS_DATA:
-		if (state->addressDataRemainingBytes == 0) {
-			state->outputState = OUTPUT_EXPECT_ADDRESS_CHECKSUM;
-		} else {
-			parser_skipThroughAddressBytes(state);
-		}
-		break;
-
-	case OUTPUT_EXPECT_ADDRESS_CHECKSUM:
-		// Note: we do not check checksum
-		cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
-		state->outputState = OUTPUT_EXPECT_AMOUNT;
-		break;
-
-	case OUTPUT_EXPECT_AMOUNT:
-		;
 		{
-			uint64_t value = cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
-			if (state->currentOutputIndex == state->attestedOutputIndex) {
-				state->outputAmount = value;
+			TRANSITION_TO(OUTPUT_EXPECT_ADDRESS_TAG);
+
+			cbor_takeTokenWithValue(stream, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
+
+			TRANSITION_TO(OUTPUT_EXPECT_ADDRESS_DATA_PREAMBLE);
+
+			state->addressDataRemainingBytes = cbor_takeToken(stream, CBOR_TYPE_BYTES);
+
+			TRANSITION_TO(OUTPUT_IN_ADDRESS_DATA);
+
+			if (state->addressDataRemainingBytes != 0) {
+				parser_skipThroughAddressBytes(state);
+				// see remark on input parser
+				break;
 			}
 		}
-		state->outputState = OUTPUT_FINISHED;
-		break;
+		{
+			TRANSITION_TO(OUTPUT_EXPECT_ADDRESS_CHECKSUM);
 
-	case OUTPUT_FINISHED:
-		// this should be handled by the caller
+			cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
 
-		ASSERT(false);
-		break;
-
-	default:
-		// unexpected state
-		ASSERT(false);
+		}
 	}
+	{
+		TRANSITION_TO(OUTPUT_EXPECT_AMOUNT);
+
+		uint64_t value = cbor_takeToken(stream, CBOR_TYPE_UNSIGNED);
+		if (state->currentOutputIndex == state->attestedOutputIndex) {
+			state->outputAmount = value;
+		}
+
+	}
+	TRANSITION_TO(OUTPUT_FINISHED);
+
+	// this should be handled by the caller
+	ASSERT(false);
+
+
+	PARSER_END;
+
+#undef  PARSER_BEGIN
+#undef  PARSER_END
+#undef  TRANSITION_TO
 }
 
 // Makes one parsing step or throws ERR_NOT_ENOUGH_INPUT
 void parser_advanceMainState(attest_utxo_parser_state_t *state)
 {
 	stream_t* stream = &(state->stream); // shorthand
-	switch (state->mainState) {
+// Note(ppershing): see note above for parser macros
+#define PARSER_BEGIN switch (state->mainState) { case MAIN_PARSING_NOT_STARTED:
+#define PARSER_END   default: ASSERT(false); }
+#define TRANSITION_TO(NEXT_STATE) state->mainState = NEXT_STATE; break; case NEXT_STATE:
+#define JUMP(NEXT_STATE) state->mainState = NEXT_STATE; break;
 
-	case MAIN_PARSING_NOT_STARTED:
-		state->mainState = MAIN_EXPECT_TX_PREAMBLE;
-		break;
+	PARSER_BEGIN;
 
-	case MAIN_EXPECT_TX_PREAMBLE:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 3);
-		state->mainState = MAIN_EXPECT_INPUTS_PREAMBLE;
-		break;
+	TRANSITION_TO(MAIN_EXPECT_TX_PREAMBLE);
 
-	case MAIN_EXPECT_INPUTS_PREAMBLE:
+	cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY, 3);
+	{
+		TRANSITION_TO(MAIN_EXPECT_INPUTS_PREAMBLE);
+
 		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY_INDEF, 0);
-		state->mainState = MAIN_EXPECT_END_OR_INPUT;
-		break;
+		{
+			TRANSITION_TO(MAIN_EXPECT_END_OR_INPUT);
 
-	case MAIN_EXPECT_END_OR_INPUT:
-		if (cbor_peekNextIsIndefEnd(stream)) {
-			cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
-			state->mainState = MAIN_EXPECT_OUTPUTS_PREAMBLE;
-		} else {
-			MEMCLEAR(& state->inputState, txInputDecoderState_t);
+			if (cbor_peekNextIsIndefEnd(stream)) {
+				cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
+				JUMP(MAIN_EXPECT_OUTPUTS_PREAMBLE);
+			}
+
+			memset(&state->inputState, 0, SIZEOF(state->inputState));
 			state->inputState = INPUT_PARSING_NOT_STARTED;
-			state->mainState = MAIN_IN_INPUT;
-		}
-		break;
 
-	case MAIN_IN_INPUT:
-		if (state->inputState == INPUT_FINISHED) {
-			state->mainState = MAIN_EXPECT_END_OR_INPUT;
-		} else {
-			parser_advanceInputState(state);
-		}
-		break;
+			TRANSITION_TO(MAIN_IN_INPUT);
 
-	case MAIN_EXPECT_OUTPUTS_PREAMBLE:
+			if (state->inputState != INPUT_FINISHED) {
+				parser_advanceInputState(state);
+				break;
+			}
+
+			JUMP(MAIN_EXPECT_END_OR_INPUT);
+		}
+	}
+	{
+		TRANSITION_TO(MAIN_EXPECT_OUTPUTS_PREAMBLE);
+
 		cbor_takeTokenWithValue(stream, CBOR_TYPE_ARRAY_INDEF, 0);
-		state->mainState = MAIN_EXPECT_END_OR_OUTPUT;
 		state->currentOutputIndex = 0;
-		break;
 
-	case MAIN_EXPECT_END_OR_OUTPUT:
-		if (cbor_peekNextIsIndefEnd(stream)) {
-			cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
-			state->mainState = MAIN_EXPECT_METADATA_PREAMBLE;
-		} else {
+		{
+			TRANSITION_TO(MAIN_EXPECT_END_OR_OUTPUT);
+
+			if (cbor_peekNextIsIndefEnd(stream)) {
+				cbor_takeTokenWithValue(stream, CBOR_TYPE_INDEF_END, 0);
+				JUMP(MAIN_EXPECT_METADATA_PREAMBLE);
+			}
+
 			MEMCLEAR(& state->outputState, txOutputDecoderState_t);
 			state->outputState = OUTPUT_PARSING_NOT_STARTED;
-			state->mainState = MAIN_IN_OUTPUT;
-		}
-		break;
 
-	case MAIN_IN_OUTPUT:
-		if (state->outputState == OUTPUT_FINISHED) {
-			state->mainState = MAIN_EXPECT_END_OR_OUTPUT;
+			TRANSITION_TO(MAIN_IN_OUTPUT);
+
+			if (state->outputState != OUTPUT_FINISHED) {
+				parser_advanceOutputState(state);
+				break;
+			}
+
 			state->currentOutputIndex += 1;
-		} else {
-			parser_advanceOutputState(state);
+			JUMP(MAIN_EXPECT_END_OR_OUTPUT);
 		}
-		break;
-
-	case MAIN_EXPECT_METADATA_PREAMBLE:
-		cbor_takeTokenWithValue(stream, CBOR_TYPE_MAP, 0);
-		state->mainState = MAIN_FINISHED;
-		break;
-
-	case MAIN_FINISHED:
-		// should be handled separately by the outer loop
-		ASSERT(false);
-		break;
-
-	default:
-		// unexpected state
-		ASSERT(false);
 	}
+	{
+		TRANSITION_TO(MAIN_EXPECT_METADATA_PREAMBLE)
+
+		cbor_takeTokenWithValue(stream, CBOR_TYPE_MAP, 0);
+	}
+	TRANSITION_TO(MAIN_FINISHED)
+
+	// should be handled separately by the outer loop
+	ASSERT(false);
+
+	PARSER_END;
+
 }
 
 void parser_init(
@@ -241,7 +263,7 @@ void parser_init(
         int outputIndex
 )
 {
-	MEMCLEAR(state, attest_utxo_parser_state_t);
+	os_memset(state, 0, SIZEOF(*state));
 	state->mainState = MAIN_PARSING_NOT_STARTED;
 	state->outputAmount = LOVELACE_INVALID;
 	state->attestedOutputIndex = outputIndex;
@@ -258,29 +280,18 @@ uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state)
 	return state->outputAmount;
 }
 
-static bool parser_isInitialized(attest_utxo_parser_state_t* state)
-{
-	return state->parserInitializedMagic == ATTEST_PARSER_INIT_MAGIC;
-}
-
 // throws ERR_NOT_ENOUGH_INPUT when cannot proceed further
 void parser_keepParsing(attest_utxo_parser_state_t* state)
 {
-	ASSERT(parser_isInitialized(state));
+	ASSERT(state->parserInitializedMagic == ATTEST_PARSER_INIT_MAGIC);
 
 	while(state -> mainState != MAIN_FINISHED) {
+		TRACE();
 		parser_advanceMainState(state);
 	}
+	TRACE();
 }
 
-
-// TODO: move this to the global state union
-attest_utxo_parser_state_t global_state;
-
-enum {
-	P1_INITIAL = 0x01,
-	P1_CONTINUE = 0x02,
-};
 
 
 void attestUtxo_sendResponse()
@@ -303,46 +314,96 @@ void attestUtxo_sendResponse()
 
 	STATIC_ASSERT(SIZEOF(wireResponse) == 32 + 4 + 8 + 16, "response is packed");
 
-	blake2b_256_finalize(&ctx ->txHashCtx, wireResponse.data.txHash, SIZEOF(wireResponse.data.txHash));
-	u4be_write(wireResponse.data.index, ctx->parserState.attestedOutputIndex);
-	u8be_write(wireResponse.data.amount, amount);
+	{
+		blake2b_256_finalize(
+		        &ctx->txHashCtx,
+		        wireResponse.data.txHash, SIZEOF(wireResponse.data.txHash)
+		);
 
-	attest_writeHmac(
-	        ATTEST_PURPOSE_BIND_UTXO_AMOUNT,
-	        (uint8_t*) &wireResponse.data, SIZEOF(wireResponse.data),
-	        wireResponse.hmac, SIZEOF(wireResponse.hmac)
-	);
+		u4be_write(wireResponse.data.index, ctx->parserState.attestedOutputIndex);
+
+		u8be_write(wireResponse.data.amount, amount);
+
+		attest_writeHmac(
+		        ATTEST_PURPOSE_BIND_UTXO_AMOUNT,
+		        (uint8_t*) &wireResponse.data, SIZEOF(wireResponse.data),
+		        wireResponse.hmac, SIZEOF(wireResponse.hmac)
+		);
+	}
+
 	io_send_buf(SUCCESS, (uint8_t*) &wireResponse, SIZEOF(wireResponse));
 }
 
 
-void processNextChunk(uint8_t* dataBuffer, size_t dataSize)
+
+void attestUtxo_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
 {
+	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+
+	// Note(ppershing): If this is ever implemented, it probably
+	// should be moved to handleDataAPDU
+	security_policy_t policy = policyForAttestUtxo();
+	if (policy != POLICY_ALLOW_WITHOUT_PROMPT) {
+		THROW(ERR_NOT_IMPLEMENTED);
+	}
+
+	VALIDATE(wireDataSize == 4, ERR_INVALID_DATA);
+	uint32_t outputIndex = u4be_read(wireDataBuffer);
+
+	{
+		// initializations
+		parser_init(&ctx->parserState, outputIndex);
+		blake2b_256_init(&ctx->txHashCtx);
+		ctx->initializedMagic = ATTEST_INIT_MAGIC;
+	}
+
+	TRACE("io");
+	io_send_buf(SUCCESS, NULL, 0);
+	TRACE("done");
+	ui_displayBusy();
+};
+
+void attestUtxo_handleDataAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+{
+	ASSERT(ctx->initializedMagic == ATTEST_INIT_MAGIC);
+	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+
 	BEGIN_TRY {
 		TRY {
-			stream_appendData(& ctx->parserState.stream, dataBuffer, dataSize);
-			blake2b_256_append(& ctx->txHashCtx, dataBuffer, dataSize);
-			parser_keepParsing(& ctx->parserState);
+			TRACE();
+			stream_appendData(&ctx->parserState.stream, wireDataBuffer, wireDataSize);
+			TRACE();
+			blake2b_256_append(&ctx->txHashCtx, wireDataBuffer, wireDataSize);
+			TRACE();
+			parser_keepParsing(&ctx->parserState);
+
+			TRACE();
 			ASSERT(ctx->parserState.mainState == MAIN_FINISHED);
+			// We should not have any data left
+			VALIDATE(stream_availableBytes(&ctx->parserState.stream) == 0, ERR_INVALID_DATA);
 			attestUtxo_sendResponse();
 			ui_idle();
 		}
 		CATCH(ERR_NOT_ENOUGH_INPUT)
 		{
 			// Respond that we need more data
+			TRACE("io");
 			io_send_buf(SUCCESS, NULL, 0);
+			TRACE("done");
 			// Note(ppershing): no ui_idle() as we continue exchange...
 		}
 		CATCH(ERR_UNEXPECTED_TOKEN)
 		{
+			TRACE();
 			// Convert to ERR_INVALID_DATA
-			// which is handled at the main() level
 			THROW(ERR_INVALID_DATA);
 		}
 		FINALLY {
 		}
 	} END_TRY;
 }
+
+
 
 
 void attestUTxO_handleAPDU(
@@ -353,40 +414,24 @@ void attestUTxO_handleAPDU(
         bool isNewCall
 )
 {
+	TRACE("P1: %d", (int) p1);
+	enum {
+		P1_INIT = 0x01,
+		P1_DATA = 0x02,
+	};
+
+	VALIDATE(isNewCall == (p1 == P1_INIT), ERR_INVALID_STATE);
+
 	if (isNewCall) {
 		os_memset(ctx, 0, SIZEOF(*ctx));
 	}
-	VALIDATE(p1 == P1_INITIAL || p1 == P1_CONTINUE, ERR_INVALID_REQUEST_PARAMETERS);
 
-	if (p1 == P1_INITIAL) {
-		if (!isNewCall) THROW(ERR_INVALID_STATE);
-
-		VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
-		VALIDATE(wireDataSize >= 4, ERR_INVALID_DATA);
-
-		security_policy_t policy = policyForAttestUtxo();
-		if (policy == POLICY_DENY) {
-			THROW(ERR_REJECTED_BY_POLICY);
-		} else if (policy == POLICY_ALLOW_WITHOUT_PROMPT) {
-			// pass
-		} else {
-			ASSERT(false); // not implemented
-		}
-
-		uint32_t outputIndex = u4be_read(wireDataBuffer);
-		parser_init( &ctx->parserState, outputIndex);
-		blake2b_256_init(& ctx->txHashCtx);
-		ctx->initializedMagic = ATTEST_INIT_MAGIC;
-
-		// Skip outputIndex
-		processNextChunk(wireDataBuffer + 4, wireDataSize - 4);
-	} else if (p1 == P1_CONTINUE) {
-		if (isNewCall) THROW(ERR_INVALID_STATE);
-
-		ASSERT(ctx->initializedMagic == ATTEST_INIT_MAGIC);
-		processNextChunk(wireDataBuffer, wireDataSize);
-	} else {
-		ASSERT(false);
+	switch(p1) {
+#	define  CASE(P1, HANDLER) case P1: {HANDLER(p2, wireDataBuffer, wireDataSize); break; }
+		CASE(P1_INIT, attestUtxo_handleInitAPDU);
+		CASE(P1_DATA, attestUtxo_handleDataAPDU);
+#	undef   CASE
+	default:
+		THROW(ERR_INVALID_REQUEST_PARAMETERS);
 	}
-
 }
