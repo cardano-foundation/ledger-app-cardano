@@ -11,7 +11,12 @@
 #include "securityPolicy.h"
 #include "uiHelpers.h"
 
+static void parser_advanceMainState(attest_utxo_parser_state_t *state);
+
+
 static ins_attest_utxo_context_t* ctx = &(instructionState.attestUtxoContext);
+static const uint16_t ATTEST_INIT_MAGIC = 4547;
+static const uint16_t ATTEST_PARSER_INIT_MAGIC = 4647;
 
 static inline uint64_t uint64_min(uint64_t x, uint64_t y)
 {
@@ -20,7 +25,7 @@ static inline uint64_t uint64_min(uint64_t x, uint64_t y)
 
 
 // We do not parse addresses, just keep streaming over then
-void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
+static void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 	stream_ensureAvailableBytes(stream, 1); // We have to consume at least something
@@ -34,7 +39,7 @@ void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 }
 
 // Performs a single transition on the Input parser
-void parser_advanceInputState(attest_utxo_parser_state_t* state)
+static void parser_advanceInputState(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 
@@ -103,7 +108,7 @@ void parser_advanceInputState(attest_utxo_parser_state_t* state)
 }
 
 // Makes one step on the transaction Output parser
-void parser_advanceOutputState(attest_utxo_parser_state_t* state)
+static void parser_advanceOutputState(attest_utxo_parser_state_t* state)
 {
 	stream_t* stream = &state->stream;
 
@@ -177,7 +182,7 @@ void parser_advanceOutputState(attest_utxo_parser_state_t* state)
 }
 
 // Makes one parsing step or throws ERR_NOT_ENOUGH_INPUT
-void parser_advanceMainState(attest_utxo_parser_state_t *state)
+static void parser_advanceMainState(attest_utxo_parser_state_t *state)
 {
 	stream_t* stream = &(state->stream); // shorthand
 // Note(ppershing): see note above for parser macros
