@@ -94,26 +94,13 @@ static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *eleme
 		        >= strlen(ctx->fullText) + 1)
 		       ? NULL
 		       : element;
-	case ID_HEADLESS:
-		#ifdef HEADLESS
-		if (ctx->headlessShouldRespond) {
-			TRACE("HEADLESS response");
-			ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
-		} else {
-			ctx->headlessShouldRespond = true;
-			UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
-		}
-		return element;
-		#else
-		ASSERT(false);
-		#endif
 	default:
 		// Always display all other elements.
 		return element;
 	}
 }
 
-void scroll_update_display_content()
+static void scroll_update_display_content()
 {
 	scrollingState_t* ctx = scrollingState;
 	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
@@ -127,7 +114,7 @@ void scroll_update_display_content()
 	UX_REDISPLAY();
 }
 
-void scroll_left()
+static void scroll_left()
 {
 	scrollingState_t* ctx = scrollingState;
 	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
@@ -137,7 +124,7 @@ void scroll_left()
 	}
 }
 
-void scroll_right()
+static void scroll_right()
 {
 	scrollingState_t* ctx = scrollingState;
 	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
@@ -148,14 +135,14 @@ void scroll_right()
 }
 
 
-void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
+static void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
 {
 	cb->state = CALLBACK_NOT_RUN;
 	cb->confirm = confirm;
 	cb->reject = reject;
 }
 
-void uiCallback_confirm(ui_callback_t* cb)
+static void uiCallback_confirm(ui_callback_t* cb)
 {
 	if (!cb->confirm) return;
 
@@ -173,7 +160,7 @@ void uiCallback_confirm(ui_callback_t* cb)
 	}
 }
 
-void uiCallback_reject(ui_callback_t* cb)
+static void uiCallback_reject(ui_callback_t* cb)
 {
 	if (!cb->reject) return;
 
@@ -231,12 +218,20 @@ static unsigned int ui_scrollingText_button(
 	return 0;
 }
 
+#ifdef HEADLESS
+void ui_displayScrollingText_headless_cb()
+{
+	TRACE("HEADLESS response");
+	ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
+}
+#endif
 
 void ui_displayScrollingText(
         const char* headerStr,
         const char* bodyStr,
         ui_callback_fn_t* callback)
 {
+	TRACE();
 	scrollingState_t* ctx = scrollingState;
 	size_t header_len = strlen(headerStr);
 	size_t body_len = strlen(bodyStr);
@@ -261,6 +256,13 @@ void ui_displayScrollingText(
 
 	uiCallback_init(&ctx->callback, callback, NULL);
 	ctx->initMagic = INIT_MAGIC_SCROLLER;
+	TRACE("setting timeout");
+	#ifdef HEADLESS
+	if (callback) {
+		set_timer(HEADLESS_DELAY, ui_displayScrollingText_headless_cb);
+	}
+	#endif
+	TRACE("done");
 	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
 }
 
@@ -293,20 +295,6 @@ static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
 		return ctx->callback.reject ? element : NULL;
 	case ID_ICON_CONFIRM:
 		return ctx->callback.confirm ? element : NULL;
-	case ID_HEADLESS:
-		#ifdef HEADLESS
-		if (ctx->headlessShouldRespond) {
-			TRACE("HEADLESS response");
-			ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
-		} else {
-			ctx->headlessShouldRespond = true;
-			TRACE("HEADLESS set timeout");
-			UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
-		}
-		return element;
-		#else
-		ASSERT(false);
-		#endif
 	default:
 		// Always display all other elements.
 		return element;
@@ -351,6 +339,15 @@ void ui_displayBusy()
 	UX_DISPLAY(ui_busy, NULL);
 }
 
+#ifdef HEADLESS
+void ui_displayConfirm_headless_cb()
+{
+	TRACE("HEADLESS response");
+	ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
+}
+#endif
+
+
 void ui_displayConfirm(
         const char* headerStr,
         const char* bodyStr,
@@ -373,6 +370,11 @@ void ui_displayConfirm(
 
 	uiCallback_init(&ctx->callback, confirm, reject);
 	ctx->initMagic = INIT_MAGIC_CONFIRM;
+	#ifdef HEADLESS
+	if (confirm) {
+		set_timer(HEADLESS_DELAY, ui_displayConfirm_headless_cb);
+	}
+	#endif
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
 }
 

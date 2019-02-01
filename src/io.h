@@ -24,4 +24,7 @@ void CHECK_RESPONSE_SIZE(unsigned int tx);
 void io_seproxyhal_display(const bagl_element_t *element);
 unsigned char io_event(unsigned char channel);
 
+typedef void timeout_callback_fn_t();
+void set_timer(int ms, timeout_callback_fn_t* cb);
+void clear_timer();
 #endif
