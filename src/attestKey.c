@@ -2,9 +2,6 @@
 #include "attestKey.h"
 #include "hmac.h"
 
-static const uint8_t P1_UNUSED = 0x00;
-static const uint8_t P2_UNUSED = 0x00;
-
 static const size_t ATTEST_KEY_SIZE = 32;
 
 typedef struct {
@@ -17,8 +14,6 @@ attestKeyData_t attestKeyData;
 
 // Sanity check
 STATIC_ASSERT(sizeof(attestKeyData.key) == ATTEST_KEY_SIZE, "bad ATTEST_KEY_SIZE");
-
-
 
 void attest_writeHmac(
         attest_purpose_t purpose,
@@ -68,6 +63,9 @@ void attestKey_initialize()
 }
 
 #ifdef DEVEL
+static const uint8_t P1_UNUSED = 0x00;
+static const uint8_t P2_UNUSED = 0x00;
+
 void handleSetAttestKey(
         uint8_t p1, uint8_t p2,
         uint8_t* wireBuffer, size_t wireSize,

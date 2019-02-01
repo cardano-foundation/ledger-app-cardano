@@ -28,8 +28,9 @@ enum {
 	RETURN_UI_STEP_INVALID,
 };
 
-void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+static void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
 {
+	TRACE();
 	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
 
 	// Parse wire
@@ -64,6 +65,7 @@ void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wire
 
 static void deriveAddress_return_ui_runStep()
 {
+	TRACE("step %d\n", ctx->ui_step);
 	ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 	ui_callback_fn_t* this_fn = deriveAddress_return_ui_runStep;
 	int nextStep = RETURN_UI_STEP_INVALID;
@@ -134,8 +136,9 @@ enum {
 };
 
 
-void deriveAddress_handleDisplay(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+static void deriveAddress_handleDisplay(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
 {
+	TRACE();
 	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
 
 	// Parse wire

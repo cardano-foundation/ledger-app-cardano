@@ -19,8 +19,7 @@ static const uint64_t VALUE_MIN_W8 = (uint64_t) 1 << 32;
 
 cbor_token_t cbor_parseToken(const uint8_t* buf, size_t size)
 {
-
-#define ENSURE_AVAILABLE_BYTES(x) VALIDATE(x <= size, ERR_NOT_ENOUGH_INPUT);
+#define ENSURE_AVAILABLE_BYTES(x) if (x > size) THROW(ERR_NOT_ENOUGH_INPUT);
 	ENSURE_AVAILABLE_BYTES(1);
 	const uint8_t tag = buf[0];
 	cbor_token_t result;

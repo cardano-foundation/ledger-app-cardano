@@ -8,7 +8,7 @@
 #include "test_utils.h"
 #include "endian.h"
 #include "utils.h"
-
+#include "cardano.h"
 
 void test_attest(const char** txChunksHex, uint32_t numChunks, uint32_t outputIndex, uint64_t expectedAmount)
 {

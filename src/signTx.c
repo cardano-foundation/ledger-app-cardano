@@ -33,7 +33,7 @@ enum {
 
 static ins_sign_tx_context_t* ctx = &(instructionState.signTxContext);
 
-inline static void CHECK_STAGE(sign_tx_stage_t expected)
+static inline void CHECK_STAGE(sign_tx_stage_t expected)
 {
 	VALIDATE(ctx->stage == expected, ERR_INVALID_STATE);
 }
@@ -214,7 +214,7 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 	signTx_handleInput_ui_runStep();
 }
 
-void signTx_handleInput_ui_runStep()
+static void signTx_handleInput_ui_runStep()
 {
 	int nextStep = HANDLE_INPUT_STEP_INVALID;
 	switch (ctx->ui_step) {
@@ -247,7 +247,7 @@ enum {
 	HANDLE_OUTPUT_STEP_INVALID,
 };
 
-void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+static void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
 {
 	TRACE();
 	ASSERT(ctx->currentOutput < ctx->numOutputs);
@@ -332,7 +332,7 @@ void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDat
 }
 
 
-void signTx_handleOutput_ui_runStep()
+static void signTx_handleOutput_ui_runStep()
 {
 	TRACE("step %d", ctx->ui_step);
 	ui_callback_fn_t* this_fn = signTx_handleOutput_ui_runStep;
@@ -551,6 +551,7 @@ static void signTx_handleWitness_ui_runStep()
 		TRACE("io_send_buf");
 
 		io_send_buf(SUCCESS, ctx->currentWitnessData, SIZEOF(ctx->currentWitnessData));
+		ui_displayBusy(); // needs to happen after I/O
 
 		ctx->currentWitness++;
 		if (ctx->currentWitness == ctx->numWitnesses) {
@@ -571,7 +572,7 @@ static void signTx_handleWitness_ui_runStep()
 
 typedef void subhandler_fn_t(uint8_t p2, uint8_t* dataBuffer, size_t dataSize);
 
-subhandler_fn_t* lookup_subhandler(uint8_t p1)
+static subhandler_fn_t* lookup_subhandler(uint8_t p1)
 {
 	switch(p1) {
 #	define  CASE(  P1, HANDLER) case P1: return HANDLER;
