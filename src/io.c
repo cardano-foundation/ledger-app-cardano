@@ -41,6 +41,22 @@ void io_seproxyhal_display(const bagl_element_t *element)
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+
+static timeout_callback_fn_t* timeout_cb;
+
+void clear_timer()
+{
+	timeout_cb = NULL;
+}
+
+void set_timer(int ms, timeout_callback_fn_t* cb)
+{
+	TRACE();
+	ASSERT(timeout_cb == NULL);
+	timeout_cb = cb;
+	UX_CALLBACK_SET_INTERVAL(ms);
+}
+
 unsigned char io_event(unsigned char channel MARK_UNUSED)
 {
 	// can't have more than one tag in the reply, not supported yet.
@@ -68,12 +84,14 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 
 	case SEPROXYHAL_TAG_TICKER_EVENT:
 		UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-			#ifdef HEADLESS
-			if (UX_ALLOWED)
+			TRACE("timer");
+			if (timeout_cb)
 			{
-				UX_REDISPLAY();
+				timeout_callback_fn_t* callback = timeout_cb;
+				// clear first if cb() throws
+				timeout_cb = NULL;
+				callback();
 			}
-			#endif
 		});
 		break;
 

@@ -131,6 +131,7 @@ static const int INS_NONE = -1;
 // menu as its idle screen; you can define your own completely custom screen.
 void ui_idle(void)
 {
+	clear_timer();
 	currentInstruction = INS_NONE;
 	// The first argument is the starting index within menu_main, and the last
 	// argument is a preprocessor; I've never seen an app that uses either
