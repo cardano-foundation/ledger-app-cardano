@@ -73,19 +73,17 @@ void getExtendedPublicKey_handleAPDU(
 static void getExtendedPublicKey_ui_runStep()
 {
 	ui_callback_fn_t* this_fn = getExtendedPublicKey_ui_runStep;
-	int nextStep = UI_STEP_INVALID;
 
-	switch (ctx->ui_step) {
-	case UI_STEP_WARNING: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(UI_STEP_WARNING) {
 		ui_displayScrollingText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
 		);
-		nextStep  = UI_STEP_DISPLAY_PATH;
-		break;
 	}
-	case UI_STEP_DISPLAY_PATH: {
+	UI_STEP(UI_STEP_DISPLAY_PATH) {
 		// Response
 		char pathStr[100];
 		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr) );
@@ -95,29 +93,21 @@ static void getExtendedPublicKey_ui_runStep()
 		        pathStr,
 		        this_fn
 		);
-		nextStep = UI_STEP_CONFIRM;
-		break;
 	}
-	case UI_STEP_CONFIRM: {
+	UI_STEP(UI_STEP_CONFIRM) {
 		ui_displayConfirm(
 		        "Confirm export",
 		        "public key?",
 		        this_fn,
 		        respond_with_user_reject
 		);
-		nextStep = UI_STEP_RESPOND;
-		break;
 	}
-	case UI_STEP_RESPOND: {
+	UI_STEP(UI_STEP_RESPOND) {
 		ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 
 		io_send_buf(SUCCESS, (uint8_t*) &ctx->extPubKey, SIZEOF(ctx->extPubKey));
 		ui_idle();
-		nextStep = UI_STEP_INVALID;
-		break;
+
 	}
-	default:
-		ASSERT(false);
-	}
-	ctx->ui_step = nextStep;
+	UI_STEP_END(UI_STEP_INVALID);
 }

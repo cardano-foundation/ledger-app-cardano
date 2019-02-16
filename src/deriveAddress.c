@@ -68,19 +68,17 @@ static void deriveAddress_return_ui_runStep()
 	TRACE("step %d\n", ctx->ui_step);
 	ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 	ui_callback_fn_t* this_fn = deriveAddress_return_ui_runStep;
-	int nextStep = RETURN_UI_STEP_INVALID;
 
-	switch (ctx->ui_step) {
-	case RETURN_UI_STEP_WARNING: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(RETURN_UI_STEP_WARNING) {
 		ui_displayScrollingText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
 		);
-		nextStep = RETURN_UI_STEP_PATH;
-		break;
 	}
-	case RETURN_UI_STEP_PATH: {
+	UI_STEP(RETURN_UI_STEP_PATH) {
 		// Response
 		char pathStr[100];
 		{
@@ -94,34 +92,24 @@ static void deriveAddress_return_ui_runStep()
 		        pathStr,
 		        this_fn
 		);
-		nextStep = RETURN_UI_STEP_CONFIRM;
-
-		break;
 	}
-	case RETURN_UI_STEP_CONFIRM: {
+	UI_STEP(RETURN_UI_STEP_CONFIRM) {
 		ui_displayConfirm(
 		        "Confirm",
 		        "export address?",
 		        this_fn,
 		        respond_with_user_reject
 		);
-		nextStep = RETURN_UI_STEP_RESPOND;
-
-		break;
 	}
-	case RETURN_UI_STEP_RESPOND: {
+	UI_STEP(RETURN_UI_STEP_RESPOND) {
 		ctx->responseReadyMagic = 0;
 		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
 
 		io_send_buf(SUCCESS, ctx->address.buffer, ctx->address.size);
 		ui_idle();
-		nextStep = RETURN_UI_STEP_INVALID;
-		break;
 	}
-	default:
-		ASSERT(false);
-	}
-	ctx->ui_step = nextStep;
+	UI_STEP_END(RETURN_UI_STEP_INVALID);
+
 }
 
 
@@ -174,28 +162,24 @@ static void deriveAddress_display_ui_runStep()
 {
 	ASSERT(ctx->responseReadyMagic == RESPONSE_READY_MAGIC);
 	ui_callback_fn_t* this_fn = deriveAddress_display_ui_runStep;
-	int nextStep = DISPLAY_UI_STEP_INVALID;
 
-	switch (ctx->ui_step) {
-	case DISPLAY_UI_STEP_WARNING: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(DISPLAY_UI_STEP_WARNING) {
 		ui_displayScrollingText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
 		);
-		nextStep = DISPLAY_UI_STEP_INSTRUCTIONS;
-		break;
 	}
-	case DISPLAY_UI_STEP_INSTRUCTIONS: {
+	UI_STEP(DISPLAY_UI_STEP_INSTRUCTIONS) {
 		ui_displayScrollingText(
 		        "Verify address",
 		        "Make sure it agrees with your computer",
 		        this_fn
 		);
-		nextStep = DISPLAY_UI_STEP_PATH;
-		break;
 	}
-	case DISPLAY_UI_STEP_PATH: {
+	UI_STEP(DISPLAY_UI_STEP_PATH) {
 		// Response
 		char pathStr[100];
 		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
@@ -204,10 +188,8 @@ static void deriveAddress_display_ui_runStep()
 		        pathStr,
 		        this_fn
 		);
-		nextStep = DISPLAY_UI_STEP_ADDRESS;
-		break;
 	}
-	case DISPLAY_UI_STEP_ADDRESS: {
+	UI_STEP(DISPLAY_UI_STEP_ADDRESS) {
 		char address58Str[100];
 		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
 
@@ -222,19 +204,12 @@ static void deriveAddress_display_ui_runStep()
 		        address58Str,
 		        this_fn
 		);
-		nextStep = DISPLAY_UI_STEP_RESPOND;
-		break;
 	}
-	case DISPLAY_UI_STEP_RESPOND: {
+	UI_STEP(DISPLAY_UI_STEP_RESPOND) {
 		io_send_buf(SUCCESS, NULL, 0);
 		ui_idle();
-		nextStep = RETURN_UI_STEP_INVALID;
-		break;
 	}
-	default:
-		ASSERT(false);
-	}
-	ctx->ui_step = nextStep;
+	UI_STEP_END(DISPLAY_UI_STEP_INVALID);
 }
 
 void deriveAddress_handleAPDU(

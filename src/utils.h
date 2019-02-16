@@ -70,6 +70,45 @@
 #define ITERATE(it, arr) for (__typeof__(&(arr[0])) it = BEGIN(arr); it < END(arr); it++)
 
 
+// *INDENT-OFF*
+// TODO(ppershing): maybe we can also join this with PARSER macros
+// in attestUtxo.c
+
+// Warning: Following macros are *NOT* brace-balanced by design!
+// The macros simplify writing resumable logic that needs to happen over
+// multiple calls.
+
+// Example usage:
+// UI_STEP_BEGIN(ctx->ui_step);
+// UI_STEP(1) {do something & setup callback}
+// UI_STEP(2) {do something & setup callback}
+// UI_STEP_END(-1); // invalid state
+
+#define UI_STEP_BEGIN(VAR) \
+	{ \
+		int* __ui_step_ptr = &(VAR); \
+		switch(*__ui_step_ptr) { \
+			default: { \
+				ASSERT(false);
+
+#define UI_STEP(NEXT_STEP) \
+				*__ui_step_ptr = NEXT_STEP; \
+				break; \
+			} \
+			case NEXT_STEP: {
+
+#define UI_STEP_END(INVALID_STEP) \
+				*__ui_step_ptr = INVALID_STEP; \
+				break; \
+			} \
+		} \
+	}
+
+// Early exit to another state, unused for now
+// #define UI_STEP_JUMP(NEXT_STEP) *__ui_step_ptr = NEXT_STEP; break;
+
+// *INDENT-ON*
+
 
 // Note: unused removes unused warning but does not warn if you suddenly
 // start using such variable. deprecated deals with that.

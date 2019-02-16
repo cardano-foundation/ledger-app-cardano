@@ -38,7 +38,6 @@ static inline void CHECK_STAGE(sign_tx_stage_t expected)
 	VALIDATE(ctx->stage == expected, ERR_INVALID_STATE);
 }
 
-
 static void signTx_handleInit_ui_runStep();
 
 enum {
@@ -216,9 +215,9 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 
 static void signTx_handleInput_ui_runStep()
 {
-	int nextStep = HANDLE_INPUT_STEP_INVALID;
-	switch (ctx->ui_step) {
-	case HANDLE_INPUT_STEP_RESPOND: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(HANDLE_INPUT_STEP_RESPOND) {
 		// Advance state to next input
 		ctx->currentInput++;
 		if (ctx->currentInput == ctx->numInputs) {
@@ -229,12 +228,8 @@ static void signTx_handleInput_ui_runStep()
 		// respond
 		io_send_buf(SUCCESS, NULL, 0);
 		ui_displayBusy(); // needs to happen after I/O
-		break;
-	};
-	default:
-		ASSERT(false);
 	}
-	ctx->ui_step = nextStep;
+	UI_STEP_END(HANDLE_INPUT_STEP_INVALID);
 }
 
 
@@ -320,14 +315,16 @@ static void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t 
 	                                   SIZEOF(ctx->currentAddress.buffer)
 	                           );
 
-	switch (policy) {
 #	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+#	define  DEFAULT(ERR) default: { THROW(ERR); }
+	switch (policy) {
 		CASE(POLICY_SHOW_BEFORE_RESPONSE, HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT);
 		CASE(POLICY_ALLOW_WITHOUT_PROMPT, HANDLE_OUTPUT_STEP_RESPOND);
-#	undef   CASE
-	default:
-		THROW(ERR_NOT_IMPLEMENTED);
+		DEFAULT(ERR_NOT_IMPLEMENTED)
 	}
+#	undef   CASE
+#	undef   DEFAULT
+
 	signTx_handleOutput_ui_runStep();
 }
 
@@ -337,10 +334,9 @@ static void signTx_handleOutput_ui_runStep()
 	TRACE("step %d", ctx->ui_step);
 	ui_callback_fn_t* this_fn = signTx_handleOutput_ui_runStep;
 
-	int nextStep = HANDLE_OUTPUT_STEP_INVALID;
+	UI_STEP_BEGIN(ctx->ui_step);
 
-	switch (ctx->ui_step) {
-	case HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT: {
+	UI_STEP(HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT) {
 		char adaAmountStr[50];
 		str_formatAdaAmount(adaAmountStr, SIZEOF(adaAmountStr), ctx->currentAmount);
 		ui_displayScrollingText(
@@ -348,10 +344,8 @@ static void signTx_handleOutput_ui_runStep()
 		        adaAmountStr,
 		        this_fn
 		);
-		nextStep = HANDLE_OUTPUT_STEP_DISPLAY_ADDRESS;
-		break;
 	}
-	case HANDLE_OUTPUT_STEP_DISPLAY_ADDRESS: {
+	UI_STEP(HANDLE_OUTPUT_STEP_DISPLAY_ADDRESS) {
 		char address58Str[200];
 		ASSERT(ctx->currentAddress.size <= SIZEOF(ctx->currentAddress.buffer));
 		encode_base58(
@@ -366,10 +360,8 @@ static void signTx_handleOutput_ui_runStep()
 		        address58Str,
 		        this_fn
 		);
-		nextStep = HANDLE_OUTPUT_STEP_RESPOND;
-		break;
 	}
-	case HANDLE_OUTPUT_STEP_RESPOND: {
+	UI_STEP(HANDLE_OUTPUT_STEP_RESPOND) {
 		// Advance state to next output
 		ctx->currentOutput++;
 		// Transition to outputs
@@ -381,13 +373,8 @@ static void signTx_handleOutput_ui_runStep()
 		// respond
 		io_send_buf(SUCCESS, NULL, 0);
 		ui_displayBusy();
-		nextStep = HANDLE_OUTPUT_STEP_INVALID;
-		break;
 	}
-	default:
-		ASSERT(false);
-	};
-	ctx->ui_step  = nextStep;
+	UI_STEP_END(HANDLE_OUTPUT_STEP_INVALID);
 }
 
 
@@ -398,6 +385,7 @@ enum {
 	HANDLE_CONFIRM_STEP_RESPOND,
 	HANDLE_CONFIRM_STEP_INVALID,
 };
+
 static void signTx_handleConfirmAPDU(uint8_t p2, uint8_t* dataBuffer MARK_UNUSED, size_t dataSize)
 {
 	TRACE();
@@ -415,13 +403,16 @@ static void signTx_handleConfirmAPDU(uint8_t p2, uint8_t* dataBuffer MARK_UNUSED
 	ctx->currentAmount = ctx->sumAmountInputs - ctx->sumAmountOutputs;
 
 	security_policy_t policy = policyForSignTxFee(ctx->currentAmount);
-	switch (policy) {
+
 #	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+#	define  DEFAULT(ERR) default: { THROW(ERR); }
+	switch (policy) {
 		CASE(POLICY_SHOW_BEFORE_RESPONSE, HANDLE_CONFIRM_STEP_DISPLAY_FEE);
-#	undef   CASE
-	default:
-		THROW(ERR_NOT_IMPLEMENTED);
+		DEFAULT(ERR_NOT_IMPLEMENTED);
 	}
+#	undef   CASE
+#	undef   DEFAULT
+
 	signTx_handleConfirm_ui_runStep();
 }
 
@@ -430,10 +421,10 @@ static void signTx_handleConfirm_ui_runStep()
 {
 	TRACE("step %d", ctx->ui_step);
 	ui_callback_fn_t* this_fn = signTx_handleConfirm_ui_runStep;
-	int nextStep = HANDLE_CONFIRM_STEP_INVALID;
 
-	switch (ctx->ui_step) {
-	case HANDLE_CONFIRM_STEP_DISPLAY_FEE: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(HANDLE_CONFIRM_STEP_DISPLAY_FEE) {
 		char adaAmount[50];
 		str_formatAdaAmount(adaAmount, SIZEOF(adaAmount), ctx->currentAmount);
 		ui_displayScrollingText(
@@ -441,33 +432,24 @@ static void signTx_handleConfirm_ui_runStep()
 		        adaAmount,
 		        this_fn
 		);
-		nextStep = HANDLE_CONFIRM_STEP_FINAL_CONFIRM;
-		break;
 	}
-	case HANDLE_CONFIRM_STEP_FINAL_CONFIRM: {
+	UI_STEP(HANDLE_CONFIRM_STEP_FINAL_CONFIRM) {
 		ui_displayConfirm(
 		        "Confirm",
 		        "transaction?",
 		        this_fn,
 		        respond_with_user_reject
 		);
-		nextStep = HANDLE_CONFIRM_STEP_RESPOND;
-		break;
 	}
-	case HANDLE_CONFIRM_STEP_RESPOND: {
+	UI_STEP(HANDLE_CONFIRM_STEP_RESPOND) {
 		// switch stage
 		ctx->stage = SIGN_STAGE_WITNESSES;
 
 		// respond
 		io_send_buf(SUCCESS, ctx->txHash, SIZEOF(ctx->txHash));
 		ui_displayBusy();
-		nextStep = HANDLE_CONFIRM_STEP_INVALID;
-		break;
 	}
-	default:
-		ASSERT(false);
-	};
-	ctx->ui_step = nextStep;
+	UI_STEP_END(HANDLE_CONFIRM_STEP_INVALID);
 }
 
 static void signTx_handleWitness_ui_runStep();
@@ -499,14 +481,17 @@ static void signTx_handleWitnessAPDU(uint8_t p2, uint8_t* dataBuffer, size_t dat
 	);
 
 	TRACE("policy %d", (int) policy);
-	switch (policy) {
+
 #	define  CASE(POLICY, UI_STEP) case POLICY: {ctx->ui_step=UI_STEP; break;}
+#	define  DEFAULT(ERR) default: { THROW(ERR); }
+	switch (policy) {
 		CASE(POLICY_PROMPT_WARN_UNUSUAL,  HANDLE_WITNESS_STEP_WARNING);
 		CASE(POLICY_ALLOW_WITHOUT_PROMPT, HANDLE_WITNESS_STEP_RESPOND);
-#	undef   CASE
-	default:
-		THROW(ERR_NOT_IMPLEMENTED);
+		DEFAULT(ERR_NOT_IMPLEMENTED);
 	}
+#	undef   CASE
+#	undef   DEFAULT
+
 	signTx_handleWitness_ui_runStep();
 }
 
@@ -514,19 +499,17 @@ static void signTx_handleWitness_ui_runStep()
 {
 	TRACE("step %d", ctx->ui_step);
 	ui_callback_fn_t* this_fn = signTx_handleWitness_ui_runStep;
-	int nextStep = HANDLE_WITNESS_STEP_INVALID;
 
-	switch (ctx->ui_step) {
-	case HANDLE_WITNESS_STEP_WARNING: {
+	UI_STEP_BEGIN(ctx->ui_step);
+
+	UI_STEP(HANDLE_WITNESS_STEP_WARNING) {
 		ui_displayScrollingText(
 		        "Warning!",
 		        "Hosts asks for unusual witness",
 		        this_fn
 		);
-		nextStep = HANDLE_WITNESS_STEP_DISPLAY;
-		break;
 	}
-	case HANDLE_WITNESS_STEP_DISPLAY: {
+	UI_STEP(HANDLE_WITNESS_STEP_DISPLAY) {
 		char pathStr[100];
 		bip44_printToStr(&ctx->currentPath, pathStr, SIZEOF(pathStr));
 		ui_displayScrollingText(
@@ -534,20 +517,16 @@ static void signTx_handleWitness_ui_runStep()
 		        pathStr,
 		        this_fn
 		);
-		nextStep = HANDLE_WITNESS_STEP_CONFIRM;
-		break;
 	}
-	case HANDLE_WITNESS_STEP_CONFIRM: {
+	UI_STEP(HANDLE_WITNESS_STEP_CONFIRM) {
 		ui_displayConfirm(
 		        "Sign using",
 		        "this witness?",
 		        this_fn,
 		        respond_with_user_reject
 		);
-		nextStep = HANDLE_WITNESS_STEP_RESPOND;
-		break;
 	}
-	case HANDLE_WITNESS_STEP_RESPOND: {
+	UI_STEP(HANDLE_WITNESS_STEP_RESPOND) {
 		TRACE("io_send_buf");
 
 		io_send_buf(SUCCESS, ctx->currentWitnessData, SIZEOF(ctx->currentWitnessData));
@@ -559,13 +538,8 @@ static void signTx_handleWitness_ui_runStep()
 			// We are finished
 			ui_idle();
 		}
-		nextStep = HANDLE_WITNESS_STEP_INVALID;
-		break;
 	}
-	default:
-		ASSERT(false);
-	};
-	ctx->ui_step = nextStep;
+	UI_STEP_END(HANDLE_INPUT_STEP_INVALID);
 }
 
 
@@ -575,15 +549,16 @@ typedef void subhandler_fn_t(uint8_t p2, uint8_t* dataBuffer, size_t dataSize);
 static subhandler_fn_t* lookup_subhandler(uint8_t p1)
 {
 	switch(p1) {
-#	define  CASE(  P1, HANDLER) case P1: return HANDLER;
+#	define  CASE(P1, HANDLER) case P1: return HANDLER;
+#	define  DEFAULT(HANDLER)  default: return HANDLER;
 		CASE(0x01, signTx_handleInitAPDU);
 		CASE(0x02, signTx_handleInputAPDU);
 		CASE(0x03, signTx_handleOutputAPDU);
 		CASE(0x04, signTx_handleConfirmAPDU);
 		CASE(0x05, signTx_handleWitnessAPDU);
+		DEFAULT(NULL)
 #	undef   CASE
-	default:
-		return NULL;
+#	undef   DEFAULT
 	}
 }
 
