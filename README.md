@@ -11,30 +11,12 @@ Cardano Ledger App for Ledger Nano S
 
 Builds and loads the application into connected device. Just make sure to close the Ledger app on the device before running the command.
 
-### Production
 
-`make clean load`
+### Debug version
 
-Build the app with the PROD API only.
+Uncomment `#DEFINE+=DEVEL` and `#DEFINE+=HEADLESS` in Makefile. Then `make clean load`
 
-### Test API 
-
-`make clean test`
-
-Builds the app with the TEST API only. Useful for testing underlying implementations used in the production functions.
-
-### Headless API - Non production
-
-`make clean headless`
-
-Build the PROD API bypassing the UI. [**WARNING!** Bypasses user confirmation screens. Not to be used for production builds].
-
-### Deploying Release
-
-Releases will need to be given to Ledger for signing with their private key.
-This will allow the application to be installed via the Ledger App Manager without warning prompts on any Ledger device.
-
-## Setup
+### Setup
 
 Make sure your:
 - SDK >= 1.5.2
@@ -69,26 +51,9 @@ The build process is managed with [Make](https://www.gnu.org/software/make/).
 
 * `clean`: Clean the build and output directories
 * `delete`: Remove the application from the device
-* `load`: Load signed app onto the Ledger device with regular api
-* `test`: Load signed app onto the Ledger device with test api
+* `load`: Load signed app onto the Ledger device
 * `build`: Build obj and bin api artefacts without loading
-* `build-test`: Build obj and bin test api artefacts without loading
 * `sign`: Sign current app.hex with CA private key
 * `deploy`: Load the current app.hex onto the Ledger device
-* `seed` : Seeds identity 1 on the device to a predetermined mnemonic. Intended for automated testing purposes. [**WARNING!** This will overwrite the identity on the device]
 
 See `Makefile` for list of included functions.
-
-## Troubleshooting
-
-### make delete/load/test/headless
-
-* `ledgerblue.commException.CommException: Exception : No dongle found
-make: *** [load] Error 1` : Device not unlocked; Device not connected; VM does not have control of USB port
-
-### make load/test/headless
-
-* `ledgerblue.commException.CommException: Exception : Invalid status 6a80`: Cardano app already installed on device - uninstall it first.
-
-### make delete
-`Invalid status 6e00`: App is running
