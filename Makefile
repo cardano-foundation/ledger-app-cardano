@@ -32,7 +32,7 @@ APPVERSION = "1.0.0"
 APP_LOAD_PARAMS =--appFlags 0 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
 
-ICONNAME=icon.gif
+ICONNAME=icon_ada.gif
 ################
 # Default rule #
 ################
