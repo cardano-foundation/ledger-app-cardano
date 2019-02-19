@@ -204,10 +204,14 @@ static unsigned int ui_scrollingText_button(
 				break;
 			}
 		}
+		CATCH(EXCEPTION_IO_RESET)
+		{
+			THROW(EXCEPTION_IO_RESET);
+		}
 		CATCH_OTHER(e)
 		{
 			TRACE("Error %d\n", (int) e);
-			#ifndef RESET_ON_CRASH
+			#ifdef RESET_ON_CRASH
 			io_seproxyhal_se_reset();
 			#endif
 		}
@@ -320,10 +324,14 @@ static unsigned int ui_confirm_button(
 				break;
 			}
 		}
+		CATCH(EXCEPTION_IO_RESET)
+		{
+			THROW(EXCEPTION_IO_RESET);
+		}
 		CATCH_OTHER(e)
 		{
 			TRACE("Error %d\n", (int) e);
-			#ifndef RESET_ON_CRASH
+			#ifdef RESET_ON_CRASH
 			io_seproxyhal_se_reset();
 			#endif
 		}
