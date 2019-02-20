@@ -54,6 +54,11 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64
 ## USB U2F
 DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"ADA\" USB_SEGMENT_SIZE=64 
 
+## WEBUSB
+WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
+DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+
+
 ## Protect stack overflows
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
 
