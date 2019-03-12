@@ -12,8 +12,8 @@ Due to Ledger constraints and potential security implications (parsing errors), 
 5) Potential security improvement -- because SignTx does not output serialized transaction, only witnesses, the host app is responsible for serializing the transaction itself. Any serialization mismatch between host and Ledger would result in an transaction which is rejected by nodes. 
 
 **SignTx Limitations**
-- Output address size is limited to ❓ bytes (single APDU). (Note: IOHK is fine with address size limit of 100 bytes)
-- Change address is limited to `m/44'/1815'/account'/1/changeIndex` where is recognized account (TBD(VL)❓: for now `0 <= account <= 10` but we need to unify this across instructions) and `0 <= changeIndex < 1 000 000`. This makes it feasible to brute-force all change addresses in case an attacker manages to modify change address(es) (As user does not confirm change addresses, it is relatively easy to perform MITM attack).
+- Output address size is limited to ~200 bytes (single APDU). (Note: IOHK is fine with address size limit of 100 bytes)
+- Change address is limited to `m/44'/1815'/account'/1/changeIndex` where is recognized account. (TBD(VL)❓: for now `0 <= account <= 10` but we need to unify this across instructions) and `0 <= changeIndex < 1 000 000`. This makes it feasible to brute-force all change addresses in case an attacker manages to modify change address(es) (As user does not confirm change addresses, it is relatively easy to perform MITM attack).
 - TBD: Input count? Output count?
 
 **Communication protocol non-goals:**
@@ -47,9 +47,14 @@ Initializes signing request.
 |Field|Value|
 |-----|-----|
 |  P1 | `0x01` |
-|  P2 | unused? |
-TBD❓: Do we include number of inputs and outputs here?
+|  P2 | unused |
 
+**Data**
+
+|Field| Length | Comments|
+|------|-----|-----|
+|Num of Tx inputs inputs| 4 | Big endian|
+|Num of Tx outputs| 4 | Big endian|
 
 ### 2 - Set UTxO inputs
 
@@ -58,20 +63,24 @@ TBD❓: Do we include number of inputs and outputs here?
 |Field|Value|
 |-----|-----|
 |  P1 | `0x02` |
-|  P2 | input_number |
-| data | n-th input |
+|  P2 | unused |
+| data | Tx input, data depending on type |
 
-Where P2 goes from 0 to the number of inputs.
-Where input is exactly the data returned by [AttestUTxO call](ins_attest_utxo.md).
-TBD: ❓Is `P2` the right place to keep the counter?
+**Data for SIGN_TX_INPUT_TYPE_UTXO**
+
+|Field| Length | Comments|
+|-----|--------|--------|
+|Input type| 1 | `SIGN_TX_INPUT_TYPE_UTXO==0x01` |
+|Attested input| 56 | Output of [attestUTxO call](ins_attest_utxo.md) |
+
+Note that ledger should check that the tx contains exactly the announced number of inputs before proceeding to outputs.
 
 **Ledger responsibilities**
 
 - Check that `P1` is valid
  - previous call *must* had `P1 == 0x01` or `P1 == 0x02`
-- Check that `P2` is valid
- - If previous call had `P1==0` -> check `P2 == 0`
- - If previous call had `P1==1` -> check `P2 == P2_prev + 1`
+- Check that `P2` is unused
+- Check that we are within advertised number of inputs
 - Check that `attested_utxo` is valid (contains valid HMAC)
 - Sum `attested_utxo.amount` into total transaction amount
 
@@ -82,23 +91,43 @@ TBD: ❓Is `P2` the right place to keep the counter?
 |Field|Value|
 |-----|-----|
 |  P1 | `0x03` |
-|  P2 | output_number |
-| data | output |
+|  P2 | unused |
+| data | Tx output, data depending on type |
 
+**Data for SIGN_TX_OUTPUT_TYPE_ADDRESS**
 
-TBD: How do we handle outputs? There are multiple output types
-1) 3-rd party address. This needs to be input as raw address data. What should the encoding be?
-2) Ledger address belonging to the external chain. 
- - TBD: Do we need to do something specific here? (Potentialy show user BIP32 path instead of the address?) If yes, this needs specific encoding, otherwise it could be simply same as external address
-3) Change address (Ledger address belonging to the internal chain).
- - TBD: Ledger needs to be able to either a) verify or b) construct this address. Option b) makes more sense. 
- - Ledger should probably not require any confirmation from the user about this address if this address is in reasonable range (e.g. belongs to the first 10000000 change addresses a-la Trezor logic). TBD: what should we do if we receive >1000000 index?
+This output type is used for regular destination addresses
+
+|Field| Length | Comments|
+|-----|--------|--------|
+|Amount| 8| Big endian. Amount in Lovelace|
+|Output type| 1 | `SIGN_TX_OUTPUT_TYPE_ADDRESS=0x01`|
+|Address| variable | CBOR-encoded raw address (before base58-encoding)|
+
+**Data for SIGN_TX_OUTPUT_TYPE_PATH**
+
+This output type is used for change addresses. These *are not* shown to the user during validation (Note: some restrictions apply. See [src/securityPolicy.c](../src/securityPolicy.c) for details.)
+
+|Field| Length | Comments|
+|-----|--------|--------|
+|Amount| 8| Big endian. Amount in Lovelace|
+|Output type| 1 | `SIGN_TX_OUTPUT_TYPE_PATH=0x02`|
+|BIP44 path| 1+4 * len | See [GetExtPubKey call](ins_get_extended_public_key.md) for a format example|
+
  
 ### 4 - Final confirmation
-Ledger needs to calculate fee (and verify it is positive. TBD? Does ledger need to verify fee is big enough?).
+
+Ledger needs to calculate and display transaction fee.
 User needs to confirm fee & approve transaction.
 
+|Field|Value|
+|-----|-----|
+|  P1 | `0x05` |
+|  P2 | (unused) |
+| data | (none) |
+
 ### 5 - Compute witnesses
+
 Given BIP44 path, sign TxHash by Ledger. Return the witness
 
 **Command**
@@ -107,11 +136,11 @@ Given BIP44 path, sign TxHash by Ledger. Return the witness
 |-----|-----|
 |  P1 | `0x05` |
 |  P2 | (unused) |
-| data | BIP44 path |
+| data | BIP44 path. See [GetExtPubKey call](ins_get_extended_public_key.md) for a format example |
 
-TBD: what are expected path checks?
+**Response**
 
-Returns:
-TxWitness
-
-TODO: ❓design streaming protocol for this call
+|Field|Length| Comments|
+|-----|-----|-----|
+|Witness extended public key| - | Not included in the response. Implementations either need to derive this or ask ledger explicitly. Note that this is a design decision to avoid leaking xpub to adversary|
+|Signature|32| Witness signature. Implementations need to construct full witness by prepending xpub and serializing into CBOR|
