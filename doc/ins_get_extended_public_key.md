@@ -54,12 +54,13 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
   - check data is valid:
     - `Lc >= 1` (we have path_len)
     - `1 + path_len * 4 == Lc`
-  - check derivatoin path is valid and within Cardano BIP32 space
+  - check derivation path is valid and within Cardano BIP32 space
     - `path_len >= 3`
     - `path_len <= 10`
     - `path[0] == 44'` (' means hardened)
     - `path[1] == 1815'`
     - `path[2] is hardened` (`path[2]` is account number)
+    - Ledger might impose more restrictions, see implementation of `policyForGetExtendedPublicKey` in [src/securityPolicy.c](../src/securityPolicy.c) for details
 - calculate public key
 - respond with public key
  
