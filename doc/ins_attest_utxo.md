@@ -32,7 +32,6 @@ To address such issues, Ledger implementation of Cardano requires each transacti
 |Data field|Width (B)|Comment|
 |----------|---------|-------|
 | outNum   |  4 (Big-endian)     | UTxO output number, indexed by 0|
-| TxChunk | variable | First chunk of Tx |
 
 `P1=0x02` (subsequent frames)
 
@@ -59,11 +58,9 @@ Upon receiving last txChunk (as determined by the transaction parsing) the respo
 - Validate that transaction parses correctly (for details see below)
 - Check that transaction contains given output number
 - Extract amount of the given output
-- Sign (using app session key generated at app start) tuple `(TxHash, OutputNumber, Amount)` and return the tuple together with the signature. 
+- Sign (using app session key generated at app start) tuple `(TxHash, OutputNumber, Amount)` and return the tuple together with the signature. This binds together UTxO and amount so that Ledger won't need to read the whole UTxO later in order to confirm the amount.
 
-Note on HMAC: We use `HMAC_SHA256(key=32 byte session key, message=(txHash,outNum,amount))` to compute the signature digest and return first 16 bytes of it. This should be resilient enough to birthday paradox and other attacks as the key is just per session and we Ledger's signing speed is slow. ❓(IOHK): Is this enough? 
-
-**IOHK vincenthz/nicolas**: we're not quite sure what is this supposed to protect from, and if that's useful for anything until we have the attested data on the ledger validated directly anyway.
+Note on HMAC: We use `HMAC_SHA256(key=32 byte session key, message=(txHash,outNum,amount))` to compute the signature digest and return first 16 bytes of it. This should be resilient enough to birthday paradox and other attacks as the key is just per session and we Ledger's signing speed is slow.
 
 **Ledger transaction parsing compatibility**
 
@@ -75,6 +72,8 @@ For security reasons, we decided that transaction parsing *should not* be future
 For these two reasons, we believe it is safer for Ledger to reject unknown version of transaction encoding and force user to upgrade the App version to one which also implements the new schema.
 
 **Ledger transaction parsing responsibility**
+
+**Note: Ledger currently supports pre-Shelley transactions only!**
 
 General description of Cardano Addresses: (https://cardanodocs.com/cardano/addresses/)
 Ledger *must* check and correctly recognize following CBOR-encoded transaction structure.
@@ -122,8 +121,6 @@ Where
 - `Tag(x)` means tagged value with tag `x`
 - `Bytes[x]` means byte sequence containing `x`
 - `??` means we do not constrain this value
-
-# ❓ TODO: Following section needs to be reviewed by IOHK!
 
 **Checks that Ledger App *does not* implement:**
 
