@@ -4,11 +4,10 @@
 #include <os_io_seproxyhal.h>
 #include <stdint.h>
 
-// io_send_* arehelper functions for sending response APDUs.
+// `io_send_*` are helper functions for sending response APDUs.
 // Note that the IO_RETURN_AFTER_TX flag is set so that the function
 // does not receive next APDU.
 // 'tx' is the conventional name for the size of the response APDU,
-// i.e. the write-offset within G_io_apdu_buffer.
 
 void _io_send_G_io_apdu_buffer(uint16_t code, uint16_t tx);
 
