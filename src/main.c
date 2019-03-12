@@ -172,6 +172,10 @@ static void cardano_main(void)
 				rx = io_exchange(CHANNEL_APDU | flags, rx);
 				flags = 0;
 
+				// We should be awaiting APDU
+				ASSERT(io_state == IO_EXPECT_IO);
+				io_state = IO_EXPECT_NONE;
+
 				// No APDU received; trigger a reset.
 				if (rx == 0)
 				{
@@ -306,6 +310,7 @@ __attribute__((section(".boot"))) int main(void)
 				USB_power(1);
 				ui_idle();
 				attestKey_initialize();
+				io_state = IO_EXPECT_IO;
 				cardano_main();
 			}
 			CATCH(EXCEPTION_IO_RESET)

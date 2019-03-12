@@ -187,6 +187,7 @@ static unsigned int ui_scrollingText_button(
 	BEGIN_TRY {
 		TRY {
 			ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
+			ASSERT(io_state == IO_EXPECT_UI);
 			switch (button_mask)
 			{
 			case BUTTON_LEFT:
@@ -267,6 +268,8 @@ void ui_displayScrollingText(
 	}
 	#endif
 	TRACE("done");
+	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
+	io_state = IO_EXPECT_UI;
 	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
 }
 
@@ -313,6 +316,7 @@ static unsigned int ui_confirm_button(
 	BEGIN_TRY {
 		TRY {
 			ASSERT(confirmState->initMagic == INIT_MAGIC_CONFIRM);
+			ASSERT(io_state == IO_EXPECT_UI);
 			switch (button_mask)
 			{
 			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT
@@ -383,6 +387,8 @@ void ui_displayConfirm(
 		set_timer(HEADLESS_DELAY, ui_displayConfirm_headless_cb);
 	}
 	#endif
+	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
+	io_state = IO_EXPECT_UI;
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
 }
 

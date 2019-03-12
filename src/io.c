@@ -3,6 +3,8 @@
 #include "assert.h"
 #include "errors.h"
 
+io_state_t io_state;
+
 void CHECK_RESPONSE_SIZE(unsigned int tx)
 {
 	// Note(ppershing): we do both checks due to potential overflows
@@ -20,6 +22,9 @@ void _io_send_G_io_apdu_buffer(uint16_t code, uint16_t tx)
 	G_io_apdu_buffer[tx++] = code >> 8;
 	G_io_apdu_buffer[tx++] = code & 0xFF;
 	io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+
+	// From now on we can receive new APDU
+	io_state = IO_EXPECT_IO;
 }
 
 void io_send_buf(uint16_t code, uint8_t* buffer, size_t bufferSize)
