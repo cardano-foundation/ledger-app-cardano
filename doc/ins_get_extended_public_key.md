@@ -6,11 +6,6 @@ Get extended public key (i.e., public key + chain code) for a given BIP32 path.
 
 Note: Unlike BTC app, this call does not return nor display addresses. See [](ins_derive_address.md) for details.
 
-❓(IOHK):Check if the restriction makes sense.
-This call restricts BIP32 path to start with `44'/1815'/account'`, i.e. it only returns public key for accounts and descendants. Currently there is no reason for a client to ask for any other path prefix. 
-
-❓(IOHK):Check if the restriction makes sense.
-This call restricts path length to be 10. Length 10 should be enough for all known application purposes.
 
 **Command**
 
@@ -44,8 +39,10 @@ Concatenation of `pub_key` and `chain_code` represents extended public key.
 
 **Errors (SW codes)**
 
-- 0x9000 OK
-- ❓(VL): describe error codes
+- `0x9000` OK
+- `0x6E10` Request rejected by app policy
+- `0x6E09` Request rejected by user
+- for more errors, see [src/errors.h](../src/errors.h)
 
 **Ledger responsibilities**
 
