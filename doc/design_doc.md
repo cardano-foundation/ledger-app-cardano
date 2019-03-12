@@ -1,5 +1,4 @@
-# Cardano Ledger App design document
-
+# Cardano Ledger App communication protocol
 
 ## Cardano app communication
 Cardano app communicates with APDU protocol (a decent overview of APDU protocol can be found [here](http://cardwerk.com/smart-card-standard-iso7816-4-section-5-basic-organizations/#chap5_4)).
@@ -40,12 +39,12 @@ Generally the response from the app looks like this:
 where `SW1 SW2` represents the return code.
 Known error codes are:
 - 0x9000 = OK
-- ❓(VL): document standard global error codes
+- see [src/errors.h](../src/errors.h) for full listing of other errors
 
 
 ## Instructions
 
-Instructions are split into several groups depending on their purpose.
+Instructions are split into several groups depending on their purpose. See [src/handlers.c](../src/handlers.c) for full listing
 
 ### `INS=0x0*` group
 
@@ -71,7 +70,6 @@ Instructions related to transaction signing
 Instructions related to debug mode of the app. These instructions *must not* be available on the production build of the app
 
 - `0xF0` Run unit tests
-- `0xF1` Set "headless" mode button responses for the next INS call
 - `0xF2` Attest get session secret (return key used by AttestUTxO HMAC)
 - `0xF3` Attest set sessoin secret (set key used by AttestUTxO HMAC)
 ## Protocol upgrade considerations:
