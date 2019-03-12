@@ -21,13 +21,15 @@ Could be called at any time
 |major| 1 |
 |minor| 1 |
 |patch| 1 |
+|flags| 1 |
 
 Tuple [`major`, `minor`, `patch`] represents app version.
 
+Flag meanings could be found in [src/getVersion.c](../src/getVersion.c)
 
-**Error codes**
-- 0x9000 OK
-- ❓ other codes
+|Mask|Value|Meaning|
+|----|-----|-------|
+|0x01|0x01 |Devel version of the app|
 
 
 **Ledger responsibilities**
