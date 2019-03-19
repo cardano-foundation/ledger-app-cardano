@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <os_io_seproxyhal.h>
+#include <os.h>
 #include "ux.h"
 
 #include "getVersion.h"
@@ -34,6 +35,12 @@
 #include "assert.h"
 #include "io.h"
 #include "endian.h"
+
+// The whole app is designed for a specific api level.
+// In case there is an api change, first *verify* changes
+// (especially potential security implications) before bumping
+// the API level!
+STATIC_ASSERT(CX_APILEVEL == 9, "bad api level");
 
 // These are global variables declared in ux.h. They can't be defined there
 // because multiple files include ux.h; they need to be defined in exactly one
@@ -98,6 +105,11 @@ static void cardano_main(void)
 				if (rx == 0)
 				{
 					THROW(EXCEPTION_IO_RESET);
+				}
+
+				if (!device_is_unlocked())
+				{
+					THROW(ERR_DEVICE_LOCKED);
 				}
 
 				// Note(ppershing): unsafe to access before checks

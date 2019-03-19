@@ -188,6 +188,7 @@ static unsigned int ui_scrollingText_button(
 		TRY {
 			ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
 			ASSERT(io_state == IO_EXPECT_UI);
+			ASSERT(device_is_unlocked() == true);
 			switch (button_mask)
 			{
 			case BUTTON_LEFT:
@@ -321,6 +322,7 @@ static unsigned int ui_confirm_button(
 		TRY {
 			ASSERT(confirmState->initMagic == INIT_MAGIC_CONFIRM);
 			ASSERT(io_state == IO_EXPECT_UI);
+			ASSERT(device_is_unlocked() == true);
 			switch (button_mask)
 			{
 			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT

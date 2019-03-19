@@ -135,3 +135,11 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len)
 	}
 	return 0;
 }
+
+STATIC_ASSERT(CX_APILEVEL == 9, "bad api level");
+static const unsigned PIN_VERIFIED = BOLOS_UX_OK; // Seems to work for api 9
+
+bool device_is_unlocked()
+{
+	return os_global_pin_is_validated() == PIN_VERIFIED;
+}

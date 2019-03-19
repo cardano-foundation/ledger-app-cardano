@@ -38,4 +38,6 @@ unsigned char io_event(unsigned char channel);
 typedef void timeout_callback_fn_t(bool ux_allowed);
 void set_timer(int ms, timeout_callback_fn_t* cb);
 void clear_timer();
+
+bool device_is_unlocked();
 #endif

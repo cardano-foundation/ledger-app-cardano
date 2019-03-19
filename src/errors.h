@@ -33,8 +33,11 @@ enum {
 	// Ledger security policy rejected the action
 	ERR_REJECTED_BY_POLICY         = 0x6E10,
 
+	// Pin screen
+	ERR_DEVICE_LOCKED              = 0x6E11,
+
 	// end of errors which trigger automatic response
-	_ERR_AUTORESPOND_END           = 0x6E11,
+	_ERR_AUTORESPOND_END           = 0x6E12,
 
 	// Errors below SHOULD NOT be returned to the client
 	// Instead, leaking these to the main() scope
