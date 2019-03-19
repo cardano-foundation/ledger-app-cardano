@@ -35,7 +35,7 @@ extern io_state_t io_state;
 void io_seproxyhal_display(const bagl_element_t *element);
 unsigned char io_event(unsigned char channel);
 
-typedef void timeout_callback_fn_t();
+typedef void timeout_callback_fn_t(bool ux_allowed);
 void set_timer(int ms, timeout_callback_fn_t* cb);
 void clear_timer();
 #endif

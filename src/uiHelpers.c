@@ -224,9 +224,13 @@ static unsigned int ui_scrollingText_button(
 }
 
 #ifdef HEADLESS
-void ui_displayScrollingText_headless_cb()
+void ui_displayScrollingText_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
+	if (!ux_allowed) {
+		TRACE("No UX allowed, ignoring headless cb!");
+		return;
+	}
 	ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
 }
 #endif
@@ -352,9 +356,13 @@ void ui_displayBusy()
 }
 
 #ifdef HEADLESS
-void ui_displayConfirm_headless_cb()
+void ui_displayConfirm_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
+	if (!ux_allowed) {
+		TRACE("No UX allowed, ignoring headless cb!");
+		return;
+	}
 	ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
 }
 #endif

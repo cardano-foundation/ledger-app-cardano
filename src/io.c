@@ -95,7 +95,7 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 				timeout_callback_fn_t* callback = timeout_cb;
 				// clear first if cb() throws
 				timeout_cb = NULL;
-				callback();
+				callback(UX_ALLOWED);
 			}
 		});
 		break;
