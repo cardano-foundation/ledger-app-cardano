@@ -186,7 +186,7 @@ static void cardano_main(void)
 			}
 			CATCH_OTHER(e)
 			{
-				if (e >= _ERR_AUTORESPOND_START && e <= _ERR_AUTORESPOND_END) {
+				if (e >= _ERR_AUTORESPOND_START && e < _ERR_AUTORESPOND_END) {
 					io_send_buf(e, NULL, 0);
 					flags = IO_ASYNCH_REPLY;
 					ui_idle();
