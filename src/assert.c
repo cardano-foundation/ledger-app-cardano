@@ -5,7 +5,13 @@
 // Note(ppershing): In DEBUG we need to keep going
 // because rendering on display takes multiple SEPROXYHAL
 // exchanges until it renders the display
-void assert(int cond, const char* msgStr)
+void assert(
+        int cond,
+        const char* msgStr
+        #ifdef RESET_ON_CRASH
+        MARK_UNUSED
+        #endif
+)
 {
 	if (cond) return; // everything holds
 	#ifdef RESET_ON_CRASH
