@@ -67,6 +67,8 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 	// can't have more than one tag in the reply, not supported yet.
 	switch (G_io_seproxyhal_spi_buffer[0]) {
 	case SEPROXYHAL_TAG_FINGER_EVENT:
+		// This app is not supposed to work with Blue
+		ASSERT(false);
 		UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
 		break;
 
