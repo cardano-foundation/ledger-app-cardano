@@ -188,6 +188,7 @@ static unsigned int ui_scrollingText_button(
 		TRY {
 			ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
 			ASSERT(io_state == IO_EXPECT_UI);
+			ASSERT(device_is_unlocked() == true);
 			switch (button_mask)
 			{
 			case BUTTON_LEFT:
@@ -224,9 +225,13 @@ static unsigned int ui_scrollingText_button(
 }
 
 #ifdef HEADLESS
-void ui_displayScrollingText_headless_cb()
+void ui_displayScrollingText_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
+	if (!ux_allowed) {
+		TRACE("No UX allowed, ignoring headless cb!");
+		return;
+	}
 	ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
 }
 #endif
@@ -317,6 +322,7 @@ static unsigned int ui_confirm_button(
 		TRY {
 			ASSERT(confirmState->initMagic == INIT_MAGIC_CONFIRM);
 			ASSERT(io_state == IO_EXPECT_UI);
+			ASSERT(device_is_unlocked() == true);
 			switch (button_mask)
 			{
 			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT
@@ -352,9 +358,13 @@ void ui_displayBusy()
 }
 
 #ifdef HEADLESS
-void ui_displayConfirm_headless_cb()
+void ui_displayConfirm_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
+	if (!ux_allowed) {
+		TRACE("No UX allowed, ignoring headless cb!");
+		return;
+	}
 	ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
 }
 #endif

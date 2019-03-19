@@ -1,15 +1,6 @@
 #ifndef H_CARDANO_APP_ERRORS
 #define H_CARDANO_APP_ERRORS
 
-// exception codes
-#define SW_DEVELOPER_ERR 0x6B00
-#define SW_INVALID_PARAM 0x6B01
-#define SW_IMPROPER_INIT 0x6B02
-
-// Still in some call
-
-#define SW_USER_REJECTED 0x6985
-
 enum {
 	// Successfull responses
 	SUCCESS                 = 0x9000,
@@ -42,8 +33,11 @@ enum {
 	// Ledger security policy rejected the action
 	ERR_REJECTED_BY_POLICY         = 0x6E10,
 
+	// Pin screen
+	ERR_DEVICE_LOCKED              = 0x6E11,
+
 	// end of errors which trigger automatic response
-	_ERR_AUTORESPOND_END           = 0x6E11,
+	_ERR_AUTORESPOND_END           = 0x6E12,
 
 	// Errors below SHOULD NOT be returned to the client
 	// Instead, leaking these to the main() scope
