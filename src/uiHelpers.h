@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include "securityPolicy.h"
 
-typedef void callback_t(); // legacy
 typedef void ui_callback_fn_t();
 
 typedef enum {
