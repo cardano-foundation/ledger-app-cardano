@@ -8,7 +8,7 @@
 #include "addressUtils.h"
 #include "base58.h"
 
-static int16_t RESPONSE_READY_MAGIC = 11223;
+static uint16_t RESPONSE_READY_MAGIC = 11223;
 
 static ins_derive_address_context_t* ctx = &(instructionState.deriveAddressContext);
 

@@ -37,13 +37,15 @@ typedef       uint8_t write_view__base_type;
 	static inline size_t name##_remaining_size(const name##_t* view) \
 	{ \
 		name##_check(view); \
-		return view->end - view->ptr; \
+		STATIC_ASSERT(sizeof(view->end - view->ptr) == sizeof(size_t), "bad size"); \
+		return (size_t) (view->end - view->ptr); \
 	} \
 	\
 	static inline size_t name##_processed_size(const name##_t* view) \
 	{ \
 		name##_check(view); \
-		return view->ptr - view->begin; \
+		STATIC_ASSERT(sizeof(view->end - view->ptr) == sizeof(size_t), "bad size"); \
+		return (size_t) (view->ptr - view->begin); \
 	}
 
 

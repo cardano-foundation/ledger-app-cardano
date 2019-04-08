@@ -34,8 +34,9 @@ static void parser_skipThroughAddressBytes(attest_utxo_parser_state_t* state)
 	                stream_availableBytes(stream),
 	                state->addressDataRemainingBytes
 	        );
-	stream_advancePos(stream, bytesToConsume);
-	state->addressDataRemainingBytes -= bytesToConsume;
+	ASSERT(bytesToConsume < BUFFER_SIZE_PARANOIA);
+	stream_advancePos(stream, (size_t) bytesToConsume);
+	state->addressDataRemainingBytes -= (size_t) bytesToConsume;
 }
 
 // Performs a single transition on the Input parser
@@ -265,10 +266,10 @@ static void parser_advanceMainState(attest_utxo_parser_state_t *state)
 
 void parser_init(
         attest_utxo_parser_state_t* state,
-        int outputIndex
+        uint32_t outputIndex
 )
 {
-	os_memset(state, 0, SIZEOF(*state));
+	MEMCLEAR(state, attest_utxo_parser_state_t);
 	state->mainState = MAIN_PARSING_NOT_STARTED;
 	state->outputAmount = LOVELACE_INVALID;
 	state->attestedOutputIndex = outputIndex;

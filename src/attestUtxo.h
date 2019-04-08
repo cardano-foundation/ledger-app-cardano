@@ -80,7 +80,7 @@ typedef struct {
 } ins_attest_utxo_context_t;
 
 void parser_keepParsing(attest_utxo_parser_state_t *state);
-void parser_init(attest_utxo_parser_state_t *state, int outputIndex);
+void parser_init(attest_utxo_parser_state_t *state, uint32_t outputIndex);
 uint64_t parser_getAttestedAmount(attest_utxo_parser_state_t* state);
 
 handler_fn_t attestUTxO_handleAPDU;
