@@ -39,7 +39,8 @@ size_t str_formatAdaAmount(
 	} while (amount > 0);
 
 	// Size without terminating character
-	size_t rawSize = ptr - scratchBuffer;
+	STATIC_ASSERT(sizeof(ptr - scratchBuffer) == sizeof(size_t), "bad size_t size");
+	size_t rawSize = (size_t) (ptr - scratchBuffer);
 
 	if (rawSize + 1 > outSize) {
 		THROW(ERR_DATA_TOO_LARGE);

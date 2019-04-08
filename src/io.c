@@ -58,8 +58,9 @@ void set_timer(int ms, timeout_callback_fn_t* cb)
 {
 	TRACE();
 	ASSERT(timeout_cb == NULL);
+	ASSERT(ms >= 0);
 	timeout_cb = cb;
-	UX_CALLBACK_SET_INTERVAL(ms);
+	UX_CALLBACK_SET_INTERVAL((unsigned) ms);
 }
 
 unsigned char io_event(unsigned char channel MARK_UNUSED)

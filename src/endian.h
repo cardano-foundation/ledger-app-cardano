@@ -44,7 +44,7 @@ inline uint32_t u4be_read(const uint8_t* inBuffer)
 
 inline uint64_t u8be_read(const uint8_t* inBuffer)
 {
-	return ((uint64_t) u4be_read(inBuffer) << 32) | (u4be_read(inBuffer + 4));
+	return ((uint64_t) u4be_read(inBuffer) << 32u) | (uint64_t) (u4be_read(inBuffer + 4));
 }
 
 void run_endian_test();

@@ -20,7 +20,7 @@ void blake2b_256_append_cbor(
 )
 {
 	uint8_t buffer[10];
-	uint8_t size = cbor_writeToken(type, value, buffer, SIZEOF(buffer));
+	size_t size = cbor_writeToken(type, value, buffer, SIZEOF(buffer));
 	blake2b_256_append(hashCtx, buffer, size);
 }
 
