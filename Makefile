@@ -41,7 +41,8 @@ all: default
 ############
 # Platform #
 ############
-DEFINES += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES += OS_IO_SEPROXYHAL
+#IO_SEPROXYHAL_BUFFER_SIZE_B=128
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += APPVERSION=\"$(APPVERSION)\"
 
@@ -62,6 +63,16 @@ DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) 
 ## Protect stack overflows
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
 
+# Nano-x
+DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+DEFINES += HAVE_GLO096
+DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+#DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+#DEFINES += HAVE_UX_LEGACY
+DEFINES += HAVE_UX_FLOW
 
 DEFINES += RESET_ON_CRASH
 ## Use developer build
@@ -72,11 +83,11 @@ DEFINES += RESET_ON_CRASH
 ##############
 #  Compiler  #
 ##############
-#GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
-#CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
+GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
 
 CC       := $(CLANGPATH)clang
-CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized
+CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized -Wconversion
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
@@ -98,6 +109,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 ### computed variables
 APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl lib_u2f
+SDK_SOURCE_PATH  += lib_ux
 
 ##############
 #   Build    #

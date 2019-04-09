@@ -16,6 +16,16 @@ static displayState_t displayState;
 static scrollingState_t* scrollingState = &(displayState.scrolling);
 static confirmState_t* confirmState = &(displayState.confirm);
 
+enum {
+	INIT_MAGIC_SCROLLER = 2345,
+	INIT_MAGIC_CONFIRM = 5432,
+};
+
+STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
+
+
+#if defined(TARGET_NANOS)
+
 #ifdef HEADLESS
 static int HEADLESS_DELAY = 100;
 #define HEADLESS_UI_ELEMENT() \
@@ -29,6 +39,12 @@ static int HEADLESS_DELAY = 100;
 	}
 #endif
 
+#define UI_BACKGROUND() {{BAGL_RECTANGLE,0,0,0,128,32,0,0,BAGL_FILL,0,0xFFFFFF,0,0},NULL,0,0,0,NULL,NULL,NULL}
+#define UI_ICON_LEFT(userid, glyph) {{BAGL_ICON,userid,3,12,7,7,0,0,0,0xFFFFFF,0,0,glyph},NULL,0,0,0,NULL,NULL,NULL}
+#define UI_ICON_RIGHT(userid, glyph) {{BAGL_ICON,userid,117,13,8,6,0,0,0,0xFFFFFF,0,0,glyph},NULL,0,0,0,NULL,NULL,NULL}
+#define UI_TEXT(userid, x, y, w, text) {{BAGL_LABELINE,userid,x,y,w,12,0,0,0,0xFFFFFF,0,BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER,0},(char *)text,0,0,0,NULL,NULL,NULL}
+
+
 enum {
 	ID_UNSPECIFIED = 0x00,
 	ID_ICON_GO_LEFT = 0x01,
@@ -38,13 +54,6 @@ enum {
 
 	ID_HEADLESS = 0xff,
 };
-
-enum {
-	INIT_MAGIC_SCROLLER = 2345,
-	INIT_MAGIC_CONFIRM = 5432,
-};
-
-STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
 
 static const bagl_element_t ui_busy[] = {
 	UI_BACKGROUND(),
@@ -135,6 +144,52 @@ static void scroll_right()
 }
 
 
+#elif defined(TARGET_NANOX)
+
+// Helper macro for better astyle formatting of UX_FLOW definitions
+
+#define LINES(...) { __VA_ARGS__ }
+
+static void uiCallback_confirm(ui_callback_t* cb);
+
+void scrolling_confirm()
+{
+	// TODO(ppershing): exception handling
+	scrollingState_t* ctx = scrollingState;
+	uiCallback_confirm(&ctx->callback);
+}
+
+UX_FLOW_DEF_VALID(
+        ux_display_scrolling_flow_1_step,
+        bnnn_paging,
+        scrolling_confirm(),
+        LINES(
+                &displayState.scrolling.header,
+                &displayState.scrolling.fullText
+        )
+);
+
+const ux_flow_step_t *        const ux_scrolling_flow [] = {
+	&ux_display_scrolling_flow_1_step,
+	FLOW_END_STEP,
+};
+
+UX_FLOW_DEF_NOCB(
+        ux_display_busy_flow_1_step,
+        pn,
+        LINES(
+                &C_icon_loader,
+                ""
+        )
+);
+
+const ux_flow_step_t *        const ux_busy_flow [] = {
+	&ux_display_busy_flow_1_step,
+	FLOW_END_STEP,
+};
+#endif
+
+
 static void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
 {
 	cb->state = CALLBACK_NOT_RUN;
@@ -178,6 +233,7 @@ static void uiCallback_reject(ui_callback_t* cb)
 	}
 }
 
+#if defined(TARGET_NANOS)
 static unsigned int ui_scrollingText_button(
         unsigned int button_mask,
         unsigned int button_mask_counter MARK_UNUSED
@@ -224,6 +280,7 @@ static unsigned int ui_scrollingText_button(
 	return 0;
 }
 
+
 #ifdef HEADLESS
 void ui_displayScrollingText_headless_cb(bool ux_allowed)
 {
@@ -234,6 +291,8 @@ void ui_displayScrollingText_headless_cb(bool ux_allowed)
 	}
 	ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
 }
+#endif
+#elif defined(TARGET_NANOX)
 #endif
 
 void ui_displayScrollingText(
@@ -275,11 +334,17 @@ void ui_displayScrollingText(
 	TRACE("done");
 	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
 	io_state = IO_EXPECT_UI;
+	#if defined(TARGET_NANOS)
 	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
+	#elif defined(TARGET_NANOX)
+	ux_flow_init(0, ux_scrolling_flow, NULL);
+	#else
+	STATIC_ASSERT(false);
+	#endif
 }
 
 
-
+#if defined(TARGET_NANOS)
 static const bagl_element_t ui_confirm[] = {
 	UI_BACKGROUND(),
 	UI_ICON_LEFT(ID_ICON_REJECT, BAGL_GLYPH_ICON_CROSS),
@@ -351,10 +416,59 @@ static unsigned int ui_confirm_button(
 	END_TRY;
 	return 0;
 }
+#elif defined(TARGET_NANOX)
+
+void confirm_confirm()
+{
+	// TODO(ppershing): exception handling
+	confirmState_t* ctx = confirmState;
+	uiCallback_confirm(&ctx->callback);
+}
+
+void confirm_reject()
+{
+	// TODO(ppershing): exception handling
+	uiCallback_reject(&confirmState->callback);
+}
+
+UX_FLOW_DEF_VALID(
+        ux_display_confirm_flow_1_step,
+        pbb,
+        confirm_confirm(),
+        LINES(
+                &C_icon_validate_14,
+                &displayState.scrolling.header,
+                &displayState.scrolling.currentText,
+        )
+);
+
+UX_FLOW_DEF_VALID(
+        ux_display_confirm_flow_2_step,
+        pbb,
+        confirm_reject(),
+        LINES(
+                &C_icon_crossmark,
+                "Reject?",
+                ""
+        )
+);
+
+const ux_flow_step_t *        const ux_confirm_flow [] = {
+	&ux_display_confirm_flow_1_step,
+	&ux_display_confirm_flow_2_step,
+	FLOW_END_STEP,
+};
+#endif
 
 void ui_displayBusy()
 {
+	#if defined(TARGET_NANOS)
 	UX_DISPLAY(ui_busy, NULL);
+	#elif defined(TARGET_NANOX)
+	ux_flow_init(0, ux_busy_flow, NULL);
+	#else
+	STATIC_ASSERT(false)
+	#endif
 }
 
 #ifdef HEADLESS
@@ -399,7 +513,13 @@ void ui_displayConfirm(
 	#endif
 	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
 	io_state = IO_EXPECT_UI;
+	#if defined(TARGET_NANOS)
 	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
+	#elif defined(TARGET_NANOX)
+	ux_flow_init(0, ux_confirm_flow, NULL);
+	#else
+	STATIC_ASSERT(false);
+	#endif
 }
 
 void respond_with_user_reject()

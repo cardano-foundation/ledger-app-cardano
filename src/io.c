@@ -3,6 +3,14 @@
 #include "assert.h"
 #include "errors.h"
 
+#if defined(TARGET_NANOS)
+ux_state_t ux;
+#elif defined(TARGET_NANOX)
+//#include "ux.h"
+ux_state_t G_ux;
+bolos_ux_params_t G_ux_params;
+#endif
+
 io_state_t io_state;
 
 void CHECK_RESPONSE_SIZE(unsigned int tx)
@@ -97,7 +105,7 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 				timeout_callback_fn_t* callback = timeout_cb;
 				// clear first if cb() throws
 				timeout_cb = NULL;
-				callback(UX_ALLOWED);
+				callback(true); //UX_ALLOWED);
 			}
 		});
 		break;
@@ -138,7 +146,7 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len)
 	return 0;
 }
 
-STATIC_ASSERT(CX_APILEVEL == 9, "bad api level");
+STATIC_ASSERT(CX_APILEVEL == 10, "bad api level");
 static const unsigned PIN_VERIFIED = BOLOS_UX_OK; // Seems to work for api 9
 
 bool device_is_unlocked()

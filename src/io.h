@@ -1,6 +1,7 @@
 #ifndef H_CARDANO_APP_IO
 #define H_CARDANO_APP_IO
 
+#include <ux.h>
 #include <os_io_seproxyhal.h>
 #include <stdint.h>
 

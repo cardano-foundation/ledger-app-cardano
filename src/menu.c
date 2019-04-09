@@ -3,6 +3,8 @@
 #include "getVersion.h"
 #include "glyphs.h"
 
+#if defined(TARGET_NANOS)
+
 // Here we define the main menu, using the Ledger-provided menu API. This menu
 // turns out to be fairly unimportant for Nano S apps, since commands are sent
 // by the computer instead of being initiated by the user. It typically just
@@ -48,3 +50,50 @@ const ux_menu_entry_t menu_main[] = {
 	{NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
 	UX_MENU_END,
 };
+#elif defined(TARGET_NANOX)
+
+
+#define LINES(...) { __VA_ARGS__ }
+
+UX_FLOW_DEF_NOCB(
+        ux_idle_flow_1_step,
+        bn,
+        #if defined(DEVEL)
+        LINES(
+                "Waiting for",
+                "commands"
+        )
+        #else
+        LINES(
+                "Warning:",
+                "DEVEL version!"
+        )
+        #endif
+);
+
+UX_FLOW_DEF_NOCB(
+        ux_idle_flow_2_step,
+        bn,
+        LINES(
+                "Version",
+                APPVERSION
+        )
+);
+
+UX_FLOW_DEF_VALID(
+        ux_idle_flow_3_step,
+        pb,
+        os_sched_exit(-1),
+        LINES(
+                &C_icon_dashboard,
+                "Quit"
+        )
+);
+
+const ux_flow_step_t * const ux_idle_flow [] = {
+	&ux_idle_flow_1_step,
+	&ux_idle_flow_2_step,
+	&ux_idle_flow_3_step,
+	FLOW_END_STEP,
+};
+#endif
