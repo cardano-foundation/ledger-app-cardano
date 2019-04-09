@@ -40,15 +40,7 @@
 // In case there is an api change, first *verify* changes
 // (especially potential security implications) before bumping
 // the API level!
-STATIC_ASSERT(CX_APILEVEL == 9, "bad api level");
-
-// These are global variables declared in ux.h. They can't be defined there
-// because multiple files include ux.h; they need to be defined in exactly one
-// place. See ux.h for their descriptions.
-// To save memory, we store all the context types in a single global union,
-// taking advantage of the fact that only one command is executed at a time.
-
-ux_state_t ux;
+STATIC_ASSERT(CX_APILEVEL == 9 || CX_APILEVEL == 10, "bad api level");
 
 static const int INS_NONE = -1;
 
@@ -61,7 +53,17 @@ void ui_idle(void)
 	// The first argument is the starting index within menu_main, and the last
 	// argument is a preprocessor; I've never seen an app that uses either
 	// argument.
+	#if defined(TARGET_NANOS)
 	UX_MENU_DISPLAY(0, menu_main, NULL);
+	#elif defined(TARGET_NANOX)
+	// reserve a display stack slot if none yet
+	if(G_ux.stack_count == 0) {
+		ux_stack_push();
+	}
+	ux_flow_init(0, ux_idle_flow, NULL);
+	#else
+	STATIC_ASSERT(false);
+	#endif
 }
 
 static const uint8_t CLA = 0xD7;
@@ -75,9 +77,9 @@ static const uint8_t CLA = 0xD7;
 // and sent in the next io_exchange call.
 static void cardano_main(void)
 {
-	volatile unsigned int rx = 0;
-	volatile unsigned int tx = 0;
-	volatile unsigned int flags = 0;
+	volatile size_t rx = 0;
+	volatile size_t tx = 0;
+	volatile uint8_t flags = 0;
 
 	// Exchange APDUs until EXCEPTION_IO_RESET is thrown.
 	for (;;) {
@@ -94,7 +96,7 @@ static void cardano_main(void)
 				rx = tx;
 				tx = 0; // ensure no race in CATCH_OTHER if io_exchange throws an error
 				ASSERT((unsigned int) rx < sizeof(G_io_apdu_buffer));
-				rx = io_exchange(CHANNEL_APDU | flags, rx);
+				rx = (unsigned int) io_exchange((uint8_t) (CHANNEL_APDU | flags), (uint16_t) rx);
 				flags = 0;
 
 				// We should be awaiting APDU
@@ -107,10 +109,7 @@ static void cardano_main(void)
 					THROW(EXCEPTION_IO_RESET);
 				}
 
-				if (!device_is_unlocked())
-				{
-					THROW(ERR_DEVICE_LOCKED);
-				}
+				VALIDATE(device_is_unlocked(), ERR_DEVICE_LOCKED);
 
 				// Note(ppershing): unsafe to access before checks
 				// Warning(ppershing): in case of unlikely change of APDU format
@@ -123,31 +122,20 @@ static void cardano_main(void)
 					uint8_t lc;
 				}* header = (void*) G_io_apdu_buffer;
 
-				if (rx < SIZEOF(*header))
-				{
-					THROW(ERR_MALFORMED_REQUEST_HEADER);
-				}
-				// check that data is safe to access
+				VALIDATE(rx >= SIZEOF(*header), ERR_MALFORMED_REQUEST_HEADER);
 
-				if (header->lc + SIZEOF(*header) != rx)
-				{
-					THROW(ERR_MALFORMED_REQUEST_HEADER);
-				}
+				// check that data is safe to access
+				VALIDATE(rx == header->lc + SIZEOF(*header), ERR_MALFORMED_REQUEST_HEADER);
+
 				uint8_t* data = G_io_apdu_buffer + SIZEOF(*header);
 
-
-				if (header->cla != CLA)
-				{
-					THROW(ERR_BAD_CLA);
-				}
+				VALIDATE(header->cla == CLA, ERR_BAD_CLA);
 
 
 				// Lookup and call the requested command handler.
 				handler_fn_t *handlerFn = lookupHandler(header->ins);
-				if (!handlerFn)
-				{
-					THROW(ERR_UNKNOWN_INS);
-				}
+
+				VALIDATE(handlerFn != NULL, ERR_UNKNOWN_INS);
 
 				bool isNewCall = false;
 				if (currentInstruction == INS_NONE)
@@ -157,9 +145,7 @@ static void cardano_main(void)
 					currentInstruction = header->ins;
 				} else
 				{
-					if (currentInstruction != header->ins) {
-						THROW(ERR_STILL_IN_CALL);
-					}
+					VALIDATE(header->ins == currentInstruction, ERR_STILL_IN_CALL);
 				}
 
 
@@ -236,9 +222,21 @@ __attribute__((section(".boot"))) int main(void)
 		BEGIN_TRY {
 			TRY {
 				io_seproxyhal_init();
+
+				#if defined(TARGET_NANOX)
+				// grab the current plane mode setting
+				G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+				#endif
+
 				USB_power(0);
 				USB_power(1);
 				ui_idle();
+
+				#if defined(HAVE_BLE)
+				BLE_power(0, NULL);
+				BLE_power(1, "Nano X ADA");
+				#endif
+
 				attestKey_initialize();
 				io_state = IO_EXPECT_IO;
 				cardano_main();

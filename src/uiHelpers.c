@@ -1,6 +1,4 @@
 #include <os_io_seproxyhal.h>
-#include <string.h>
-
 #include "uiHelpers.h"
 #include "ux.h"
 #include "assert.h"
@@ -8,141 +6,35 @@
 #include "utils.h"
 #include "securityPolicy.h"
 
-static displayState_t displayState;
+displayState_t displayState;
 
-// WARNING(ppershing): Following two references MUST be declared `static`
-// otherwise the Ledger will crash. I am really not sure why is this
-// but it might be related to position-independent-code compilation.
-static scrollingState_t* scrollingState = &(displayState.scrolling);
-static confirmState_t* confirmState = &(displayState.confirm);
-
-#ifdef HEADLESS
-static int HEADLESS_DELAY = 100;
-#define HEADLESS_UI_ELEMENT() \
-	{ \
-		{ \
-			BAGL_LABELINE,ID_HEADLESS, 0, 12, 128, \
-			12,0,0,0,0xFFFFFF,0, \
-			BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_LEFT,0 \
-		}, \
-		"HEADLESS ",0,0,0,NULL,NULL,NULL \
-	}
+// These are global variables declared in ux.h. They can't be defined there
+// because multiple files include ux.h; they need to be defined in exactly one
+// place. See ux.h for their descriptions.
+// To save memory, we store all the context types in a single global union,
+// taking advantage of the fact that only one command is executed at a time.
+#if defined(TARGET_NANOS)
+// ux is a magic global variable implicitly referenced by the UX_ macros. Apps
+// should never need to reference it directly
+ux_state_t ux;
+#elif defined(TARGET_NANOX)
+ux_state_t G_ux;
+bolos_ux_params_t G_ux_params;
 #endif
-
-enum {
-	ID_UNSPECIFIED = 0x00,
-	ID_ICON_GO_LEFT = 0x01,
-	ID_ICON_GO_RIGHT = 0x02,
-	ID_ICON_CONFIRM = 0x03,
-	ID_ICON_REJECT = 0x04,
-
-	ID_HEADLESS = 0xff,
-};
-
-enum {
-	INIT_MAGIC_SCROLLER = 2345,
-	INIT_MAGIC_CONFIRM = 5432,
-};
 
 STATIC_ASSERT(SIZEOF(uint8_t) == SIZEOF(char), "bad char size");
 
-static const bagl_element_t ui_busy[] = {
-	UI_BACKGROUND(),
-	UI_TEXT(ID_UNSPECIFIED, 0, 20, 128, "..."),
-};
-
-static unsigned int ui_busy_button(
-        unsigned int button_mask MARK_UNUSED,
-        unsigned int button_mask_counter MARK_UNUSED
-)
+void assert_uiPaginatedText_magic()
 {
-	return 0;
+	ASSERT(paginatedTextState->initMagic == INIT_MAGIC_PAGINATED_TEXT);
 }
 
-static const bagl_element_t ui_scrollingText[] = {
-	UI_BACKGROUND(),
-	UI_ICON_LEFT(ID_ICON_GO_LEFT, BAGL_GLYPH_ICON_LEFT),
-	UI_ICON_RIGHT(ID_ICON_GO_RIGHT, BAGL_GLYPH_ICON_RIGHT),
-
-	// TODO(ppershing): what are the following magical numbers?
-
-	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, &displayState.scrolling.header),
-	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, &displayState.scrolling.currentText),
-	#ifdef HEADLESS
-	HEADLESS_UI_ELEMENT(),
-	#endif
-};
-
-// forward
-static unsigned int ui_scrollingText_button(
-        unsigned int button_mask,
-        unsigned int button_mask_counter MARK_UNUSED
-);
-
-static const bagl_element_t* ui_prepro_scrollingText(const bagl_element_t *element)
+void assert_uiPrompt_magic()
 {
-	scrollingState_t* ctx = scrollingState;
-	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
-
-	switch (element->component.userid) {
-	case ID_ICON_GO_LEFT:
-		return (ctx->scrollIndex == 0)
-		       ? NULL
-		       : element;
-	case ID_ICON_GO_RIGHT:
-		return (ctx->scrollIndex + SIZEOF(ctx->currentText)
-		        >= strlen(ctx->fullText) + 1)
-		       ? NULL
-		       : element;
-	default:
-		// Always display all other elements.
-		return element;
-	}
+	ASSERT(promptState->initMagic == INIT_MAGIC_PROMPT);
 }
 
-static void scroll_update_display_content()
-{
-	scrollingState_t* ctx = scrollingState;
-	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
-	ASSERT(ctx->currentText[SIZEOF(ctx->currentText) - 1] == '\0');
-	ASSERT(ctx->scrollIndex + SIZEOF(ctx->currentText) <= SIZEOF(ctx->fullText));
-	os_memmove(
-	        ctx->currentText,
-	        ctx->fullText + ctx->scrollIndex,
-	        SIZEOF(ctx->currentText) - 1
-	);
-	UX_REDISPLAY();
-}
-
-static void scroll_left()
-{
-	scrollingState_t* ctx = scrollingState;
-	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
-	if (ctx->scrollIndex > 0) {
-		ctx->scrollIndex--;
-		scroll_update_display_content();
-	}
-}
-
-static void scroll_right()
-{
-	scrollingState_t* ctx = scrollingState;
-	ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
-	if (ctx->scrollIndex + SIZEOF(ctx->currentText) < 1 + strlen(ctx->fullText)) {
-		scrollingState->scrollIndex++;
-		scroll_update_display_content();
-	}
-}
-
-
-static void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
-{
-	cb->state = CALLBACK_NOT_RUN;
-	cb->confirm = confirm;
-	cb->reject = reject;
-}
-
-static void uiCallback_confirm(ui_callback_t* cb)
+void uiCallback_confirm(ui_callback_t* cb)
 {
 	if (!cb->confirm) return;
 
@@ -160,7 +52,7 @@ static void uiCallback_confirm(ui_callback_t* cb)
 	}
 }
 
-static void uiCallback_reject(ui_callback_t* cb)
+void uiCallback_reject(ui_callback_t* cb)
 {
 	if (!cb->reject) return;
 
@@ -178,71 +70,89 @@ static void uiCallback_reject(ui_callback_t* cb)
 	}
 }
 
-static unsigned int ui_scrollingText_button(
-        unsigned int button_mask,
-        unsigned int button_mask_counter MARK_UNUSED
-)
-{
-	scrollingState_t* ctx = scrollingState;
-	BEGIN_TRY {
-		TRY {
-			ASSERT(ctx->initMagic == INIT_MAGIC_SCROLLER);
-			ASSERT(io_state == IO_EXPECT_UI);
-			ASSERT(device_is_unlocked() == true);
-			switch (button_mask)
-			{
-			case BUTTON_LEFT:
-			case BUTTON_EVT_FAST | BUTTON_LEFT: // SEEK LEFT
-				scroll_left();
-				break;
-
-			case BUTTON_RIGHT:
-			case BUTTON_EVT_FAST | BUTTON_RIGHT: // SEEK RIGHT
-				scroll_right();
-				break;
-
-			case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: // PROCEED
-				uiCallback_confirm(&ctx->callback);
-				break;
-			}
-		}
-		CATCH(EXCEPTION_IO_RESET)
-		{
-			THROW(EXCEPTION_IO_RESET);
-		}
-		CATCH_OTHER(e)
-		{
-			TRACE("Error %d\n", (int) e);
-			#ifdef RESET_ON_CRASH
-			io_seproxyhal_se_reset();
-			#endif
-		}
-		FINALLY {
-		}
-	}
-	END_TRY;
-	return 0;
-}
-
 #ifdef HEADLESS
-void ui_displayScrollingText_headless_cb(bool ux_allowed)
+static int HEADLESS_DELAY = 100;
+
+void ui_displayPrompt_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
 	if (!ux_allowed) {
 		TRACE("No UX allowed, ignoring headless cb!");
 		return;
 	}
-	ui_scrollingText_button(BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT, 0);
+	TRY_CATCH_UI({
+		assert_uiPrompt_magic();
+		ASSERT(io_state == IO_EXPECT_UI);
+		ASSERT(device_is_unlocked() == true);
+		uiCallback_confirm(&promptState->callback);
+	})
 }
+
+void ui_displayPaginatedText_headless_cb(bool ux_allowed)
+{
+	TRACE("HEADLESS response");
+	if (!ux_allowed) {
+		TRACE("No UX allowed, ignoring headless cb!");
+		return;
+	}
+	TRY_CATCH_UI({
+		assert_uiPaginatedText_magic();
+		ASSERT(io_state == IO_EXPECT_UI);
+		ASSERT(device_is_unlocked() == true);
+		uiCallback_confirm(&paginatedTextState->callback);
+	});
+}
+
 #endif
 
-void ui_displayScrollingText(
+static void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
+{
+	cb->state = CALLBACK_NOT_RUN;
+	cb->confirm = confirm;
+	cb->reject = reject;
+}
+
+void ui_displayPrompt(
+        const char* headerStr,
+        const char* bodyStr,
+        ui_callback_fn_t* confirm,
+        ui_callback_fn_t* reject)
+{
+	size_t header_len = strlen(headerStr);
+	size_t text_len = strlen(bodyStr);
+	// sanity checks, keep 1 byte for null terminator
+	ASSERT(header_len < SIZEOF(promptState->header));
+	ASSERT(text_len < SIZEOF(promptState->text));
+
+	// clear all memory
+	os_memset(&displayState, 0, SIZEOF(displayState));
+	promptState_t* ctx = promptState;
+
+	// Copy data
+	os_memmove(ctx->header, headerStr, header_len + 1);
+	os_memmove(ctx->text, bodyStr, text_len + 1);
+
+	uiCallback_init(&ctx->callback, confirm, reject);
+	ctx->initMagic = INIT_MAGIC_PROMPT;
+	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
+	io_state = IO_EXPECT_UI;
+
+	ui_displayPrompt_run();
+
+	#ifdef HEADLESS
+	if (confirm) {
+		set_timer(HEADLESS_DELAY, ui_displayPrompt_headless_cb);
+	}
+	#endif
+}
+
+void ui_displayPaginatedText(
         const char* headerStr,
         const char* bodyStr,
         ui_callback_fn_t* callback)
 {
 	TRACE();
-	scrollingState_t* ctx = scrollingState;
+	paginatedTextState_t* ctx = paginatedTextState;
 	size_t header_len = strlen(headerStr);
 	size_t body_len = strlen(bodyStr);
 	// sanity checks
@@ -265,141 +175,19 @@ void ui_displayScrollingText(
 	);
 
 	uiCallback_init(&ctx->callback, callback, NULL);
-	ctx->initMagic = INIT_MAGIC_SCROLLER;
+	ctx->initMagic = INIT_MAGIC_PAGINATED_TEXT;
 	TRACE("setting timeout");
-	#ifdef HEADLESS
-	if (callback) {
-		set_timer(HEADLESS_DELAY, ui_displayScrollingText_headless_cb);
-	}
-	#endif
 	TRACE("done");
 	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
 	io_state = IO_EXPECT_UI;
-	UX_DISPLAY(ui_scrollingText, ui_prepro_scrollingText);
-}
 
+	ui_displayPaginatedText_run();
 
-
-static const bagl_element_t ui_confirm[] = {
-	UI_BACKGROUND(),
-	UI_ICON_LEFT(ID_ICON_REJECT, BAGL_GLYPH_ICON_CROSS),
-	UI_ICON_RIGHT(ID_ICON_CONFIRM, BAGL_GLYPH_ICON_CHECK),
-	UI_TEXT(ID_UNSPECIFIED, 0, 12, 128, displayState.confirm.header),
-	UI_TEXT(ID_UNSPECIFIED, 0, 26, 128, displayState.confirm.text),
 	#ifdef HEADLESS
-	HEADLESS_UI_ELEMENT(),
-	#endif
-};
-
-// Forward
-static unsigned int ui_confirm_button(
-        unsigned int button_mask,
-        unsigned int button_mask_counter MARK_UNUSED
-);
-
-static const bagl_element_t* ui_prepro_confirm(const bagl_element_t *element)
-{
-	confirmState_t* ctx = confirmState;
-
-	ASSERT(ctx->initMagic == INIT_MAGIC_CONFIRM);
-	switch (element->component.userid) {
-	case ID_ICON_REJECT:
-		return ctx->callback.reject ? element : NULL;
-	case ID_ICON_CONFIRM:
-		return ctx->callback.confirm ? element : NULL;
-	default:
-		// Always display all other elements.
-		return element;
-	}
-}
-
-static unsigned int ui_confirm_button(
-        unsigned int button_mask,
-        unsigned int button_mask_counter MARK_UNUSED
-)
-{
-	BEGIN_TRY {
-		TRY {
-			ASSERT(confirmState->initMagic == INIT_MAGIC_CONFIRM);
-			ASSERT(io_state == IO_EXPECT_UI);
-			ASSERT(device_is_unlocked() == true);
-			switch (button_mask)
-			{
-			case BUTTON_EVT_RELEASED | BUTTON_LEFT: // REJECT
-				uiCallback_reject(&confirmState->callback);
-				break;
-
-			case BUTTON_EVT_RELEASED | BUTTON_RIGHT: // APPROVE
-				uiCallback_confirm(&confirmState->callback);
-				break;
-			}
-		}
-		CATCH(EXCEPTION_IO_RESET)
-		{
-			THROW(EXCEPTION_IO_RESET);
-		}
-		CATCH_OTHER(e)
-		{
-			TRACE("Error %d\n", (int) e);
-			#ifdef RESET_ON_CRASH
-			io_seproxyhal_se_reset();
-			#endif
-		}
-		FINALLY {
-		}
-	}
-	END_TRY;
-	return 0;
-}
-
-void ui_displayBusy()
-{
-	UX_DISPLAY(ui_busy, NULL);
-}
-
-#ifdef HEADLESS
-void ui_displayConfirm_headless_cb(bool ux_allowed)
-{
-	TRACE("HEADLESS response");
-	if (!ux_allowed) {
-		TRACE("No UX allowed, ignoring headless cb!");
-		return;
-	}
-	ui_confirm_button(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
-}
-#endif
-
-
-void ui_displayConfirm(
-        const char* headerStr,
-        const char* bodyStr,
-        ui_callback_fn_t* confirm,
-        ui_callback_fn_t* reject)
-{
-	size_t header_len = strlen(headerStr);
-	size_t text_len = strlen(bodyStr);
-	// sanity checks, keep 1 byte for null terminator
-	ASSERT(header_len < SIZEOF(confirmState->header));
-	ASSERT(text_len < SIZEOF(confirmState->text));
-
-	// clear all memory
-	os_memset(&displayState, 0, SIZEOF(displayState));
-	confirmState_t* ctx = confirmState;
-
-	// Copy data
-	os_memmove(ctx->header, headerStr, header_len + 1);
-	os_memmove(ctx->text, bodyStr, text_len + 1);
-
-	uiCallback_init(&ctx->callback, confirm, reject);
-	ctx->initMagic = INIT_MAGIC_CONFIRM;
-	#ifdef HEADLESS
-	if (confirm) {
-		set_timer(HEADLESS_DELAY, ui_displayConfirm_headless_cb);
+	if (callback) {
+		set_timer(HEADLESS_DELAY, ui_displayPaginatedText_headless_cb);
 	}
 	#endif
-	ASSERT(io_state == IO_EXPECT_NONE || io_state == IO_EXPECT_UI);
-	io_state = IO_EXPECT_UI;
-	UX_DISPLAY(ui_confirm, ui_prepro_confirm);
 }
 
 void respond_with_user_reject()

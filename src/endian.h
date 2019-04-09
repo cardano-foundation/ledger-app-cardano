@@ -2,6 +2,7 @@
 #define H_CARANO_APP_ENDIAN
 
 #include <stdint.h>
+#include "assert.h"
 
 inline void u1be_write(uint8_t* outBuffer, uint8_t value)
 {
@@ -38,8 +39,8 @@ inline uint16_t u2be_read(const uint8_t* inBuffer)
 
 	// bitwise OR promotes unsigned types smaller than int to unsigned
 	return (uint16_t) (
-		((uint32_t) (u1be_read(inBuffer) << 8)) | ((uint32_t) (u1be_read(inBuffer + 1)))
-	);
+	               ((uint32_t) (u1be_read(inBuffer) << 8)) | ((uint32_t) (u1be_read(inBuffer + 1)))
+	       );
 }
 
 inline uint32_t u4be_read(const uint8_t* inBuffer)
