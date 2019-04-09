@@ -70,8 +70,9 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 
 	VALIDATE(SIZEOF(*wireHeader) == wireDataSize, ERR_INVALID_DATA);
 
-	ctx->numInputs    = u4be_read(wireHeader->numInputs);
-	ctx->numOutputs   = u4be_read(wireHeader->numOutputs);
+	ASSERT_TYPE(ctx->numInputs, uint16_t);
+	ctx->numInputs    = (uint16_t) u4be_read(wireHeader->numInputs);
+	ctx->numOutputs   = (uint16_t) u4be_read(wireHeader->numOutputs);
 
 	VALIDATE(ctx->numInputs < SIGN_MAX_INPUTS, ERR_INVALID_DATA);
 	VALIDATE(ctx->numOutputs < SIGN_MAX_OUTPUTS, ERR_INVALID_DATA);
