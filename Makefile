@@ -32,7 +32,12 @@ APPVERSION = "1.0.0"
 APP_LOAD_PARAMS =--appFlags 0 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
 
-ICONNAME=icon_ada.gif
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+ICONNAME=nanox_icon_ada.gif
+else
+ICONNAME=nanos_icon_ada.gif
+endif
+
 ################
 # Default rule #
 ################
