@@ -149,8 +149,8 @@ size_t unboxChecksummedAddress(
 
 			uint64_t tmp = parseToken(&view, CBOR_TYPE_BYTES);
 			// Validate that we can down-cast
-			STATIC_ASSERT(sizeof(tmp) >= sizeof(SIZE_MAX), "wut?");
-			VALIDATE(tmp < SIZE_MAX, ERR_INVALID_DATA);
+			STATIC_ASSERT(sizeof(tmp) >= sizeof(SIZE_MAX), "bad int size");
+			VALIDATE(tmp < (uint64_t) SIZE_MAX, ERR_INVALID_DATA);
 
 			unboxedSize = (size_t) tmp;
 
