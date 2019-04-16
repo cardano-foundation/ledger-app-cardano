@@ -56,7 +56,10 @@ void clear_timer()
 
 void set_timer(int ms, timeout_callback_fn_t* cb)
 {
-	TRACE();
+	// if TRACE() is enabled, set_timer must be called
+	// before ui_ methods, because it causes Ledger Nano S
+	// to freeze in debug mode
+	// TRACE();
 	ASSERT(timeout_cb == NULL);
 	ASSERT(ms >= 0);
 	timeout_cb = cb;
@@ -139,8 +142,8 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len)
 	return 0;
 }
 
-STATIC_ASSERT(CX_APILEVEL == 9, "bad api level");
-static const unsigned PIN_VERIFIED = BOLOS_UX_OK; // Seems to work for api 9
+STATIC_ASSERT(CX_APILEVEL == 9 || CX_APILEVEL == 10, "bad api level");
+static const unsigned PIN_VERIFIED = BOLOS_UX_OK; // Seems to work for api 9/10
 
 bool device_is_unlocked()
 {

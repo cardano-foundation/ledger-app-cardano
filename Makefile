@@ -16,7 +16,7 @@
 #*******************************************************************************
 
 ifeq ($(BOLOS_SDK),)
-$(error Environment variable BOLOS_SDK is not set)
+	$(error Environment variable BOLOS_SDK is not set)
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
@@ -27,12 +27,17 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
-APPVERSION = "1.0.0"
+APPVERSION = "1.1.0"
 
-APP_LOAD_PARAMS =--appFlags 0 --curve ed25519 --path "44'/1815'"
+APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
 
-ICONNAME=icon_ada.gif
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	ICONNAME=icon_ada_nanox.gif
+else
+	ICONNAME=icon_ada_nanos.gif
+endif
+
 ################
 # Default rule #
 ################
@@ -41,13 +46,9 @@ all: default
 ############
 # Platform #
 ############
-DEFINES += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES += OS_IO_SEPROXYHAL
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += APPVERSION=\"$(APPVERSION)\"
-
-## Devel-related
-DEFINES   += PRINTF\(...\)=
-#DEFINES += HAVE_PRINTF PRINTF=screen_printf
 
 ## USB HID?
 DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
@@ -59,22 +60,61 @@ DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"ADA\" USB_SEGMENT_SIZE=64
 WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
 DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
 
+## BLUETOOTH
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	DEFINES += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
+endif
 
 ## Protect stack overflows
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
 
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+	DEFINES += HAVE_GLO096
+	DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+	DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
+	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+	DEFINES += HAVE_UX_FLOW
+else
+	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+endif
 
 DEFINES += RESET_ON_CRASH
+
 ## Use developer build
-#DEFINES += DEVEL
+#DEVEL = 1
 #DEFINES += HEADLESS
 
+# Enabling debug PRINTF
+ifeq ($(DEVEL), 1)
+	DEFINES += DEVEL HAVE_PRINTF
+	ifeq ($(TARGET_NAME),TARGET_NANOX)
+		DEFINES += PRINTF=mcu_usb_printf
+	else
+		DEFINES += PRINTF=screen_printf
+	endif
+else
+    DEFINES += PRINTF\(...\)=
+endif
 
 ##############
 #  Compiler  #
 ##############
-#GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
-#CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
+ifneq ($(BOLOS_ENV),)
+$(info BOLOS_ENV=$(BOLOS_ENV))
+	CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
+	GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+else
+	$(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
+endif
+ifeq ($(CLANGPATH),)
+	$(info CLANGPATH is not set: clang will be used from PATH)
+endif
+ifeq ($(GCCPATH),)
+	$(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
+endif
 
 CC       := $(CLANGPATH)clang
 CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized
@@ -99,27 +139,18 @@ include $(BOLOS_SDK)/Makefile.glyphs
 ### computed variables
 APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl lib_u2f
-
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+	SDK_SOURCE_PATH  += lib_ux
+endif
 ##############
 #   Build    #
 ##############
-build: all
-
-sign:
-	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
-
-deploy:
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
-
-load: build
+load: all
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
 
-#	python -m ledgerblue.signApp --hex bin/app.hex --key $(SIGNKEY) > bin/app.sig
-#	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS) --signature $(APPSIG)
-
-
 delete:
-	python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS) --rootPrivateKey $(SIGNKEY)
+	python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
 
 seed:
 	python -m ledgerblue.hostOnboard --id $(NANOS_ID) --words $(WORDS) --pin $(PIN)

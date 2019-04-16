@@ -77,7 +77,7 @@ static void getExtendedPublicKey_ui_runStep()
 	UI_STEP_BEGIN(ctx->ui_step);
 
 	UI_STEP(UI_STEP_WARNING) {
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
@@ -88,14 +88,14 @@ static void getExtendedPublicKey_ui_runStep()
 		char pathStr[100];
 		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr) );
 
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Export public key",
 		        pathStr,
 		        this_fn
 		);
 	}
 	UI_STEP(UI_STEP_CONFIRM) {
-		ui_displayConfirm(
+		ui_displayPrompt(
 		        "Confirm export",
 		        "public key?",
 		        this_fn,

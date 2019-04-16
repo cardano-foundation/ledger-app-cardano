@@ -72,7 +72,7 @@ static void deriveAddress_return_ui_runStep()
 	UI_STEP_BEGIN(ctx->ui_step);
 
 	UI_STEP(RETURN_UI_STEP_WARNING) {
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
@@ -87,14 +87,14 @@ static void deriveAddress_return_ui_runStep()
 			os_memcpy(pathStr, prefix, len); // Note: not null-terminated yet
 			bip44_printToStr(&ctx->pathSpec, pathStr + len, SIZEOF(pathStr) - len);
 		}
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Export address",
 		        pathStr,
 		        this_fn
 		);
 	}
 	UI_STEP(RETURN_UI_STEP_CONFIRM) {
-		ui_displayConfirm(
+		ui_displayPrompt(
 		        "Confirm",
 		        "export address?",
 		        this_fn,
@@ -166,14 +166,14 @@ static void deriveAddress_display_ui_runStep()
 	UI_STEP_BEGIN(ctx->ui_step);
 
 	UI_STEP(DISPLAY_UI_STEP_WARNING) {
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Unusual request",
 		        "Proceed with care",
 		        this_fn
 		);
 	}
 	UI_STEP(DISPLAY_UI_STEP_INSTRUCTIONS) {
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Verify address",
 		        "Make sure it agrees with your computer",
 		        this_fn
@@ -183,7 +183,7 @@ static void deriveAddress_display_ui_runStep()
 		// Response
 		char pathStr[100];
 		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Address path",
 		        pathStr,
 		        this_fn
@@ -199,7 +199,7 @@ static void deriveAddress_display_ui_runStep()
 		        address58Str,
 		        SIZEOF(address58Str)
 		);
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Address",
 		        address58Str,
 		        this_fn
