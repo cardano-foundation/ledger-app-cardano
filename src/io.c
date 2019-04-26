@@ -48,12 +48,12 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 
 static timeout_callback_fn_t* timeout_cb;
-static int ticker_value;
+static int timeout_remaining_ms;
 
 void clear_timer()
 {
 	timeout_cb = NULL;
-	ticker_value = 0;
+	timeout_remaining_ms = 0;
 }
 
 void set_timer(int ms, timeout_callback_fn_t* cb)
@@ -65,7 +65,7 @@ void set_timer(int ms, timeout_callback_fn_t* cb)
 	ASSERT(timeout_cb == NULL);
 	ASSERT(ms >= 0);
 	timeout_cb = cb;
-	ticker_value = ms;
+	timeout_remaining_ms = ms;
 }
 
 unsigned char io_event(unsigned char channel MARK_UNUSED)

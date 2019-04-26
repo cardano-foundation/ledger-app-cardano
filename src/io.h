@@ -52,9 +52,9 @@ bool device_is_unlocked();
 #define CARDANO_UX_TICKER_EVENT(seph_packet, callback) \
 	UX_FORWARD_EVENT({ \
 		unsigned int UX_ALLOWED = CARDANO_UX_ALLOWED_VALUE; \
-		if (ticker_value) { \
-			ticker_value -= MIN(ticker_value, 100); \
-			if (!ticker_value) { \
+		if (timeout_remaining_ms) { \
+			timeout_remaining_ms -= MIN(timeout_remaining_ms, 100); \
+			if (!timeout_remaining_ms) { \
 				callback \
 			} \
 		} \
