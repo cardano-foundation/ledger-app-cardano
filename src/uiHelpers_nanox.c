@@ -17,7 +17,7 @@ void paginated_text_confirm()
 	});
 }
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
         ux_display_paginated_text_flow_1_step,
         bnnn_paging,
         paginated_text_confirm(),
@@ -27,7 +27,7 @@ UX_FLOW_DEF_VALID(
         )
 );
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
         ux_display_short_text_flow_1_step,
         pnn,
         paginated_text_confirm(),
@@ -38,15 +38,15 @@ UX_FLOW_DEF_VALID(
         )
 );
 
-const ux_flow_step_t * const ux_paginated_text_flow [] = {
-	&ux_display_paginated_text_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_paginated_text_flow,
+        &ux_display_paginated_text_flow_1_step
+);
 
-const ux_flow_step_t * const ux_short_text_flow [] = {
-	&ux_display_short_text_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_short_text_flow,
+        &ux_display_short_text_flow_1_step
+);
 
 void ui_displayPaginatedText_run()
 {
@@ -78,7 +78,7 @@ void prompt_reject()
 	});
 }
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
         ux_display_prompt_flow_1_step,
         pbb,
         prompt_confirm(),
@@ -90,7 +90,7 @@ UX_FLOW_DEF_VALID(
 );
 
 
-UX_FLOW_DEF_VALID(
+UX_STEP_CB(
         ux_display_prompt_flow_2_step,
         pbb,
         prompt_reject(),
@@ -101,11 +101,11 @@ UX_FLOW_DEF_VALID(
         )
 );
 
-const ux_flow_step_t * const ux_prompt_flow [] = {
-	&ux_display_prompt_flow_1_step,
-	&ux_display_prompt_flow_2_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_prompt_flow,
+        &ux_display_prompt_flow_1_step,
+        &ux_display_prompt_flow_2_step
+);
 
 
 void ui_displayPrompt_run()
@@ -114,7 +114,7 @@ void ui_displayPrompt_run()
 }
 
 // ----- Flow busy -----
-UX_FLOW_DEF_NOCB(
+UX_STEP_NOCB(
         ux_display_busy_flow_1_step,
         pn,
         LINES(
@@ -123,10 +123,10 @@ UX_FLOW_DEF_NOCB(
         )
 );
 
-const ux_flow_step_t * const ux_busy_flow [] = {
-	&ux_display_busy_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_busy_flow,
+        &ux_display_busy_flow_1_step
+);
 
 void ui_displayBusy()
 {
