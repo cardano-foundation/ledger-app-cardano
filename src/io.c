@@ -5,6 +5,28 @@
 
 io_state_t io_state;
 
+// UX_TICKER_EVENT from Nano X BOLOS SDK overrides our callbacks so we made our own version of it
+// Ticker event interval is assumed to be 100 ms.
+#if defined(TARGET_NANOS)
+#define CARDANO_UX_ALLOWED_VALUE (ux.params.len != BOLOS_UX_IGNORE && ux.params.len != BOLOS_UX_CONTINUE)
+#elif defined(TARGET_NANOX)
+#define CARDANO_UX_ALLOWED_VALUE (G_ux_params.len != BOLOS_UX_IGNORE && G_ux_params.len != BOLOS_UX_CONTINUE)
+#endif
+
+#define CARDANO_UX_TICKER_EVENT(seph_packet, callback) \
+	UX_FORWARD_EVENT({ \
+		unsigned int UX_ALLOWED = CARDANO_UX_ALLOWED_VALUE; \
+		if (timeout_remaining_ms) { \
+			timeout_remaining_ms -= MIN(timeout_remaining_ms, 100); \
+			if (!timeout_remaining_ms) { \
+				callback \
+			} \
+		} \
+		if (UX_ALLOWED) { \
+			UX_CONTINUE_DISPLAY_APP({}); \
+		} \
+	}, 0);
+
 void CHECK_RESPONSE_SIZE(unsigned int tx)
 {
 	// Note(ppershing): we do both checks due to potential overflows
@@ -96,6 +118,9 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 		break;
 
 	case SEPROXYHAL_TAG_TICKER_EVENT:
+		// WARNING: CARDANO_UX_TICKER_EVENT bypasses UX_TICKER_EVENT from the SDK which calls
+		// internal G_ux.stack[0].ticker_callback. This may interfere in the future with
+		// the usage of UX_STEP_TIMER if we start using it
 		CARDANO_UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
 			TRACE("timer");
 			if (timeout_cb)
