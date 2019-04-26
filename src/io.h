@@ -40,4 +40,27 @@ void set_timer(int ms, timeout_callback_fn_t* cb);
 void clear_timer();
 
 bool device_is_unlocked();
+
+// UX_TICKER_EVENT from Nano X BOLOS SDK overrides our callbacks so we made our own version of it
+// Ticker event interval is assumed to be 100 ms.
+#if defined(TARGET_NANOS)
+#define CARDANO_UX_ALLOWED_VALUE (ux.params.len != BOLOS_UX_IGNORE && ux.params.len != BOLOS_UX_CONTINUE)
+#elif defined(TARGET_NANOX)
+#define CARDANO_UX_ALLOWED_VALUE (G_ux_params.len != BOLOS_UX_IGNORE && G_ux_params.len != BOLOS_UX_CONTINUE)
+#endif
+
+#define CARDANO_UX_TICKER_EVENT(seph_packet, callback) \
+	UX_FORWARD_EVENT({ \
+		unsigned int UX_ALLOWED = CARDANO_UX_ALLOWED_VALUE; \
+		if (ticker_value) { \
+			ticker_value -= MIN(ticker_value, 100); \
+			if (!ticker_value) { \
+				callback \
+			} \
+		} \
+		if (UX_ALLOWED) { \
+			UX_CONTINUE_DISPLAY_APP({}); \
+		} \
+	}, 0);
+
 #endif

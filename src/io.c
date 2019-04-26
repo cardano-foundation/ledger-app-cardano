@@ -48,10 +48,12 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 
 static timeout_callback_fn_t* timeout_cb;
+static int ticker_value;
 
 void clear_timer()
 {
 	timeout_cb = NULL;
+	ticker_value = 0;
 }
 
 void set_timer(int ms, timeout_callback_fn_t* cb)
@@ -63,7 +65,7 @@ void set_timer(int ms, timeout_callback_fn_t* cb)
 	ASSERT(timeout_cb == NULL);
 	ASSERT(ms >= 0);
 	timeout_cb = cb;
-	UX_CALLBACK_SET_INTERVAL((unsigned) ms);
+	ticker_value = ms;
 }
 
 unsigned char io_event(unsigned char channel MARK_UNUSED)
@@ -94,7 +96,7 @@ unsigned char io_event(unsigned char channel MARK_UNUSED)
 		break;
 
 	case SEPROXYHAL_TAG_TICKER_EVENT:
-		UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+		CARDANO_UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
 			TRACE("timer");
 			if (timeout_cb)
 			{
