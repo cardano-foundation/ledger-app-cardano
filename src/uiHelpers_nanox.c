@@ -40,12 +40,12 @@ UX_STEP_CB(
 
 UX_FLOW(
         ux_paginated_text_flow,
-	&ux_display_paginated_text_flow_1_step
+        &ux_display_paginated_text_flow_1_step
 );
 
 UX_FLOW(
         ux_short_text_flow,
-	&ux_display_short_text_flow_1_step
+        &ux_display_short_text_flow_1_step
 );
 
 void ui_displayPaginatedText_run()
@@ -103,8 +103,8 @@ UX_STEP_CB(
 
 UX_FLOW(
         ux_prompt_flow,
-	&ux_display_prompt_flow_1_step,
-	&ux_display_prompt_flow_2_step
+        &ux_display_prompt_flow_1_step,
+        &ux_display_prompt_flow_2_step
 );
 
 
@@ -125,7 +125,7 @@ UX_STEP_NOCB(
 
 UX_FLOW(
         ux_busy_flow,
-	&ux_display_busy_flow_1_step
+        &ux_display_busy_flow_1_step
 );
 
 void ui_displayBusy()

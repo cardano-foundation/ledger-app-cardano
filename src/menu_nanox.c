@@ -46,9 +46,9 @@ UX_STEP_CB(
 
 UX_FLOW(
         ux_idle_flow,
-	&ux_idle_flow_1_step,
-	&ux_idle_flow_2_step,
-	&ux_idle_flow_3_step
+        &ux_idle_flow_1_step,
+        &ux_idle_flow_2_step,
+        &ux_idle_flow_3_step
 );
 
 #endif
