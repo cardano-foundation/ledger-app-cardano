@@ -38,15 +38,15 @@ UX_STEP_CB(
         )
 );
 
-const ux_flow_step_t * const ux_paginated_text_flow [] = {
-	&ux_display_paginated_text_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_paginated_text_flow,
+	&ux_display_paginated_text_flow_1_step
+);
 
-const ux_flow_step_t * const ux_short_text_flow [] = {
-	&ux_display_short_text_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_short_text_flow,
+	&ux_display_short_text_flow_1_step
+);
 
 void ui_displayPaginatedText_run()
 {
@@ -101,11 +101,11 @@ UX_STEP_CB(
         )
 );
 
-const ux_flow_step_t * const ux_prompt_flow [] = {
+UX_FLOW(
+        ux_prompt_flow,
 	&ux_display_prompt_flow_1_step,
-	&ux_display_prompt_flow_2_step,
-	FLOW_END_STEP,
-};
+	&ux_display_prompt_flow_2_step
+);
 
 
 void ui_displayPrompt_run()
@@ -123,10 +123,10 @@ UX_STEP_NOCB(
         )
 );
 
-const ux_flow_step_t * const ux_busy_flow [] = {
-	&ux_display_busy_flow_1_step,
-	FLOW_END_STEP,
-};
+UX_FLOW(
+        ux_busy_flow,
+	&ux_display_busy_flow_1_step
+);
 
 void ui_displayBusy()
 {
