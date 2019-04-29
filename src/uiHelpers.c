@@ -88,6 +88,15 @@ void ui_displayPrompt_headless_cb(bool ux_allowed)
 	})
 }
 
+void autoconfirmPrompt()
+{
+	#if defined(TARGET_NANOS)
+	nanos_set_timer(HEADLESS_DELAY, ui_displayPrompt_headless_cb);
+	#elif defined(TARGET_NANOX)
+	UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
+	#endif
+}
+
 void ui_displayPaginatedText_headless_cb(bool ux_allowed)
 {
 	TRACE("HEADLESS response");
@@ -101,6 +110,15 @@ void ui_displayPaginatedText_headless_cb(bool ux_allowed)
 		ASSERT(device_is_unlocked() == true);
 		uiCallback_confirm(&paginatedTextState->callback);
 	});
+}
+
+void autoconfirmPaginatedText()
+{
+	#if defined(TARGET_NANOS)
+	nanos_set_timer(HEADLESS_DELAY, ui_displayPaginatedText_headless_cb);
+	#elif defined(TARGET_NANOX)
+	UX_CALLBACK_SET_INTERVAL(HEADLESS_DELAY);
+	#endif
 }
 
 #endif
@@ -141,7 +159,7 @@ void ui_displayPrompt(
 
 	#ifdef HEADLESS
 	if (confirm) {
-		set_timer(HEADLESS_DELAY, ui_displayPrompt_headless_cb);
+		autoconfirmPrompt();
 	}
 	#endif
 }
@@ -185,7 +203,7 @@ void ui_displayPaginatedText(
 
 	#ifdef HEADLESS
 	if (callback) {
-		set_timer(HEADLESS_DELAY, ui_displayPaginatedText_headless_cb);
+		autoconfirmPaginatedText();
 	}
 	#endif
 }

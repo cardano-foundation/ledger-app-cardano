@@ -48,12 +48,12 @@ static const int INS_NONE = -1;
 // menu as its idle screen; you can define your own completely custom screen.
 void ui_idle(void)
 {
-	clear_timer();
 	currentInstruction = INS_NONE;
 	// The first argument is the starting index within menu_main, and the last
 	// argument is a preprocessor; I've never seen an app that uses either
 	// argument.
 	#if defined(TARGET_NANOS)
+	nanos_clear_timer();
 	UX_MENU_DISPLAY(0, menu_main, NULL);
 	#elif defined(TARGET_NANOX)
 	// reserve a display stack slot if none yet
