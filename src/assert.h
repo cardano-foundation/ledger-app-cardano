@@ -19,13 +19,13 @@ extern void assert(int cond, const char* msgStr);
 #define _MAX_ASSERT_LENGTH_ 25
 // Shortens a string literal by skipping some prefix
 #define _SHORTEN_(strLiteral, size) \
-    (sizeof(strLiteral) > size \
-	? (strLiteral) + sizeof(strLiteral) - size \
-	: strLiteral \
-    )
+	(sizeof(strLiteral) > size \
+	 ? (strLiteral) + sizeof(strLiteral) - size \
+	 : strLiteral \
+	)
 
 #define _FILE_LINE_ __FILE__ ":" _TO_STR2_(__LINE__)
 
-#define ASSERT(cond) assert(cond, _SHORTEN_( _FILE_LINE_, _MAX_ASSERT_LENGTH_))
+#define ASSERT(cond) assert((cond), _SHORTEN_( _FILE_LINE_, _MAX_ASSERT_LENGTH_))
 
 #endif

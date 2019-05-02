@@ -47,7 +47,7 @@ size_t encode_base58(
 
 	while (startAt < inSize) {
 		unsigned short remainder = 0;
-		unsigned char divLoop;
+		size_t divLoop;
 		for (divLoop = startAt; divLoop < inSize; divLoop++) {
 			unsigned short digit256 = (unsigned short)(tmpBuffer[divLoop] & 0xff);
 			unsigned short tmpDiv = remainder * 256 + digit256;

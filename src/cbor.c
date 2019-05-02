@@ -146,22 +146,22 @@ size_t cbor_writeToken(uint8_t type, uint64_t value, uint8_t* buffer, size_t buf
 
 	if (value < VALUE_MIN_W1) {
 		CHECK_BUF_LEN(1);
-		u1be_write(buffer, type | value);
+		u1be_write(buffer, (uint8_t) (type | value));
 		return 1;
 	} else if (value < VALUE_MIN_W2) {
 		CHECK_BUF_LEN(1 + 1);
 		u1be_write(buffer, type | 24);
-		u1be_write(buffer + 1, value);
+		u1be_write(buffer + 1, (uint8_t) value);
 		return 1 + 1;
 	} else if (value < VALUE_MIN_W4) {
 		CHECK_BUF_LEN(1 + 2);
 		u1be_write(buffer, type | 25);
-		u2be_write(buffer + 1, value);
+		u2be_write(buffer + 1, (uint16_t) value);
 		return 1 + 2;
 	} else if (value < VALUE_MIN_W8) {
 		CHECK_BUF_LEN(1 + 4);
 		u1be_write(buffer, type | 26);
-		u4be_write(buffer + 1, value);
+		u4be_write(buffer + 1, (uint32_t) value);
 		return 1 + 4;
 	} else {
 		CHECK_BUF_LEN(1 + 8);

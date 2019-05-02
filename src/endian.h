@@ -2,6 +2,7 @@
 #define H_CARANO_APP_ENDIAN
 
 #include <stdint.h>
+#include "assert.h"
 
 inline void u1be_write(uint8_t* outBuffer, uint8_t value)
 {
@@ -34,17 +35,22 @@ inline uint8_t u1be_read(const uint8_t* inBuffer)
 
 inline uint16_t u2be_read(const uint8_t* inBuffer)
 {
-	return ((uint16_t) u1be_read(inBuffer) << 8) | (u1be_read(inBuffer + 1));
+	STATIC_ASSERT(sizeof(uint32_t) == sizeof(unsigned), "bad unsigned size");
+
+	// bitwise OR promotes unsigned types smaller than int to unsigned
+	return (uint16_t) (
+	               ((uint32_t) (u1be_read(inBuffer) << 8)) | ((uint32_t) (u1be_read(inBuffer + 1)))
+	       );
 }
 
 inline uint32_t u4be_read(const uint8_t* inBuffer)
 {
-	return ((uint32_t) u2be_read(inBuffer) << 16) | (u2be_read(inBuffer + 2));
+	return ((uint32_t) u2be_read(inBuffer) << 16) | (uint32_t)(u2be_read(inBuffer + 2));
 }
 
 inline uint64_t u8be_read(const uint8_t* inBuffer)
 {
-	return ((uint64_t) u4be_read(inBuffer) << 32) | (u4be_read(inBuffer + 4));
+	return ((uint64_t) u4be_read(inBuffer) << 32u) | (uint64_t) (u4be_read(inBuffer + 4));
 }
 
 void run_endian_test();

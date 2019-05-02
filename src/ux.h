@@ -3,10 +3,6 @@
 
 #include "common.h"
 
-// ux is a magic global variable implicitly referenced by the UX_ macros. Apps
-// should never need to reference it directly.
-extern ux_state_t ux;
-
 // These are helper macros for defining UI elements. There are four basic UI
 // elements: the background, which is a black rectangle that fills the whole
 // screen; icons on the left and right sides of the screen, typically used for

@@ -1,3 +1,6 @@
+#include <bolos_target.h> // we need target definitions
+#if defined(TARGET_NANOS)
+
 #include <os_io_seproxyhal.h>
 #include "menu.h"
 #include "getVersion.h"
@@ -48,3 +51,5 @@ const ux_menu_entry_t menu_main[] = {
 	{NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
 	UX_MENU_END,
 };
+
+#endif

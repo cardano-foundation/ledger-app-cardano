@@ -70,8 +70,9 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 
 	VALIDATE(SIZEOF(*wireHeader) == wireDataSize, ERR_INVALID_DATA);
 
-	ctx->numInputs    = u4be_read(wireHeader->numInputs);
-	ctx->numOutputs   = u4be_read(wireHeader->numOutputs);
+	ASSERT_TYPE(ctx->numInputs, uint16_t);
+	ctx->numInputs    = (uint16_t) u4be_read(wireHeader->numInputs);
+	ctx->numOutputs   = (uint16_t) u4be_read(wireHeader->numOutputs);
 
 	VALIDATE(ctx->numInputs < SIGN_MAX_INPUTS, ERR_INVALID_DATA);
 	VALIDATE(ctx->numOutputs < SIGN_MAX_OUTPUTS, ERR_INVALID_DATA);
@@ -112,7 +113,7 @@ static void signTx_handleInit_ui_runStep()
 
 	switch(ctx->ui_step) {
 	case HANDLE_INIT_STEP_CONFIRM: {
-		ui_displayConfirm(
+		ui_displayPrompt(
 		        "Start new",
 		        "transaction?",
 		        this_fn,
@@ -339,7 +340,7 @@ static void signTx_handleOutput_ui_runStep()
 	UI_STEP(HANDLE_OUTPUT_STEP_DISPLAY_AMOUNT) {
 		char adaAmountStr[50];
 		str_formatAdaAmount(adaAmountStr, SIZEOF(adaAmountStr), ctx->currentAmount);
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Send ADA",
 		        adaAmountStr,
 		        this_fn
@@ -355,7 +356,7 @@ static void signTx_handleOutput_ui_runStep()
 		        SIZEOF(address58Str)
 		);
 
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "To address",
 		        address58Str,
 		        this_fn
@@ -427,14 +428,14 @@ static void signTx_handleConfirm_ui_runStep()
 	UI_STEP(HANDLE_CONFIRM_STEP_DISPLAY_FEE) {
 		char adaAmount[50];
 		str_formatAdaAmount(adaAmount, SIZEOF(adaAmount), ctx->currentAmount);
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Transaction Fee",
 		        adaAmount,
 		        this_fn
 		);
 	}
 	UI_STEP(HANDLE_CONFIRM_STEP_FINAL_CONFIRM) {
-		ui_displayConfirm(
+		ui_displayPrompt(
 		        "Confirm",
 		        "transaction?",
 		        this_fn,
@@ -503,7 +504,7 @@ static void signTx_handleWitness_ui_runStep()
 	UI_STEP_BEGIN(ctx->ui_step);
 
 	UI_STEP(HANDLE_WITNESS_STEP_WARNING) {
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Warning!",
 		        "Hosts asks for unusual witness",
 		        this_fn
@@ -512,14 +513,14 @@ static void signTx_handleWitness_ui_runStep()
 	UI_STEP(HANDLE_WITNESS_STEP_DISPLAY) {
 		char pathStr[100];
 		bip44_printToStr(&ctx->currentPath, pathStr, SIZEOF(pathStr));
-		ui_displayScrollingText(
+		ui_displayPaginatedText(
 		        "Witness path",
 		        pathStr,
 		        this_fn
 		);
 	}
 	UI_STEP(HANDLE_WITNESS_STEP_CONFIRM) {
-		ui_displayConfirm(
+		ui_displayPrompt(
 		        "Sign using",
 		        "this witness?",
 		        this_fn,

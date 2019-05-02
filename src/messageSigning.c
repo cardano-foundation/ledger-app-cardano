@@ -18,8 +18,9 @@ void signRawMessage(privateKey_t* privateKey,
 
 	// Note(ppershing): this could be done without
 	// temporary copy
+	STATIC_ASSERT(sizeof(int) == sizeof(size_t), "bad sizing");
 	size_t signatureSize =
-	        cx_eddsa_sign(
+	        (size_t) cx_eddsa_sign(
 	                (const struct cx_ecfp_256_private_key_s*) privateKey,
 	                0 /* mode */,
 	                CX_SHA512,

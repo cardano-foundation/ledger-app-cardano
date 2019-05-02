@@ -28,6 +28,12 @@
 	(sizeof(var) + SIZEOF_NOT_A_PTR(var))
 
 
+#define ASSERT_TYPE(expr, expected_type) \
+	STATIC_ASSERT( \
+	               __builtin_types_compatible_p(__typeof__((expr)), expected_type), \
+	               "Wrong type" \
+	             )
+
 // Given that memset is root of many problems, a bit of paranoia is good.
 // If you don't believe, just check out https://www.viva64.com/en/b/0360/
 //

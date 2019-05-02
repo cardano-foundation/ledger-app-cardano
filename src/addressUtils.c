@@ -140,14 +140,19 @@ size_t unboxChecksummedAddress(
 	read_view_t view = make_read_view(addressBuffer, addressBuffer + addressSize);
 
 	uint32_t checksum;
-	uint64_t unboxedSize;
+	size_t unboxedSize;
 	const uint8_t* unboxedBuffer;
 	{
 		parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 2);
 		{
 			parseTokenWithValue(&view, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
 
-			unboxedSize = parseToken(&view, CBOR_TYPE_BYTES);
+			uint64_t tmp = parseToken(&view, CBOR_TYPE_BYTES);
+			// Validate that we can down-cast
+			STATIC_ASSERT(sizeof(tmp) >= sizeof(SIZE_MAX), "bad int size");
+			VALIDATE(tmp < (uint64_t) SIZE_MAX, ERR_INVALID_DATA);
+
+			unboxedSize = (size_t) tmp;
 
 			unboxedBuffer = view.ptr;
 			// overflow pre-check, should not be needed with view_skipBytes but ...

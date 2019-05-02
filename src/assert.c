@@ -21,7 +21,7 @@ void assert(
 		#ifdef DEVEL
 		{
 			PRINTF("Assertion failed %s\n", msgStr);
-			ui_displayConfirm("Assertion failed", msgStr, NULL, NULL);
+			ui_displayPaginatedText("Assertion failed", msgStr, NULL);
 			THROW(ERR_ASSERT);
 		}
 		#else

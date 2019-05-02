@@ -35,9 +35,17 @@ extern io_state_t io_state;
 void io_seproxyhal_display(const bagl_element_t *element);
 unsigned char io_event(unsigned char channel);
 
-typedef void timeout_callback_fn_t(bool ux_allowed);
-void set_timer(int ms, timeout_callback_fn_t* cb);
-void clear_timer();
-
 bool device_is_unlocked();
+
+#if defined(TARGET_NANOS)
+typedef void timeout_callback_fn_t(bool ux_allowed);
+void nanos_set_timer(int ms, timeout_callback_fn_t* cb);
+void nanos_clear_timer();
+#elif defined(TARGET_NANOX)
+// we had to disable set_timer for Nano X, since in the new SDK UX_STEP_CB/UX_STEP_NOCB macros
+// automatically push a confirm callback to G_ux.stack[].ticker_callback with timeout zero
+// which causes other callbacks (i.e. ours) to be ignored in UX_TICKER_EVENT, so set_timer
+// does not actually work anymore in Nano X
+#endif
+
 #endif
