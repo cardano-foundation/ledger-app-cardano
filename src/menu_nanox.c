@@ -39,7 +39,7 @@ UX_STEP_CB(
         pb,
         os_sched_exit(-1),
         LINES(
-                &C_icon_dashboard,
+                &C_icon_dashboard_x,
                 "Quit"
         )
 );
