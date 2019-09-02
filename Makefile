@@ -27,7 +27,7 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
-APPVERSION = "1.1.0"
+APPVERSION = "1.1.1"
 
 APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)

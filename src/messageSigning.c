@@ -19,6 +19,7 @@ void signRawMessage(privateKey_t* privateKey,
 	// Note(ppershing): this could be done without
 	// temporary copy
 	STATIC_ASSERT(sizeof(int) == sizeof(size_t), "bad sizing");
+	io_seproxyhal_io_heartbeat();
 	size_t signatureSize =
 	        (size_t) cx_eddsa_sign(
 	                (const struct cx_ecfp_256_private_key_s*) privateKey,
@@ -29,6 +30,7 @@ void signRawMessage(privateKey_t* privateKey,
 	                signature, SIZEOF(signature),
 	                0 /* info */
 	        );
+	io_seproxyhal_io_heartbeat();
 
 	ASSERT(signatureSize == 64);
 	os_memmove(outBuffer, signature, signatureSize);
