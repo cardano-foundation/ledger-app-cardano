@@ -103,7 +103,7 @@ endif
 #  Compiler  #
 ##############
 CC       := $(CLANGPATH)clang
-CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized
+CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized -I/usr/include
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
