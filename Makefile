@@ -27,7 +27,7 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
-APPVERSION = "1.1.1"
+APPVERSION = "1.1.2"
 
 APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
@@ -57,8 +57,9 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64
 DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"ADA\" USB_SEGMENT_SIZE=64 
 
 ## WEBUSB
-WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
-DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+#WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
+#DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
 
 ## BLUETOOTH
 ifeq ($(TARGET_NAME),TARGET_NANOX)
