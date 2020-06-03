@@ -27,7 +27,7 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
-APPVERSION = "1.1.2"
+APPVERSION = "1.2.0"
 
 APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
@@ -130,6 +130,7 @@ ifeq ($(TARGET_NAME),TARGET_NANOX)
 	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 	SDK_SOURCE_PATH  += lib_ux
 endif
+
 ##############
 #   Build    #
 ##############
