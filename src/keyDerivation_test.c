@@ -135,7 +135,6 @@ void testPublicKeyDerivation()
 
 	TESTCASE(
 	        (HD + 44, HD + 1815, HD + 1),
-
 	        "eb6e933ce45516ac7b0e023de700efae5e212ccc6bf0fcb33ba9243b9d832827"
 	)
 
@@ -155,6 +154,8 @@ void testPublicKeyDerivation()
 	        (HD + 44, HD + 1815, HD + 1, HD + 23, 189),
 	        "3aba387352d588040e33046bfd5d856210e5324f91cb5d6b710b23e65a096400"
 	);
+
+	// TODO: some test cases for Shelley derivation
 
 #undef TESTCASE
 }

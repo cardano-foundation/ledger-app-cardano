@@ -40,8 +40,8 @@ security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec)
 	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
 
 	WARN_IF(!bip44_hasReasonableAccount(pathSpec));
-	// Normally extPubKey is asked only for an account
-	WARN_IF(bip44_containsChainType(pathSpec));
+	// Normally extPubKey is asked only for an account or a staking key
+	WARN_IF(bip44_containsChainType(pathSpec) && !bip44_isValidStakingKeyPath(pathSpec));
 
 	PROMPT_IF(true);
 }

@@ -2,9 +2,10 @@
 #include "bip44.h"
 #include "endian.h"
 
-static const uint32_t MAX_REASONABLE_ACCOUNT = 10;
-static const uint32_t CARDANO_CHAIN_INTERNAL = 1;
+static const uint32_t MAX_REASONABLE_ACCOUNT = 20;
 static const uint32_t CARDANO_CHAIN_EXTERNAL = 0;
+static const uint32_t CARDANO_CHAIN_INTERNAL = 1;
+static const uint32_t CARDANO_CHAIN_STAKING_KEY = 2;
 static const uint32_t MAX_REASONABLE_ADDRESS = 1000000;
 
 size_t bip44_parseFromWire(
@@ -41,10 +42,14 @@ bool bip44_hasValidCardanoPrefix(const bip44_path_t* pathSpec)
 {
 #define CHECK(cond) if (!(cond)) return false
 	const uint32_t HD = HARDENED_BIP32; // shorthand
+
 	// Have at least account
 	CHECK(pathSpec->length > BIP44_I_COIN_TYPE);
 
-	CHECK(pathSpec->path[BIP44_I_PURPOSE] == (BIP_44 | HD));
+	const uint32_t purpose = pathSpec->path[BIP44_I_PURPOSE];
+	CHECK((purpose == (PURPOSE_BYRON | HD)) ||
+		  (purpose == (PURPOSE_SHELLEY | HD)));
+
 	CHECK(pathSpec->path[BIP44_I_COIN_TYPE] == (ADA_COIN_TYPE | HD));
 	return true;
 #undef CHECK
@@ -89,9 +94,9 @@ uint32_t bip44_getChainTypeValue(const bip44_path_t* pathSpec)
 bool bip44_hasValidChainType(const bip44_path_t* pathSpec)
 {
 	if (!bip44_containsChainType(pathSpec)) return false;
-	uint32_t chainType = bip44_getChainTypeValue(pathSpec);
+	const uint32_t chainType = bip44_getChainTypeValue(pathSpec);
 
-	return (chainType == CARDANO_CHAIN_INTERNAL) || (chainType == CARDANO_CHAIN_EXTERNAL);
+	return (chainType == CARDANO_CHAIN_EXTERNAL) || (chainType == CARDANO_CHAIN_INTERNAL);
 }
 
 // Address
@@ -110,8 +115,24 @@ uint32_t bip44_getAddressValue(const bip44_path_t* pathSpec)
 bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec)
 {
 	if (!bip44_containsAddress(pathSpec)) return false;
-	uint32_t address = bip44_getAddressValue(pathSpec);
+	const uint32_t address = bip44_getAddressValue(pathSpec);
 	return (address <= MAX_REASONABLE_ADDRESS);
+}
+
+// staking key (one per account) should end with /2/0
+bool bip44_isValidStakingKeyPath(const bip44_path_t* pathSpec)
+{
+	if (pathSpec->length != BIP44_I_ADDRESS) return false;
+
+	const uint32_t purpose = pathSpec->path[BIP44_I_PURPOSE];
+	if (purpose != PURPOSE_SHELLEY) return false;
+
+	if (!bip44_hasReasonableAccount(pathSpec)) return false;
+
+	const uint32_t chainType = bip44_getChainTypeValue(pathSpec);
+	if (chainType != CARDANO_CHAIN_STAKING_KEY) return false;
+
+	return (bip44_getAddressValue(pathSpec) == 0);
 }
 
 // Futher
@@ -151,7 +172,7 @@ void bip44_printToStr(const bip44_path_t* pathSpec, char* out, size_t outSize)
 	ASSERT(pathSpec->length < ARRAY_LEN(pathSpec->path));
 
 	for (size_t i = 0; i < pathSpec->length; i++) {
-		uint32_t value = pathSpec->path[i];
+		const uint32_t value = pathSpec->path[i];
 
 		if ((value & HARDENED_BIP32) == HARDENED_BIP32) {
 			WRITE("/%d'", (int) (value & ~HARDENED_BIP32));
