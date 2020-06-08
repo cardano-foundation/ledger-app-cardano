@@ -17,18 +17,7 @@ enum {
 	P1_DISPLAY = 0x02,
 };
 
-// forward declarations
-
-static void deriveAddress_return_ui_runStep();
-enum {
-	RETURN_UI_STEP_WARNING = 100,
-	RETURN_UI_STEP_PATH,
-	RETURN_UI_STEP_CONFIRM,
-	RETURN_UI_STEP_RESPOND,
-	RETURN_UI_STEP_INVALID,
-};
-
-static void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+void parseArguments(uint8_t p2, uint8_t *wireDataBuffer, size_t wireDataSize)
 {
 	TRACE();
 	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
@@ -39,17 +28,34 @@ static void deriveAddress_handleReturn(uint8_t p2, uint8_t* wireDataBuffer, size
 	if (parsedSize != wireDataSize) {
 		THROW(ERR_INVALID_DATA);
 	}
+}
 
-	// Check security policy
-	security_policy_t policy = policyForReturnDeriveAddress(&ctx->pathSpec);
-	ENSURE_NOT_DENIED(policy);
-
+void prepareResponse()
+{
 	ctx->address.size = deriveAddress(
 	                            &ctx->pathSpec,
 	                            ctx->address.buffer,
 	                            SIZEOF(ctx->address.buffer)
 	                    );
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
+}
+
+static void deriveAddress_return_ui_runStep();
+enum {
+	RETURN_UI_STEP_WARNING = 100,
+	RETURN_UI_STEP_PATH,
+	RETURN_UI_STEP_CONFIRM,
+	RETURN_UI_STEP_RESPOND,
+	RETURN_UI_STEP_INVALID,
+};
+
+static void deriveAddress_handleReturn()
+{
+	// Check security policy
+	security_policy_t policy = policyForReturnDeriveAddress(&ctx->pathSpec);
+	ENSURE_NOT_DENIED(policy);
+
+	prepareResponse();
 
 	switch (policy) {
 #	define  CASE(POLICY, STEP) case POLICY: {ctx->ui_step=STEP; break;}
@@ -124,28 +130,13 @@ enum {
 };
 
 
-static void deriveAddress_handleDisplay(uint8_t p2, uint8_t* wireDataBuffer, size_t wireDataSize)
+static void deriveAddress_handleDisplay()
 {
-	TRACE();
-	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
-
-	// Parse wire
-	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, wireDataBuffer, wireDataSize);
-
-	if (parsedSize != wireDataSize) {
-		THROW(ERR_INVALID_DATA);
-	}
-
 	// Check security policy
 	security_policy_t policy = policyForShowDeriveAddress(&ctx->pathSpec);
 	ENSURE_NOT_DENIED(policy);
 
-	ctx->address.size = deriveAddress(
-	                            &ctx->pathSpec,
-	                            ctx->address.buffer,
-	                            SIZEOF(ctx->address.buffer)
-	                    );
-	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
+	prepareResponse();
 
 	switch (policy) {
 #	define  CASE(policy, step) case policy: {ctx->ui_step=step; break;}
@@ -225,8 +216,11 @@ void deriveAddress_handleAPDU(
 		os_memset(ctx, 0, SIZEOF(*ctx));
 	}
 	ctx->responseReadyMagic = 0;
+
+	parseArguments(p2, wireDataBuffer, wireDataSize);
+
 	switch (p1) {
-#	define  CASE(P1, HANDLER_FN) case P1: {HANDLER_FN(p2, wireDataBuffer, wireDataSize); break;}
+#	define  CASE(P1, HANDLER_FN) case P1: {HANDLER_FN(); break;}
 		CASE(P1_RETURN,  deriveAddress_handleReturn);
 		CASE(P1_DISPLAY, deriveAddress_handleDisplay);
 #	undef  CASE
