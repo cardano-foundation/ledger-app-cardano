@@ -16,15 +16,15 @@
 #*******************************************************************************
 
 ifeq ($(BOLOS_SDK),)
-	$(error Environment variable BOLOS_SDK is not set)
+$(error Environment variable BOLOS_SDK is not set)
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
 SIGNKEY = `cat sign.key`
 APPSIG = `cat bin/app.sig`
 NANOS_ID = 1
-WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch crush open amazing screen patrol group space point ten exist slush involve unfold"
-PIN = 6666
+WORDS = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+PIN = 5555
 
 APPNAME = "Cardano ADA"
 APPVERSION = "1.1.2"
@@ -82,11 +82,11 @@ else
 DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 endif
 
-DEFINES += RESET_ON_CRASH
+#DEFINES += RESET_ON_CRASH
 
 ## Use developer build
-#DEVEL = 1
-#DEFINES += HEADLESS
+DEVEL = 1
+DEFINES += HEADLESS
 
 # Enabling debug PRINTF
 ifeq ($(DEVEL), 1)
@@ -129,6 +129,7 @@ ifeq ($(TARGET_NAME),TARGET_NANOX)
 	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 	SDK_SOURCE_PATH  += lib_ux
 endif
+
 ##############
 #   Build    #
 ##############
