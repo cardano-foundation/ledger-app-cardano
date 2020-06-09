@@ -7,6 +7,7 @@
 #include "cbor.h"
 #include "endian.h"
 #include "base58.h"
+#include "bech32.h"
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "hash.h"
@@ -28,6 +29,7 @@ void handleRunTests(
 {
 	BEGIN_ASSERT_NOEXCEPT {
 		PRINTF("Running tests\n");
+		run_bech32_test();
 		run_textUtils_test();
 		run_txHashBuilder_test();
 		run_endian_test();
