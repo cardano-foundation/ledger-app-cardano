@@ -1,5 +1,5 @@
 #include "common.h"
-#include "addressUtils.h"
+#include "addressUtilsByron.h"
 #include "keyDerivation.h"
 #include "cbor.h"
 #include "cardano.h"

@@ -1,6 +1,6 @@
 #ifdef DEVEL
 
-#include "addressUtils.h"
+#include "addressUtilsByron.h"
 #include "test_utils.h"
 #include "hex_utils.h"
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
@@ -24,7 +24,7 @@ static void PRINTF_bip44(const bip44_path_t* pathSpec)
 
 void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
-	PRINTF("testcase_deriveAddress ");
+	PRINTF("testcase_deriveAddressByron ");
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
@@ -68,7 +68,7 @@ void testAddressDerivation()
 }
 
 
-void run_address_utils_test()
+void run_addressUtilsByron_test()
 {
 	testAddressDerivation();
 }

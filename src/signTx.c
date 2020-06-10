@@ -7,7 +7,7 @@
 #include "ux.h"
 #include "attestKey.h"
 #include "endian.h"
-#include "addressUtils.h"
+#include "addressUtilsByron.h"
 #include "uiHelpers.h"
 #include "crc32.h"
 #include "txHashBuilder.h"

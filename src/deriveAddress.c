@@ -5,7 +5,7 @@
 #include "state.h"
 #include "securityPolicy.h"
 #include "uiHelpers.h"
-#include "addressUtils.h"
+#include "addressUtilsByron.h"
 #include "base58.h"
 
 static uint16_t RESPONSE_READY_MAGIC = 11223;

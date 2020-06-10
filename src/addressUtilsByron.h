@@ -1,5 +1,5 @@
-#ifndef H_CARDANO_APP_ADDRESS_UTILS
-#define H_CARDANO_APP_ADDRESS_UTILS
+#ifndef H_CARDANO_APP_ADDRESS_UTILS_BYRON
+#define H_CARDANO_APP_ADDRESS_UTILS_BYRON
 
 #include "common.h"
 #include "bip44.h"
@@ -32,6 +32,6 @@ size_t unboxChecksummedAddress(
         uint8_t* outputBuffer, size_t outputSize
 );
 
-void run_address_utils_test();
+void run_addressUtilsByron_test();
 
 #endif
