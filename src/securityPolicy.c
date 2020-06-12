@@ -12,7 +12,7 @@ static inline bool has_cardano_prefix_and_any_account(const bip44_path_t* pathSp
 
 static inline bool has_valid_change_and_any_address(const bip44_path_t* pathSpec)
 {
-	return bip44_hasValidChainType(pathSpec) &&
+	return bip44_hasValidChainTypeForAddress(pathSpec) &&
 	       bip44_containsAddress(pathSpec);
 }
 
