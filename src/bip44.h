@@ -45,8 +45,6 @@ bool bip44_hasValidChainType(const bip44_path_t* pathSpec);
 bool bip44_containsAddress(const bip44_path_t* pathSpec);
 bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec);
 
-bool bip44_isValidStakingKeyPath(const bip44_path_t* pathSpec);
-
 bool bip44_containsMoreThanAddress(const bip44_path_t* pathSpec);
 
 bool isHardened(uint32_t value);

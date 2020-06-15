@@ -2,10 +2,11 @@
 #include "bip44.h"
 #include "endian.h"
 
-static const uint32_t MAX_REASONABLE_ACCOUNT = 20;
 static const uint32_t CARDANO_CHAIN_EXTERNAL = 0;
 static const uint32_t CARDANO_CHAIN_INTERNAL = 1;
 static const uint32_t CARDANO_CHAIN_STAKING_KEY = 2;
+
+static const uint32_t MAX_REASONABLE_ACCOUNT = 20;
 static const uint32_t MAX_REASONABLE_ADDRESS = 1000000;
 
 size_t bip44_parseFromWire(
@@ -117,22 +118,6 @@ bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec)
 	if (!bip44_containsAddress(pathSpec)) return false;
 	const uint32_t address = bip44_getAddressValue(pathSpec);
 	return (address <= MAX_REASONABLE_ADDRESS);
-}
-
-// staking key (one per account) should end with /2/0
-bool bip44_isValidStakingKeyPath(const bip44_path_t* pathSpec)
-{
-	if (pathSpec->length != BIP44_I_ADDRESS) return false;
-
-	const uint32_t purpose = pathSpec->path[BIP44_I_PURPOSE];
-	if (purpose != PURPOSE_SHELLEY) return false;
-
-	if (!bip44_hasReasonableAccount(pathSpec)) return false;
-
-	const uint32_t chainType = bip44_getChainTypeValue(pathSpec);
-	if (chainType != CARDANO_CHAIN_STAKING_KEY) return false;
-
-	return (bip44_getAddressValue(pathSpec) == 0);
 }
 
 // Futher
