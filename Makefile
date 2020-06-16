@@ -152,3 +152,11 @@ dep/%.d: %.c Makefile
 
 listvariants:
 	@echo VARIANTS COIN cardano_ada
+
+##############
+#   Style    #
+##############
+
+# better to run this manually to avoid irrelevant dependencies processing
+style:
+	astyle --options=.astylerc src/*
