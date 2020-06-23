@@ -2,6 +2,7 @@
 #define H_CARDANO_APP_SECURITY_POLICY
 
 #include "bip44.h"
+#include "addressUtilsShelley.h"
 
 typedef enum {
 	POLICY_DENY = 1,
@@ -13,8 +14,8 @@ typedef enum {
 
 security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec);
 
-security_policy_t policyForShowDeriveAddress(const bip44_path_t* pathSpec);
-security_policy_t policyForReturnDeriveAddress(const bip44_path_t* pathSpec);
+security_policy_t policyForShowDeriveAddress(shelleyAddressParams_t* addressParams);
+security_policy_t policyForReturnDeriveAddress(shelleyAddressParams_t* addressParams);
 
 security_policy_t policyForAttestUtxo();
 
