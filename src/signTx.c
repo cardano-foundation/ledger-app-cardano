@@ -349,7 +349,7 @@ static void signTx_handleOutput_ui_runStep()
 	UI_STEP(HANDLE_OUTPUT_STEP_DISPLAY_ADDRESS) {
 		char address58Str[200];
 		ASSERT(ctx->currentAddress.size <= SIZEOF(ctx->currentAddress.buffer));
-		encode_base58(
+		base58_encode(
 		        ctx->currentAddress.buffer,
 		        ctx->currentAddress.size,
 		        address58Str,

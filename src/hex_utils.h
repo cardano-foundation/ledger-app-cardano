@@ -14,5 +14,7 @@ void stream_initFromHexString(stream_t* s, const char* inStr);
 
 size_t parseHexString(const char* inStr, uint8_t* outBuffer, size_t outMaxSize);
 
+size_t encodeBytesToHex(const uint8_t* bytes, size_t bytesLength, char* outString, size_t outMaxSize);
+
 void run_hex_test();
 #endif

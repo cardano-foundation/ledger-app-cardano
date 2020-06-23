@@ -24,7 +24,7 @@ static const uint32_t MAX_BUFFER_SIZE = 124;
 
 static const char BASE58ALPHABET[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-size_t encode_base58(
+size_t base58_encode(
         const uint8_t* inBuffer, size_t inSize,
         char* outStr, size_t outMaxSize
 )

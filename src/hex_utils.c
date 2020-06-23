@@ -53,6 +53,25 @@ size_t parseHexString(const char* inStr, uint8_t* outBuffer, size_t outMaxSize)
 	return outLen;
 }
 
+// returns length of the string written to out
+size_t encodeBytesToHex(const uint8_t* bytes, size_t bytesLength, char* out, size_t outMaxSize)
+{
+	ASSERT(bytesLength < BUFFER_SIZE_PARANOIA);
+	ASSERT(outMaxSize < BUFFER_SIZE_PARANOIA);
+	ASSERT(outMaxSize >= 2 * bytesLength + 1);
+
+	size_t i = 0;
+	for (; i < bytesLength; i++) {
+		// TODO upper or lowercase?
+		out[2 * i]     = "0123456789abcdef"[bytes[i] >> 4];
+		out[2 * i + 1] = "0123456789abcdef"[bytes[i] & 0x0F];
+	}
+	ASSERT(i == bytesLength);
+	out[2 * i] = '\0';
+
+	return 2 * bytesLength + 1;
+}
+
 
 void stream_initFromHexString(stream_t* s, const char* inStr)
 {
