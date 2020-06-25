@@ -4,7 +4,6 @@
 #include "assert.h"
 #include "errors.h"
 #include "keyDerivation.h"
-#include "stream.h"
 #include "cbor.h"
 #include "hash.h"
 #include "crc32.h"

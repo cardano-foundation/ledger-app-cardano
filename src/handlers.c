@@ -7,8 +7,6 @@
 #include "getVersion.h"
 #include "getExtendedPublicKey.h"
 #include "runTests.h"
-#include "attestUtxo.h"
-#include "attestKey.h"
 #include "state.h"
 #include "errors.h"
 #include "deriveAddress.h"
@@ -29,15 +27,12 @@ handler_fn_t* lookupHandler(uint8_t ins)
 		CASE(0x11, deriveAddress_handleAPDU);
 
 		// 0x2* -  signing-transaction related
-		CASE(0x20, attestUTxO_handleAPDU);
 		CASE(0x21, signTx_handleAPDU);
 
 		#ifdef DEVEL
 		// 0xF* -  debug_mode related
 		CASE(0xF0, handleRunTests);
 		//   0xF1  reserved for INS_SET_HEADLESS_INTERACTION
-		CASE(0xF2, handleGetAttestKey);
-		CASE(0xF3, handleSetAttestKey);
 		#endif
 #	undef   CASE
 	default:

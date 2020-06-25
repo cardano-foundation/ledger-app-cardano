@@ -3,7 +3,6 @@
 #include "crc32.h"
 #include "test_utils.h"
 #include "utils.h"
-#include "stream.h"
 #include "hex_utils.h"
 
 

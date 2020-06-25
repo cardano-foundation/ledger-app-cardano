@@ -110,13 +110,6 @@ security_policy_t policyForShowDeriveAddress(shelleyAddressParams_t* addressPara
 	SHOW_IF(true);
 }
 
-// Attest UTxO and return it to the host
-security_policy_t policyForAttestUtxo()
-{
-	// We always allow attesting UTxO without user interaction (there is no security implication for doing this)
-	ALLOW_IF(true);
-}
-
 
 // Initiate transaction signing
 security_policy_t policyForSignTxInit()

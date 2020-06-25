@@ -27,7 +27,6 @@
 #include "ux.h"
 
 #include "getVersion.h"
-#include "attestKey.h"
 #include "handlers.h"
 #include "state.h"
 #include "errors.h"
@@ -237,7 +236,6 @@ __attribute__((section(".boot"))) int main(void)
 				BLE_power(1, "Nano X ADA");
 				#endif
 
-				attestKey_initialize();
 				io_state = IO_EXPECT_IO;
 				cardano_main();
 			}

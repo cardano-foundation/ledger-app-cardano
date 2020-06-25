@@ -77,8 +77,6 @@
 
 
 // *INDENT-OFF*
-// TODO(ppershing): maybe we can also join this with PARSER macros
-// in attestUtxo.c
 
 // Warning: Following macros are *NOT* brace-balanced by design!
 // The macros simplify writing resumable logic that needs to happen over

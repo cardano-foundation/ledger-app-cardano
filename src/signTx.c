@@ -5,7 +5,6 @@
 #include "cardano.h"
 #include "keyDerivation.h"
 #include "ux.h"
-#include "attestKey.h"
 #include "endian.h"
 #include "addressUtilsByron.h"
 #include "uiHelpers.h"
@@ -59,9 +58,6 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 	ctx->currentOutput = 0;
 	ctx->currentWitness = 0;
 
-	ctx->sumAmountInputs = 0;
-	ctx->sumAmountOutputs = 0;
-
 
 	struct {
 		uint8_t numInputs[4];
@@ -80,6 +76,10 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 	// Note(ppershing): current code design assumes at least one input
 	// and at least one output. If this has to be relaxed, stage switching
 	// logic needs to be re-visited
+	// Note(janmazak): we need both to be at least one
+	// an input is needed for certificate replay protection (enforced by full node)
+	// an output is needed to make sure the tx is signed for the correct network id
+	// and cannot be used on a different network by an adversary
 	VALIDATE(ctx->numInputs > 0, ERR_INVALID_DATA);
 	VALIDATE(ctx->numOutputs > 0, ERR_INVALID_DATA);
 
@@ -90,6 +90,8 @@ static void signTx_handleInitAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t wi
 	// tries to lessen potential pubkey privacy leaks because
 	// in WITNESS stage we do not verify whether the witness belongs
 	// to a given utxo.
+
+	// TODO fix to reflect reward withdrawals which have additional witnesses
 	VALIDATE(ctx->numWitnesses <= ctx->numInputs, ERR_INVALID_DATA);
 
 	security_policy_t policy = policyForSignTxInit();
@@ -141,13 +143,6 @@ static void signTx_handleInit_ui_runStep()
 }
 
 
-static void amountSum_incrementBy(uint64_t* sumPtr, uint64_t amount)
-{
-	ASSERT(*sumPtr <= LOVELACE_MAX_SUPPLY);
-	VALIDATE(*sumPtr + amount <= LOVELACE_MAX_SUPPLY, ERR_INVALID_DATA);
-	*sumPtr += amount;
-}
-
 static void signTx_handleInput_ui_runStep();
 
 enum {
@@ -168,32 +163,15 @@ static void signTx_handleInputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t w
 	if (inputType == SIGN_TX_INPUT_TYPE_UTXO) {
 
 		struct {
-			struct {
-				uint8_t txHash[32];
-				uint8_t index[4];
-				uint8_t amount[8];
-			} data;
-			uint8_t hmac[16];
+			uint8_t txHash[32];
+			uint8_t index[4];
 		}* wireUtxo = (void*) wireDataBuffer + 1;
 
 		VALIDATE(wireDataSize == 1 + SIZEOF(*wireUtxo), ERR_INVALID_DATA);
 
-		if (!attest_isCorrectHmac(
-		            ATTEST_PURPOSE_BIND_UTXO_AMOUNT,
-		            (uint8_t*) &wireUtxo->data, SIZEOF(wireUtxo->data),
-		            wireUtxo->hmac, SIZEOF(wireUtxo->hmac)
-		    )) {
-			THROW(ERR_INVALID_DATA);
-		}
-
-		uint8_t* txHashBuffer = wireUtxo->data.txHash;
-		size_t txHashSize = SIZEOF(wireUtxo->data.txHash);
-		uint32_t parsedIndex = u4be_read(wireUtxo->data.index);
-		uint64_t parsedAmount = u8be_read(wireUtxo->data.amount);
-
-		// Note(ppershing): Ledger doesn't have uint64_t printing, this is better than nothing
-		TRACE("Input amount %u.%06u", (unsigned) (parsedAmount / 1000000), (unsigned) (parsedAmount % 1000000));
-		amountSum_incrementBy(&ctx->sumAmountInputs, parsedAmount);
+		uint8_t* txHashBuffer = wireUtxo->txHash;
+		size_t txHashSize = SIZEOF(wireUtxo->txHash);
+		uint32_t parsedIndex = u4be_read(wireUtxo->index);
 
 		TRACE("Adding input to tx hash");
 		txHashBuilder_addUtxoInput(&ctx->txHashBuilder, txHashBuffer, txHashSize, parsedIndex);
@@ -259,7 +237,6 @@ static void signTx_handleOutputAPDU(uint8_t p2, uint8_t* wireDataBuffer, size_t 
 	uint8_t outputType = parse_u1be(&view);
 	TRACE("Amount: %u.%06u", (unsigned) (amount / 1000000), (unsigned)(amount % 1000000));
 
-	amountSum_incrementBy(&ctx->sumAmountOutputs, amount);
 	ctx->currentAmount = amount;
 
 	uint8_t rawAddressBuffer[200];
@@ -394,14 +371,11 @@ static void signTx_handleConfirmAPDU(uint8_t p2, uint8_t* dataBuffer MARK_UNUSED
 	VALIDATE(dataSize == 0, ERR_INVALID_DATA);
 
 	CHECK_STAGE(SIGN_STAGE_CONFIRM);
-	VALIDATE(ctx->sumAmountInputs > ctx->sumAmountOutputs, ERR_INVALID_DATA);
 
 	txHashBuilder_finalize(
 	        &ctx->txHashBuilder,
 	        ctx->txHash, SIZEOF(ctx->txHash)
 	);
-
-	ctx->currentAmount = ctx->sumAmountInputs - ctx->sumAmountOutputs;
 
 	security_policy_t policy = policyForSignTxFee(ctx->currentAmount);
 

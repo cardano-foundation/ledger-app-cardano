@@ -11,12 +11,10 @@
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "hash.h"
-#include "attestUtxo.h"
 #include "keyDerivation.h"
 #include "addressUtilsByron.h"
 #include "addressUtilsShelley.h"
 #include "crc32.h"
-#include "hmac.h"
 #include "txHashBuilder.h"
 #include "textUtils.h"
 
@@ -39,12 +37,10 @@ void handleRunTests(
 		run_cbor_test();
 		run_base58_test();
 		run_hash_test();
-		run_test_attestUtxo();
 		run_key_derivation_test();
 		run_addressUtilsByron_test();
 		run_addressUtilsShelley_test();
 		run_crc32_test();
-		run_hmac_test();
 		PRINTF("All tests done\n");
 	} END_ASSERT_NOEXCEPT;
 

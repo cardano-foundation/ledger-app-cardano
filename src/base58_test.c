@@ -6,7 +6,6 @@
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "base58.h"
-#include "stream.h"
 #include <string.h>
 #include "utils.h"
 

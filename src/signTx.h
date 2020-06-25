@@ -30,8 +30,6 @@ typedef struct {
 	uint16_t currentOutput;
 	uint16_t currentWitness;
 
-	uint64_t sumAmountInputs;
-	uint64_t sumAmountOutputs;
 	tx_hash_builder_t txHashBuilder;
 	uint8_t txHash[32];
 	uint8_t currentWitnessData[64];
