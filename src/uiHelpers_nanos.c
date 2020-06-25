@@ -12,7 +12,7 @@
 			12,0,0,0,0xFFFFFF,0, \
 			BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_LEFT,0 \
 		}, \
-		"HEADLESS ",0,0,0,NULL,NULL,NULL \
+		"HEADLESS " \
 	}
 #endif
 
@@ -161,13 +161,6 @@ static const bagl_element_t* ui_prepro_paginatedText(const bagl_element_t *eleme
 		// Always display all other elements.
 		return element;
 	}
-}
-
-static void uiCallback_init(ui_callback_t* cb, ui_callback_fn_t* confirm, ui_callback_fn_t* reject)
-{
-	cb->state = CALLBACK_NOT_RUN;
-	cb->confirm = confirm;
-	cb->reject = reject;
 }
 
 static const bagl_element_t ui_prompt[] = {
