@@ -104,65 +104,67 @@ static void prepareResponse()
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 }
 
-static void displayStakingInfo(ui_callback_fn_t callback)
-{
-	const uint8_t addressType = getAddressType(ctx->addressParams.header);
-	char stakingInfo[120];
 
-	switch (ctx->addressParams.stakingChoice) {
+static const char STAKING_HEADING_PATH[]    = "Staking key path: ";
+static const char STAKING_HEADING_HASH[]    = "Staking key hash: ";
+static const char STAKING_HEADING_POINTER[] = "Staking key pointer: ";
+static const char STAKING_HEADING_WARNING[] = "WARNING: ";
+
+static void ui_displayStakingInfo(shelleyAddressParams_t* addressParams, ui_callback_fn_t callback)
+{
+	const uint8_t addressType = getAddressType(addressParams->header);
+
+	const char *heading = NULL;
+	char stakingInfo[120];
+	os_memset(stakingInfo, 0, SIZEOF(stakingInfo));
+
+	switch (addressParams->stakingChoice) {
 
 	case NO_STAKING:
 		if (addressType == ENTERPRISE) {
-			ui_displayPaginatedText(
-			        "WARNING: ",
-			        "no staking rewards",
-			        callback
-			);
+			heading = STAKING_HEADING_WARNING;
+			strncpy(stakingInfo, "no staking rewards", SIZEOF(stakingInfo));
+
 		} else if (addressType == BYRON) {
-			ui_displayPaginatedText(
-			        "WARNING: ",
-			        "legacy Byron address (no staking rewards)",
-			        callback
-			);
+			heading = STAKING_HEADING_WARNING;
+			strncpy(stakingInfo, "legacy Byron address (no staking rewards)", SIZEOF(stakingInfo));
+
 		} else {
 			ASSERT(false);
 		}
 		break;
 
 	case STAKING_KEY_PATH:
+		heading = STAKING_HEADING_PATH;
 		// TODO avoid displaying anything if staking key belongs to spending account?
-		bip44_printToStr(&ctx->addressParams.stakingKeyPath, stakingInfo, SIZEOF(stakingInfo));
-		ui_displayPaginatedText(
-		        "Staking key path: ",
-		        stakingInfo,
-		        callback
-		);
+		bip44_printToStr(&addressParams->stakingKeyPath, stakingInfo, SIZEOF(stakingInfo));
 		break;
 
 	case STAKING_KEY_HASH:
+		heading = STAKING_HEADING_HASH;
 		encode_hex(
-		        ctx->addressParams.stakingKeyHash, SIZEOF(ctx->addressParams.stakingKeyHash),
+		        addressParams->stakingKeyHash, SIZEOF(addressParams->stakingKeyHash),
 		        stakingInfo, SIZEOF(stakingInfo)
-		);
-		ui_displayPaginatedText(
-		        "Staking key hash: ",
-		        stakingInfo,
-		        callback
 		);
 		break;
 
 	case BLOCKCHAIN_POINTER:
-		printBlockchainPointerToStr(ctx->addressParams.stakingKeyBlockchainPointer, stakingInfo, SIZEOF(stakingInfo));
-		ui_displayPaginatedText(
-		        "Staking key pointer: ",
-		        stakingInfo,
-		        callback
-		);
+		heading = STAKING_HEADING_POINTER;
+		printBlockchainPointerToStr(addressParams->stakingKeyBlockchainPointer, stakingInfo, SIZEOF(stakingInfo));
 		break;
 
 	default:
 		ASSERT(false);
 	}
+
+	ASSERT(heading != NULL);
+	ASSERT(strlen(stakingInfo) > 0);
+
+	ui_displayPaginatedText(
+			heading,
+			stakingInfo,
+			callback
+	);
 }
 
 
@@ -226,7 +228,7 @@ static void deriveAddress_return_ui_runStep()
 		);
 	}
 	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
-		displayStakingInfo(this_fn);
+		ui_displayStakingInfo(this_fn);
 	}
 	UI_STEP(RETURN_UI_STEP_CONFIRM) {
 		ui_displayPrompt(
@@ -311,10 +313,17 @@ static void deriveAddress_display_ui_runStep()
 		);
 	}
 	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
-		displayStakingInfo(this_fn);
+		ui_displayStakingInfo(this_fn);
 	}
 	UI_STEP(DISPLAY_UI_STEP_ADDRESS) {
-		char humanAddress[100]; // TODO is this enough?
+		// for Shelley, address is at most 1 + 28 + 28 = 57 bytes,
+		// encoded in bech32 as 11 + 8/5 * 57 = 103 chars
+
+		// TODO why was 100 enough for Byron?! the examples at
+		// https://docs.cardano.org/cardano-components/adrestia/doc/key-concepts/addresses-byron.html
+		// use even 114 chars
+		char humanAddress[120];
+
 		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
 		if (getAddressType(ctx->addressParams.header) == BYRON) {
 			base58_encode(
