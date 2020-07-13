@@ -180,7 +180,15 @@ static size_t view_appendVariableLengthUInt(write_view_t* view, uint64_t value)
 {
 	ASSERT((value & (1llu << 63)) == 0); // avoid accidental cast from negative signed value
 
-	uint8_t chunks[10]; // 7-bit chunks, at most 10 in uint64
+	if (value == 0) {
+		uint8_t byte = 0;
+		view_appendData(view, &byte, 1);
+		return 1;
+	}
+
+	ASSERT(value > 0);
+
+	uint8_t chunks[10]; // 7-bit chunks of the input bits, at most 10 in uint64
 	size_t outputSize = 0;
 	{
 		blockchainIndex_t bits = value;
@@ -190,19 +198,13 @@ static size_t view_appendVariableLengthUInt(write_view_t* view, uint64_t value)
 			bits >>= 7;
 		}
 	}
-	if (value > 0) {
-		ASSERT(outputSize > 0);
-		for (size_t i = outputSize - 1; i > 0; --i) {
-			// highest bit set to 1 since more bytes follow
-			uint8_t nextByte = chunks[i] | 0b10000000;
-			view_appendData(view, &nextByte, 1);
-		}
-	} else {
-		outputSize = 1;
-		chunks[0] = 0;
+	ASSERT(outputSize > 0);
+	for (size_t i = outputSize - 1; i > 0; --i) {
+		// highest bit set to 1 since more bytes follow
+		uint8_t nextByte = chunks[i] | 0b10000000;
+		view_appendData(view, &nextByte, 1);
 	}
-
-	// write remaining byte
+	// write the remaining byte, highest bit 0
 	view_appendData(view, &chunks[0], 1);
 
 	return outputSize;
