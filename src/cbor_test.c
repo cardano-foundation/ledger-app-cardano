@@ -132,7 +132,7 @@ static void test_cbor_serialization()
 	ITERATE(it, testVectors) {
 		PRINTF("test_cbor_serialization %s\n", PTR_PIC(it->hex));
 		uint8_t expected[50];
-		size_t expectedSize = parseHexString(PTR_PIC(it->hex), expected, SIZEOF(expected));
+		size_t expectedSize = decode_hex(PTR_PIC(it->hex), expected, SIZEOF(expected));
 		uint8_t buffer[50];
 		size_t bufferSize = cbor_writeToken(it->type, it->value, buffer, SIZEOF(buffer));
 		cbor_appendToken(& ctx->s, it->type, it->value);

@@ -33,9 +33,8 @@ void stream_appendFromHexString(stream_t* s, const char* inStr)
 	}
 }
 
-size_t parseHexString(const char* inStr, uint8_t* outBuffer, size_t outMaxSize)
+size_t decode_hex(const char* inStr, uint8_t* outBuffer, size_t outMaxSize)
 {
-
 	size_t len = strlen(inStr);
 	if (len % 2) THROW(ERR_UNEXPECTED_TOKEN);
 
@@ -53,8 +52,10 @@ size_t parseHexString(const char* inStr, uint8_t* outBuffer, size_t outMaxSize)
 	return outLen;
 }
 
+static const char HEX_ALPHABET[] = "0123456789abcdef";
+
 // returns length of the string written to out
-size_t encodeBytesToHex(const uint8_t* bytes, size_t bytesLength, char* out, size_t outMaxSize)
+size_t encode_hex(const uint8_t* bytes, size_t bytesLength, char* out, size_t outMaxSize)
 {
 	ASSERT(bytesLength < BUFFER_SIZE_PARANOIA);
 	ASSERT(outMaxSize < BUFFER_SIZE_PARANOIA);
@@ -63,8 +64,8 @@ size_t encodeBytesToHex(const uint8_t* bytes, size_t bytesLength, char* out, siz
 	size_t i = 0;
 	for (; i < bytesLength; i++) {
 		// TODO upper or lowercase?
-		out[2 * i]     = "0123456789abcdef"[bytes[i] >> 4];
-		out[2 * i + 1] = "0123456789abcdef"[bytes[i] & 0x0F];
+		out[2 * i]     = HEX_ALPHABET[bytes[i] >> 4];
+		out[2 * i + 1] = HEX_ALPHABET[bytes[i] & 0x0F];
 	}
 	ASSERT(i == bytesLength);
 	out[2 * i] = '\0';

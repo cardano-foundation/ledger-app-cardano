@@ -13,13 +13,13 @@ static void testcase_sha256(const char* keyHex, const char* inputHex, const char
 {
 	PRINTF("testcase_sha256 %s %s\n", keyHex, inputHex);
 	uint8_t keyBuffer[150];
-	size_t keySize = parseHexString(keyHex, keyBuffer, SIZEOF(keyBuffer));
+	size_t keySize = decode_hex(keyHex, keyBuffer, SIZEOF(keyBuffer));
 
 	uint8_t inputBuffer[150];
-	size_t inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
+	size_t inputSize = decode_hex(inputHex, inputBuffer, SIZEOF(inputBuffer));
 
 	uint8_t expectedBuffer[32];
-	size_t expectedSize = parseHexString(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
+	size_t expectedSize = decode_hex(expectedHex, expectedBuffer, SIZEOF(expectedBuffer));
 
 	uint8_t outputBuffer[32];
 	hmac_sha256(

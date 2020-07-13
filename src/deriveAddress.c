@@ -136,7 +136,7 @@ static void displayStakingInfo(ui_callback_fn_t callback)
 		break;
 
 	case STAKING_KEY_HASH:
-		encodeBytesToHex(
+		encode_hex(
 		        ctx->addressParams.stakingKeyHash, SIZEOF(ctx->addressParams.stakingKeyHash),
 		        stakingInfo, SIZEOF(stakingInfo)
 		);

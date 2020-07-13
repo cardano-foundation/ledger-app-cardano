@@ -63,7 +63,7 @@ void run_txHashBuilder_test()
 	txHashBuilder_enterInputs(&builder);
 	ITERATE(it, inputs) {
 		uint8_t tmp[32];
-		size_t tmpSize = parseHexString(PTR_PIC(it->txHashHex), tmp, SIZEOF(tmp));
+		size_t tmpSize = decode_hex(PTR_PIC(it->txHashHex), tmp, SIZEOF(tmp));
 		txHashBuilder_addUtxoInput(
 		        &builder,
 		        tmp, tmpSize,
@@ -74,7 +74,7 @@ void run_txHashBuilder_test()
 	txHashBuilder_enterOutputs(&builder);
 	ITERATE(it, outputs) {
 		uint8_t tmp[70];
-		size_t tmpSize = parseHexString(PTR_PIC(it->rawAddressHex), tmp, SIZEOF(tmp));
+		size_t tmpSize = decode_hex(PTR_PIC(it->rawAddressHex), tmp, SIZEOF(tmp));
 		txHashBuilder_addOutput(
 		        &builder,
 		        tmp, tmpSize,
@@ -85,7 +85,7 @@ void run_txHashBuilder_test()
 	txHashBuilder_enterMetadata(&builder);
 
 	uint8_t expected[32];
-	parseHexString(expectedHex, expected, SIZEOF(expected));
+	decode_hex(expectedHex, expected, SIZEOF(expected));
 
 	uint8_t result[32];
 	txHashBuilder_finalize(&builder, result, SIZEOF(result));
