@@ -322,10 +322,11 @@ static void deriveAddress_display_ui_runStep()
 			        humanAddress, SIZEOF(humanAddress)
 			);
 		} else { // all shelley addresses
-			bech32_encode("addr",
-			              ctx->address.buffer, ctx->address.size,
-			              humanAddress, SIZEOF(humanAddress)
-			             );
+			bech32_encode(
+			        "addr",
+			        ctx->address.buffer, ctx->address.size,
+			        humanAddress, SIZEOF(humanAddress)
+			);
 		}
 		ui_displayPaginatedText(
 		        "Address",

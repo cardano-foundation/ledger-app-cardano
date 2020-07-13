@@ -13,10 +13,11 @@ static inline bool spending_path_is_consistent_with_header(uint8_t header, const
 
 	// Byron derivation path is only valid for a Byron address
 	// the rest should be Shelley derivation scheme
-	if (addressType == BYRON)
+	if (addressType == BYRON) {
 		CHECK(bip44_hasByronPrefix(spendingPath));
-	if (addressType != BYRON)
+	} else {
 		CHECK(bip44_hasShelleyPrefix(spendingPath));
+	}
 
 	if (addressType == REWARD) {
 		CHECK(bip44_isValidStakingKeyPath(spendingPath));
