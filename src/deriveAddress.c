@@ -228,7 +228,7 @@ static void deriveAddress_return_ui_runStep()
 		);
 	}
 	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
-		ui_displayStakingInfo(this_fn);
+		ui_displayStakingInfo(&ctx->addressParams, this_fn);
 	}
 	UI_STEP(RETURN_UI_STEP_CONFIRM) {
 		ui_displayPrompt(
@@ -313,7 +313,7 @@ static void deriveAddress_display_ui_runStep()
 		);
 	}
 	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
-		ui_displayStakingInfo(this_fn);
+		ui_displayStakingInfo(&ctx->addressParams, this_fn);
 	}
 	UI_STEP(DISPLAY_UI_STEP_ADDRESS) {
 		// for Shelley, address is at most 1 + 28 + 28 = 57 bytes,
