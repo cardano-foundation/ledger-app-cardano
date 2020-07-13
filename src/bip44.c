@@ -131,32 +131,18 @@ bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec)
 }
 
 // Staking keys (one per account, should end with /2/0 after account)
-
 bool bip44_isValidStakingKeyPath(const bip44_path_t* pathSpec)
 {
 	if (!bip44_containsAddress(pathSpec)) return false;
 	if (bip44_containsMoreThanAddress(pathSpec)) return false;
 	if (!bip44_hasShelleyPrefix(pathSpec)) return false;
 
+	// TODO should check for reasonable account number?
+
 	const uint32_t chainType = bip44_getChainTypeValue(pathSpec);
 	if (chainType != CARDANO_CHAIN_STAKING_KEY) return false;
 
 	return (bip44_getAddressValue(pathSpec) == 0);
-}
-
-void bip44_stakingKeyPathFromAddresPath(const bip44_path_t* addressPath, bip44_path_t* stakingKeyPath)
-{
-	ASSERT(bip44_hasShelleyPrefix(addressPath));
-	ASSERT(bip44_containsAddress(addressPath) && !bip44_containsMoreThanAddress(addressPath));
-
-	stakingKeyPath->length = 5;
-	stakingKeyPath->path[BIP44_I_PURPOSE] = addressPath->path[BIP44_I_PURPOSE];
-	stakingKeyPath->path[BIP44_I_COIN_TYPE] = addressPath->path[BIP44_I_COIN_TYPE];
-	stakingKeyPath->path[BIP44_I_ACCOUNT] = addressPath->path[BIP44_I_ACCOUNT];
-	stakingKeyPath->path[BIP44_I_CHAIN] = CARDANO_CHAIN_STAKING_KEY;
-	stakingKeyPath->path[BIP44_I_ADDRESS] = 0;
-
-	ASSERT(bip44_isValidStakingKeyPath(stakingKeyPath));
 }
 
 // Futher

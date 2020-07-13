@@ -47,7 +47,6 @@ bool bip44_containsAddress(const bip44_path_t* pathSpec);
 bool bip44_hasReasonableAddress(const bip44_path_t* pathSpec);
 
 bool bip44_isValidStakingKeyPath(const bip44_path_t* pathSpec);
-void bip44_stakingKeyPathFromAddresPath(const bip44_path_t* addressPath, bip44_path_t* stakingKeyPath);
 
 bool bip44_containsMoreThanAddress(const bip44_path_t* pathSpec);
 
