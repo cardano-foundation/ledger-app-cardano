@@ -21,83 +21,6 @@ enum {
 	P1_DISPLAY = 0x02,
 };
 
-/*
- * The serialization format:
- *
- * address header 1B
- * spending public key derivation path (1B for length + [0-10] x 4B)
- * staking choice 1B
- *     if NO_STAKING:
- *         nothing more
- *     if STAKING_KEY_PATH:
- *         staking public key derivation path (1B for length + [0-10] x 4B)
- *     if STAKING_KEY_HASH:
- *         staking key hash 28B
- *     if BLOCKCHAIN_POINTER:
- *         certificate blockchain pointer 3 x 4B
- *
- * (see also enums in addressUtilsShelley.h)
- */
-static void parseAddressParams(uint8_t *wireDataBuffer, size_t wireDataSize)
-{
-	TRACE();
-	shelleyAddressParams_t* params = &ctx->addressParams;
-
-	read_view_t view = make_read_view(wireDataBuffer, wireDataBuffer + wireDataSize);
-
-	// address header
-	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
-	params->header = parse_u1be(&view);
-	TRACE("Address header: 0x%x\n", params->header);
-	VALIDATE(isSupportedAddressType(params->header), ERR_UNSUPPORTED_ADDRESS_TYPE);
-
-	// spending public key derivation path
-	view_skipBytes(&view, bip44_parseFromWire(&params->spendingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
-	TRACE();
-	bip44_PRINTF(&params->stakingKeyPath);
-
-	// staking choice
-	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
-	params->stakingChoice = parse_u1be(&view);
-	TRACE("Staking choice: 0x%x\n", params->stakingChoice);
-	VALIDATE(isValidStakingChoice(params->stakingChoice), ERR_INVALID_DATA);
-
-	// staking choice determines what to parse next
-	switch (params->stakingChoice) {
-
-	case NO_STAKING:
-		break;
-
-	case STAKING_KEY_PATH:
-		view_skipBytes(&view, bip44_parseFromWire(&params->stakingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
-		TRACE();
-		bip44_PRINTF(&params->stakingKeyPath);
-		break;
-
-	case STAKING_KEY_HASH:
-		VALIDATE(view_remainingSize(&view) == PUBLIC_KEY_HASH_LENGTH, ERR_INVALID_DATA);
-		ASSERT(SIZEOF(params->stakingKeyHash) == PUBLIC_KEY_HASH_LENGTH);
-		os_memcpy(params->stakingKeyHash, view.ptr, PUBLIC_KEY_HASH_LENGTH);
-		view_skipBytes(&view, PUBLIC_KEY_HASH_LENGTH);
-		TRACE();
-		break;
-
-	case BLOCKCHAIN_POINTER:
-		VALIDATE(view_remainingSize(&view) == 12, ERR_INVALID_DATA);
-		params->stakingKeyBlockchainPointer.blockIndex = parse_u4be(&view);
-		params->stakingKeyBlockchainPointer.txIndex = parse_u4be(&view);
-		params->stakingKeyBlockchainPointer.certificateIndex = parse_u4be(&view);
-		TRACE("Staking pointer: [%d, %d, %d]\n", params->stakingKeyBlockchainPointer.blockIndex,
-		      params->stakingKeyBlockchainPointer.txIndex, params->stakingKeyBlockchainPointer.certificateIndex);
-		break;
-
-	default:
-		ASSERT(false);
-	}
-
-	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
-}
-
 static void prepareResponse()
 {
 	ctx->address.size = deriveAddress_shelley(&ctx->addressParams, ctx->address.buffer, SIZEOF(ctx->address.buffer));
@@ -161,9 +84,9 @@ static void ui_displayStakingInfo(shelleyAddressParams_t* addressParams, ui_call
 	ASSERT(strlen(stakingInfo) > 0);
 
 	ui_displayPaginatedText(
-			heading,
-			stakingInfo,
-			callback
+	        heading,
+	        stakingInfo,
+	        callback
 	);
 }
 
@@ -323,20 +246,16 @@ static void deriveAddress_display_ui_runStep()
 		// https://docs.cardano.org/cardano-components/adrestia/doc/key-concepts/addresses-byron.html
 		// use even 114 chars
 		char humanAddress[120];
+		os_memset(humanAddress, 0, SIZEOF(humanAddress));
 
 		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
-		if (getAddressType(ctx->addressParams.header) == BYRON) {
-			base58_encode(
-			        ctx->address.buffer, ctx->address.size,
-			        humanAddress, SIZEOF(humanAddress)
-			);
-		} else { // all shelley addresses
-			bech32_encode(
-			        "addr",
-			        ctx->address.buffer, ctx->address.size,
-			        humanAddress, SIZEOF(humanAddress)
-			);
-		}
+		size_t length = humanReadableAddress(
+		                        ctx->address.buffer, ctx->address.size,
+		                        humanAddress, SIZEOF(humanAddress)
+		                );
+		ASSERT(length > 0);
+		ASSERT(strlen(humanAddress) == length);
+
 		ui_displayPaginatedText(
 		        "Address",
 		        humanAddress,
@@ -366,7 +285,7 @@ void deriveAddress_handleAPDU(
 
 	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
 
-	parseAddressParams(wireDataBuffer, wireDataSize);
+	parseAddressParams(wireDataBuffer, wireDataSize, &ctx->addressParams);
 
 	switch (p1) {
 #	define  CASE(P1, HANDLER_FN) case P1: {HANDLER_FN(); break;}

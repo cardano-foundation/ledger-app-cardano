@@ -4,6 +4,8 @@
 #include "addressUtilsByron.h"
 #include "addressUtilsShelley.h"
 #include "bip44.h"
+#include "base58.h"
+#include "bech32.h"
 
 address_type_t getAddressType(uint8_t addressHeader)
 {
@@ -78,10 +80,11 @@ bool isStakingInfoConsistentWithHeader(const shelleyAddressParams_t* addressPara
 #undef CONSISTENT_ONLY_WITH
 }
 
-static size_t view_appendPublicKeyHash(write_view_t* view, const bip44_path_t* spendingKeyPath)
+// TODO perhaps move elsewhere? bip44?
+size_t view_appendPublicKeyHash(write_view_t* view, const bip44_path_t* keyDerivationPath)
 {
 	extendedPublicKey_t extPubKey;
-	deriveExtendedPublicKey(spendingKeyPath, &extPubKey);
+	deriveExtendedPublicKey(keyDerivationPath, &extPubKey);
 
 	uint8_t hashedPubKey[PUBLIC_KEY_HASH_LENGTH];
 	blake2b_224_hash(
@@ -360,4 +363,93 @@ void printBlockchainPointerToStr(blockchainPointer_t blockchainPointer, char* ou
 	);
 
 	ASSERT(ptr < end);
+}
+
+size_t humanReadableAddress(const uint8_t* address, size_t addressSize, char* out, size_t outSize)
+{
+	ASSERT(addressSize > 0);
+	const uint8_t addressType = getAddressType(address[0]);
+	ASSERT(isSupportedAddressType(addressType));
+
+	switch (addressType) {
+	case BYRON:
+		return base58_encode(address, addressSize, out, outSize);
+
+	default: // shelley addresses
+		return bech32_encode("addr", address, addressSize, out, outSize);
+	}
+}
+
+/*
+ * Apart from parsing, we validate that the input contains nothing more than the params.
+ *
+ * The serialization format:
+ *
+ * address header 1B
+ * spending public key derivation path (1B for length + [0-10] x 4B)
+ * staking choice 1B
+ *     if NO_STAKING:
+ *         nothing more
+ *     if STAKING_KEY_PATH:
+ *         staking public key derivation path (1B for length + [0-10] x 4B)
+ *     if STAKING_KEY_HASH:
+ *         staking key hash 28B
+ *     if BLOCKCHAIN_POINTER:
+ *         certificate blockchain pointer 3 x 4B
+ *
+ * (see also enums in addressUtilsShelley.h)
+ */
+void parseAddressParams(const uint8_t *wireDataBuffer, size_t wireDataSize, shelleyAddressParams_t* params)
+{
+	TRACE();
+
+	read_view_t view = make_read_view(wireDataBuffer, wireDataBuffer + wireDataSize);
+
+	// address header
+	params->header = parse_u1be(&view);
+	TRACE("Address header: 0x%x\n", params->header);
+	VALIDATE(isSupportedAddressType(params->header), ERR_UNSUPPORTED_ADDRESS_TYPE);
+
+	// spending public key derivation path
+	view_skipBytes(&view, bip44_parseFromWire(&params->spendingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+	bip44_PRINTF(&params->stakingKeyPath);
+
+	// staking choice
+	params->stakingChoice = parse_u1be(&view);
+	TRACE("Staking choice: 0x%x\n", params->stakingChoice);
+	VALIDATE(isValidStakingChoice(params->stakingChoice), ERR_INVALID_DATA);
+
+	// staking choice determines what to parse next
+	switch (params->stakingChoice) {
+
+	case NO_STAKING:
+		break;
+
+	case STAKING_KEY_PATH:
+		view_skipBytes(&view, bip44_parseFromWire(&params->stakingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+		bip44_PRINTF(&params->stakingKeyPath);
+		break;
+
+	case STAKING_KEY_HASH:
+		VALIDATE(view_remainingSize(&view) == PUBLIC_KEY_HASH_LENGTH, ERR_INVALID_DATA);
+		ASSERT(SIZEOF(params->stakingKeyHash) == PUBLIC_KEY_HASH_LENGTH);
+		os_memcpy(params->stakingKeyHash, view.ptr, PUBLIC_KEY_HASH_LENGTH);
+		view_skipBytes(&view, PUBLIC_KEY_HASH_LENGTH);
+		// TODO printf / trace?
+		break;
+
+	case BLOCKCHAIN_POINTER:
+		VALIDATE(view_remainingSize(&view) == 12, ERR_INVALID_DATA);
+		params->stakingKeyBlockchainPointer.blockIndex = parse_u4be(&view);
+		params->stakingKeyBlockchainPointer.txIndex = parse_u4be(&view);
+		params->stakingKeyBlockchainPointer.certificateIndex = parse_u4be(&view);
+		TRACE("Staking pointer: [%d, %d, %d]\n", params->stakingKeyBlockchainPointer.blockIndex,
+		      params->stakingKeyBlockchainPointer.txIndex, params->stakingKeyBlockchainPointer.certificateIndex);
+		break;
+
+	default:
+		ASSERT(false);
+	}
+
+	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
 }

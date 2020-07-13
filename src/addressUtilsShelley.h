@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "bip44.h"
+#include "bufView.h"
 
 #define PUBLIC_KEY_HASH_LENGTH 28
 
@@ -54,10 +55,15 @@ typedef struct {
 
 bool isStakingInfoConsistentWithHeader(const shelleyAddressParams_t* addressParams);
 
+size_t view_appendPublicKeyHash(write_view_t* view, const bip44_path_t* keyDerivationPath);
 
 size_t deriveAddress_shelley(const shelleyAddressParams_t* addressParams, uint8_t* outBuffer, size_t outSize);
 
 void printBlockchainPointerToStr(blockchainPointer_t blockchainPointer, char* out, size_t outSize);
+
+size_t humanReadableAddress(const uint8_t* address, size_t addressSize, char* out, size_t outSize);
+
+void parseAddressParams(const uint8_t *wireDataBuffer, size_t wireDataSize, shelleyAddressParams_t* params);
 
 void run_addressUtilsShelley_test();
 
