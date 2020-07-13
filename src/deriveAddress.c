@@ -46,15 +46,18 @@ static void parseAddressParams(uint8_t *wireDataBuffer, size_t wireDataSize)
 	read_view_t view = make_read_view(wireDataBuffer, wireDataBuffer + wireDataSize);
 
 	// address header
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
 	params->header = parse_u1be(&view);
 	TRACE("Address header: 0x%x\n", params->header);
 	VALIDATE(isSupportedAddressType(params->header), ERR_UNSUPPORTED_ADDRESS_TYPE);
 
 	// spending public key derivation path
 	view_skipBytes(&view, bip44_parseFromWire(&params->spendingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+	TRACE();
 	bip44_PRINTF(&params->stakingKeyPath);
 
 	// staking choice
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
 	params->stakingChoice = parse_u1be(&view);
 	TRACE("Staking choice: 0x%x\n", params->stakingChoice);
 	VALIDATE(isValidStakingChoice(params->stakingChoice), ERR_INVALID_DATA);
@@ -67,6 +70,7 @@ static void parseAddressParams(uint8_t *wireDataBuffer, size_t wireDataSize)
 
 	case STAKING_KEY_PATH:
 		view_skipBytes(&view, bip44_parseFromWire(&params->stakingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+		TRACE();
 		bip44_PRINTF(&params->stakingKeyPath);
 		break;
 
@@ -75,7 +79,7 @@ static void parseAddressParams(uint8_t *wireDataBuffer, size_t wireDataSize)
 		ASSERT(SIZEOF(params->stakingKeyHash) == PUBLIC_KEY_HASH_LENGTH);
 		os_memcpy(params->stakingKeyHash, view.ptr, PUBLIC_KEY_HASH_LENGTH);
 		view_skipBytes(&view, PUBLIC_KEY_HASH_LENGTH);
-		// TODO printf / trace?
+		TRACE();
 		break;
 
 	case BLOCKCHAIN_POINTER:
