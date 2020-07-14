@@ -27,7 +27,7 @@ WORDS = "void come effort suffer camp survey warrior heavy shoot primary clutch 
 PIN = 6666
 
 APPNAME = "Cardano ADA"
-APPVERSION = "1.1.0"
+APPVERSION = "1.2.0"
 
 APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
@@ -51,14 +51,15 @@ DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += APPVERSION=\"$(APPVERSION)\"
 
 ## USB HID?
-DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
 ## USB U2F
 DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"ADA\" USB_SEGMENT_SIZE=64 
 
 ## WEBUSB
-WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
-DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+#WEBUSB_URL = https://www.ledger.com/pages/supported-crypto-assets
+#DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
 
 ## BLUETOOTH
 ifeq ($(TARGET_NAME),TARGET_NANOX)
@@ -69,16 +70,16 @@ endif
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
-	DEFINES += HAVE_GLO096
-	DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
-	DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
-	DEFINES += HAVE_UX_FLOW
+DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+DEFINES += HAVE_GLO096
+DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+DEFINES += HAVE_UX_FLOW
 else
-	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 endif
 
 DEFINES += RESET_ON_CRASH
@@ -102,22 +103,8 @@ endif
 ##############
 #  Compiler  #
 ##############
-ifneq ($(BOLOS_ENV),)
-$(info BOLOS_ENV=$(BOLOS_ENV))
-	CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-	GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
-else
-	$(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
-endif
-ifeq ($(CLANGPATH),)
-	$(info CLANGPATH is not set: clang will be used from PATH)
-endif
-ifeq ($(GCCPATH),)
-	$(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
-endif
-
 CC       := $(CLANGPATH)clang
-CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized
+CFLAGS   += -O3 -Os -Wall -Wextra -Wuninitialized -I/usr/include
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 LD       := $(GCCPATH)arm-none-eabi-gcc
@@ -143,6 +130,7 @@ ifeq ($(TARGET_NAME),TARGET_NANOX)
 	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 	SDK_SOURCE_PATH  += lib_ux
 endif
+
 ##############
 #   Build    #
 ##############

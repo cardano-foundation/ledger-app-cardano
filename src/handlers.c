@@ -5,6 +5,7 @@
 
 #include "handlers.h"
 #include "getVersion.h"
+#include "getSerial.h"
 #include "getExtendedPublicKey.h"
 #include "runTests.h"
 #include "attestUtxo.h"
@@ -23,6 +24,7 @@ handler_fn_t* lookupHandler(uint8_t ins)
 #	define  CASE(INS, HANDLER) case INS: return HANDLER;
 		// 0x0* -  app status calls
 		CASE(0x00, getVersion_handleAPDU);
+		CASE(0x01, getSerial_handleAPDU);
 
 		// 0x1* -  public-key/address related
 		CASE(0x10, getExtendedPublicKey_handleAPDU);

@@ -5,6 +5,7 @@
 #include "menu.h"
 #include "getVersion.h"
 #include "glyphs.h"
+#include "utils.h"
 
 // Here we define the main menu, using the Ledger-provided menu API. This menu
 // turns out to be fairly unimportant for Nano S apps, since commands are sent
@@ -41,6 +42,11 @@ static const ux_menu_entry_t menu_about[] = {
 	UX_MENU_END,
 };
 
+void os_sched_exit_ui_callback(unsigned int userid MARK_UNUSED)
+{
+	os_sched_exit(BOLOS_UX_OK);
+}
+
 const ux_menu_entry_t menu_main[] = {
 	#if defined(DEVEL) || defined(HEADLESS)
 	{NULL, NULL, 0, NULL, "Warning:", "DEVEL version!", 0, 0},
@@ -48,7 +54,7 @@ const ux_menu_entry_t menu_main[] = {
 	{NULL, NULL, 0, NULL, "Waiting for", "commands...", 0, 0},
 	#endif
 	{menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
-	{NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
+	{NULL, os_sched_exit_ui_callback, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
 	UX_MENU_END,
 };
 

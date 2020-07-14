@@ -35,12 +35,14 @@ void derivePrivateKey(
 			STATIC_ASSERT(CX_APILEVEL >= 5, "unsupported api level");
 			STATIC_ASSERT(SIZEOF(privateKey->d) == 64, "bad private key length");
 
+			io_seproxyhal_io_heartbeat();
 			os_perso_derive_node_bip32(
 			        CX_CURVE_Ed25519,
 			        pathSpec->path,
 			        pathSpec->length,
 			        privateKeyRawBuffer,
 			        chainCode->code);
+			io_seproxyhal_io_heartbeat();
 
 			// We should do cx_ecfp_init_private_key here, but it does not work in SDK < 1.5.4,
 			// should work with the new SDK
@@ -62,6 +64,7 @@ void deriveRawPublicKey(
 {
 	// We should do cx_ecfp_generate_pair here, but it does not work in SDK < 1.5.4,
 	// should work with the new SDK
+	io_seproxyhal_io_heartbeat();
 	cx_eddsa_get_public_key(
 	        // cx_eddsa has a special case struct for Cardano's private keys
 	        // but signature is standard
@@ -69,6 +72,7 @@ void deriveRawPublicKey(
 	        CX_SHA512,
 	        publicKey,
 	        NULL, 0, NULL, 0);
+	io_seproxyhal_io_heartbeat();
 }
 
 void extractRawPublicKey(
