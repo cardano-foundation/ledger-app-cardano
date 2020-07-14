@@ -36,8 +36,12 @@ enum {
 	// Pin screen
 	ERR_DEVICE_LOCKED              = 0x6E11,
 
+	// unsupported Shelley address type
+	ERR_UNSUPPORTED_ADDRESS_TYPE   = 0x6E12,
+
+
 	// end of errors which trigger automatic response
-	_ERR_AUTORESPOND_END           = 0x6E12,
+	_ERR_AUTORESPOND_END           = 0x6E13,
 
 	// Errors below SHOULD NOT be returned to the client
 	// Instead, leaking these to the main() scope
