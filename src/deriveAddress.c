@@ -6,7 +6,11 @@
 #include "securityPolicy.h"
 #include "uiHelpers.h"
 #include "addressUtilsByron.h"
+#include "addressUtilsShelley.h"
 #include "base58.h"
+#include "bech32.h"
+#include "bufView.h"
+#include "hex_utils.h"
 
 static uint16_t RESPONSE_READY_MAGIC = 11223;
 
@@ -17,33 +21,158 @@ enum {
 	P1_DISPLAY = 0x02,
 };
 
-void parseArguments(uint8_t p2, uint8_t *wireDataBuffer, size_t wireDataSize)
+/*
+ * The serialization format:
+ *
+ * address header 1B
+ * spending public key derivation path (1B for length + [0-10] x 4B)
+ * staking choice 1B
+ *     if NO_STAKING:
+ *         nothing more
+ *     if STAKING_KEY_PATH:
+ *         staking public key derivation path (1B for length + [0-10] x 4B)
+ *     if STAKING_KEY_HASH:
+ *         staking key hash 28B
+ *     if BLOCKCHAIN_POINTER:
+ *         certificate blockchain pointer 3 x 4B
+ *
+ * (see also enums in addressUtilsShelley.h)
+ */
+static void parseAddressParams(uint8_t *wireDataBuffer, size_t wireDataSize)
 {
 	TRACE();
-	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+	shelleyAddressParams_t* params = &ctx->addressParams;
 
-	// Parse wire
-	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, wireDataBuffer, wireDataSize);
+	read_view_t view = make_read_view(wireDataBuffer, wireDataBuffer + wireDataSize);
 
-	if (parsedSize != wireDataSize) {
-		THROW(ERR_INVALID_DATA);
+	// address header
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
+	params->header = parse_u1be(&view);
+	TRACE("Address header: 0x%x\n", params->header);
+	VALIDATE(isSupportedAddressType(params->header), ERR_UNSUPPORTED_ADDRESS_TYPE);
+
+	// spending public key derivation path
+	view_skipBytes(&view, bip44_parseFromWire(&params->spendingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+	TRACE();
+	bip44_PRINTF(&params->stakingKeyPath);
+
+	// staking choice
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
+	params->stakingChoice = parse_u1be(&view);
+	TRACE("Staking choice: 0x%x\n", params->stakingChoice);
+	VALIDATE(isValidStakingChoice(params->stakingChoice), ERR_INVALID_DATA);
+
+	// staking choice determines what to parse next
+	switch (params->stakingChoice) {
+
+	case NO_STAKING:
+		break;
+
+	case STAKING_KEY_PATH:
+		view_skipBytes(&view, bip44_parseFromWire(&params->stakingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
+		TRACE();
+		bip44_PRINTF(&params->stakingKeyPath);
+		break;
+
+	case STAKING_KEY_HASH:
+		VALIDATE(view_remainingSize(&view) == PUBLIC_KEY_HASH_LENGTH, ERR_INVALID_DATA);
+		ASSERT(SIZEOF(params->stakingKeyHash) == PUBLIC_KEY_HASH_LENGTH);
+		os_memcpy(params->stakingKeyHash, view.ptr, PUBLIC_KEY_HASH_LENGTH);
+		view_skipBytes(&view, PUBLIC_KEY_HASH_LENGTH);
+		TRACE();
+		break;
+
+	case BLOCKCHAIN_POINTER:
+		VALIDATE(view_remainingSize(&view) == 12, ERR_INVALID_DATA);
+		params->stakingKeyBlockchainPointer.blockIndex = parse_u4be(&view);
+		params->stakingKeyBlockchainPointer.txIndex = parse_u4be(&view);
+		params->stakingKeyBlockchainPointer.certificateIndex = parse_u4be(&view);
+		TRACE("Staking pointer: [%d, %d, %d]\n", params->stakingKeyBlockchainPointer.blockIndex,
+		      params->stakingKeyBlockchainPointer.txIndex, params->stakingKeyBlockchainPointer.certificateIndex);
+		break;
+
+	default:
+		ASSERT(false);
 	}
+
+	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
 }
 
-void prepareResponse()
+static void prepareResponse()
 {
-	ctx->address.size = deriveAddress(
-	                            &ctx->pathSpec,
-	                            ctx->address.buffer,
-	                            SIZEOF(ctx->address.buffer)
-	                    );
+	ctx->address.size = deriveAddress_shelley(&ctx->addressParams, ctx->address.buffer, SIZEOF(ctx->address.buffer));
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 }
+
+
+static const char STAKING_HEADING_PATH[]    = "Staking key path: ";
+static const char STAKING_HEADING_HASH[]    = "Staking key hash: ";
+static const char STAKING_HEADING_POINTER[] = "Staking key pointer: ";
+static const char STAKING_HEADING_WARNING[] = "WARNING: ";
+
+static void ui_displayStakingInfo(shelleyAddressParams_t* addressParams, ui_callback_fn_t callback)
+{
+	const uint8_t addressType = getAddressType(addressParams->header);
+
+	const char *heading = NULL;
+	char stakingInfo[120];
+	os_memset(stakingInfo, 0, SIZEOF(stakingInfo));
+
+	switch (addressParams->stakingChoice) {
+
+	case NO_STAKING:
+		if (addressType == ENTERPRISE) {
+			heading = STAKING_HEADING_WARNING;
+			strncpy(stakingInfo, "no staking rewards", SIZEOF(stakingInfo));
+
+		} else if (addressType == BYRON) {
+			heading = STAKING_HEADING_WARNING;
+			strncpy(stakingInfo, "legacy Byron address (no staking rewards)", SIZEOF(stakingInfo));
+
+		} else {
+			ASSERT(false);
+		}
+		break;
+
+	case STAKING_KEY_PATH:
+		heading = STAKING_HEADING_PATH;
+		// TODO avoid displaying anything if staking key belongs to spending account?
+		bip44_printToStr(&addressParams->stakingKeyPath, stakingInfo, SIZEOF(stakingInfo));
+		break;
+
+	case STAKING_KEY_HASH:
+		heading = STAKING_HEADING_HASH;
+		encode_hex(
+		        addressParams->stakingKeyHash, SIZEOF(addressParams->stakingKeyHash),
+		        stakingInfo, SIZEOF(stakingInfo)
+		);
+		break;
+
+	case BLOCKCHAIN_POINTER:
+		heading = STAKING_HEADING_POINTER;
+		printBlockchainPointerToStr(addressParams->stakingKeyBlockchainPointer, stakingInfo, SIZEOF(stakingInfo));
+		break;
+
+	default:
+		ASSERT(false);
+	}
+
+	ASSERT(heading != NULL);
+	ASSERT(strlen(stakingInfo) > 0);
+
+	ui_displayPaginatedText(
+			heading,
+			stakingInfo,
+			callback
+	);
+}
+
 
 static void deriveAddress_return_ui_runStep();
 enum {
 	RETURN_UI_STEP_WARNING = 100,
-	RETURN_UI_STEP_PATH,
+	RETURN_UI_STEP_SPENDING_PATH,
+	RETURN_UI_STEP_STAKING_INFO,
 	RETURN_UI_STEP_CONFIRM,
 	RETURN_UI_STEP_RESPOND,
 	RETURN_UI_STEP_INVALID,
@@ -52,7 +181,7 @@ enum {
 static void deriveAddress_handleReturn()
 {
 	// Check security policy
-	security_policy_t policy = policyForReturnDeriveAddress(&ctx->pathSpec);
+	security_policy_t policy = policyForReturnDeriveAddress(&ctx->addressParams);
 	ENSURE_NOT_DENIED(policy);
 
 	prepareResponse();
@@ -60,7 +189,7 @@ static void deriveAddress_handleReturn()
 	switch (policy) {
 #	define  CASE(POLICY, STEP) case POLICY: {ctx->ui_step=STEP; break;}
 		CASE(POLICY_PROMPT_WARN_UNUSUAL,    RETURN_UI_STEP_WARNING);
-		CASE(POLICY_PROMPT_BEFORE_RESPONSE, RETURN_UI_STEP_PATH);
+		CASE(POLICY_PROMPT_BEFORE_RESPONSE, RETURN_UI_STEP_SPENDING_PATH);
 		CASE(POLICY_ALLOW_WITHOUT_PROMPT,   RETURN_UI_STEP_RESPOND);
 #	undef   CASE
 	default:
@@ -84,20 +213,22 @@ static void deriveAddress_return_ui_runStep()
 		        this_fn
 		);
 	}
-	UI_STEP(RETURN_UI_STEP_PATH) {
-		// Response
+	UI_STEP(RETURN_UI_STEP_SPENDING_PATH) {
 		char pathStr[100];
 		{
 			const char* prefix = "Path: ";
 			size_t len = strlen(prefix);
 			os_memcpy(pathStr, prefix, len); // Note: not null-terminated yet
-			bip44_printToStr(&ctx->pathSpec, pathStr + len, SIZEOF(pathStr) - len);
+			bip44_printToStr(&ctx->addressParams.spendingKeyPath, pathStr + len, SIZEOF(pathStr) - len);
 		}
 		ui_displayPaginatedText(
 		        "Export address",
 		        pathStr,
 		        this_fn
 		);
+	}
+	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
+		ui_displayStakingInfo(&ctx->addressParams, this_fn);
 	}
 	UI_STEP(RETURN_UI_STEP_CONFIRM) {
 		ui_displayPrompt(
@@ -124,6 +255,7 @@ enum {
 	DISPLAY_UI_STEP_WARNING = 200,
 	DISPLAY_UI_STEP_INSTRUCTIONS,
 	DISPLAY_UI_STEP_PATH,
+	DISPLAY_UI_STEP_STAKING_INFO,
 	DISPLAY_UI_STEP_ADDRESS,
 	DISPLAY_UI_STEP_RESPOND,
 	DISPLAY_UI_STEP_INVALID
@@ -133,7 +265,7 @@ enum {
 static void deriveAddress_handleDisplay()
 {
 	// Check security policy
-	security_policy_t policy = policyForShowDeriveAddress(&ctx->pathSpec);
+	security_policy_t policy = policyForShowDeriveAddress(&ctx->addressParams);
 	ENSURE_NOT_DENIED(policy);
 
 	prepareResponse();
@@ -173,26 +305,41 @@ static void deriveAddress_display_ui_runStep()
 	UI_STEP(DISPLAY_UI_STEP_PATH) {
 		// Response
 		char pathStr[100];
-		bip44_printToStr(&ctx->pathSpec, pathStr, SIZEOF(pathStr));
+		bip44_printToStr(&ctx->addressParams.spendingKeyPath, pathStr, SIZEOF(pathStr));
 		ui_displayPaginatedText(
 		        "Address path",
 		        pathStr,
 		        this_fn
 		);
 	}
+	UI_STEP(RETURN_UI_STEP_STAKING_INFO) {
+		ui_displayStakingInfo(&ctx->addressParams, this_fn);
+	}
 	UI_STEP(DISPLAY_UI_STEP_ADDRESS) {
-		char address58Str[100];
-		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
+		// for Shelley, address is at most 1 + 28 + 28 = 57 bytes,
+		// encoded in bech32 as 11 + 8/5 * 57 = 103 chars
 
-		encode_base58(
-		        ctx->address.buffer,
-		        ctx->address.size,
-		        address58Str,
-		        SIZEOF(address58Str)
-		);
+		// TODO why was 100 enough for Byron?! the examples at
+		// https://docs.cardano.org/cardano-components/adrestia/doc/key-concepts/addresses-byron.html
+		// use even 114 chars
+		char humanAddress[120];
+
+		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
+		if (getAddressType(ctx->addressParams.header) == BYRON) {
+			base58_encode(
+			        ctx->address.buffer, ctx->address.size,
+			        humanAddress, SIZEOF(humanAddress)
+			);
+		} else { // all shelley addresses
+			bech32_encode(
+			        "addr",
+			        ctx->address.buffer, ctx->address.size,
+			        humanAddress, SIZEOF(humanAddress)
+			);
+		}
 		ui_displayPaginatedText(
 		        "Address",
-		        address58Str,
+		        humanAddress,
 		        this_fn
 		);
 	}
@@ -217,7 +364,9 @@ void deriveAddress_handleAPDU(
 	}
 	ctx->responseReadyMagic = 0;
 
-	parseArguments(p2, wireDataBuffer, wireDataSize);
+	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+
+	parseAddressParams(wireDataBuffer, wireDataSize);
 
 	switch (p1) {
 #	define  CASE(P1, HANDLER_FN) case P1: {HANDLER_FN(); break;}

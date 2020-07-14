@@ -1,8 +1,46 @@
+#include "addressUtilsShelley.h"
 #include "securityPolicy.h"
+#include "bip44.h"
 
 // Warning: following helper macros assume "pathSpec" in the context
 
 // Helper macros
+
+static inline bool spending_path_is_consistent_with_header(uint8_t header, const bip44_path_t* spendingPath)
+{
+#define CHECK(cond) if (!(cond)) return false
+	const uint8_t addressType = getAddressType(header);
+
+	// Byron derivation path is only valid for a Byron address
+	// the rest should be Shelley derivation scheme
+	if (addressType == BYRON) {
+		CHECK(bip44_hasByronPrefix(spendingPath));
+	} else {
+		CHECK(bip44_hasShelleyPrefix(spendingPath));
+	}
+
+	if (addressType == REWARD) {
+		CHECK(bip44_isValidStakingKeyPath(spendingPath));
+	} else {
+		// for all non-reward addresses, we check chain type and length
+		CHECK(bip44_hasValidChainTypeForAddress(spendingPath));
+		CHECK(bip44_containsAddress(spendingPath));
+	}
+
+	return true;
+#undef CHECK
+}
+
+static inline bool staking_info_is_valid(const shelleyAddressParams_t* addressParams)
+{
+#define CHECK(cond) if (!(cond)) return false
+	CHECK(isStakingInfoConsistentWithHeader(addressParams));
+	if (addressParams->stakingChoice == STAKING_KEY_PATH) {
+		CHECK(bip44_isValidStakingKeyPath(&addressParams->stakingKeyPath));
+	}
+	return true;
+#undef CHECK
+}
 
 static inline bool has_cardano_prefix_and_any_account(const bip44_path_t* pathSpec)
 {
@@ -47,25 +85,27 @@ security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec)
 }
 
 // Derive address and return it to the host
-security_policy_t policyForReturnDeriveAddress(const bip44_path_t* pathSpec)
+security_policy_t policyForReturnDeriveAddress(shelleyAddressParams_t* addressParams)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
-	DENY_IF(!has_valid_change_and_any_address(pathSpec));
+	DENY_IF(!has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
+	DENY_IF(!spending_path_is_consistent_with_header(addressParams->header, &addressParams->spendingKeyPath));
+	DENY_IF(!staking_info_is_valid(addressParams));
 
-	WARN_IF(!has_reasonable_account_and_address(pathSpec))
-	WARN_IF(is_too_deep(pathSpec));
+	WARN_IF(!has_reasonable_account_and_address(&addressParams->spendingKeyPath));
+	WARN_IF(is_too_deep(&addressParams->spendingKeyPath)); // TODO change to DENY?
 
 	PROMPT_IF(true);
 }
 
 // Derive address and show it to the user
-security_policy_t policyForShowDeriveAddress(const bip44_path_t* pathSpec)
+security_policy_t policyForShowDeriveAddress(shelleyAddressParams_t* addressParams)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
-	DENY_IF(!has_valid_change_and_any_address(pathSpec));
+	DENY_IF(!has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
+	DENY_IF(!spending_path_is_consistent_with_header(addressParams->header, &addressParams->spendingKeyPath));
+	DENY_IF(!staking_info_is_valid(addressParams));
 
-	WARN_IF(!has_reasonable_account_and_address(pathSpec))
-	WARN_IF(is_too_deep(pathSpec));
+	WARN_IF(!has_reasonable_account_and_address(&addressParams->spendingKeyPath));
+	WARN_IF(is_too_deep(&addressParams->spendingKeyPath)); // TODO change to DENY?
 
 	SHOW_IF(true);
 }

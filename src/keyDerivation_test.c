@@ -31,7 +31,7 @@ void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* exp
 	PRINTF("\n");
 
 	uint8_t expected[64];
-	size_t expectedSize = parseHexString(expectedHex, expected, SIZEOF(expected));
+	size_t expectedSize = decode_hex(expectedHex, expected, SIZEOF(expected));
 
 	chain_code_t chainCode;
 	privateKey_t privateKey;
@@ -115,7 +115,7 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	extractRawPublicKey(&publicKey, publicKeyRaw, SIZEOF(publicKeyRaw));
 
 	uint8_t expectedBuffer[32];
-	parseHexString(expected, expectedBuffer, SIZEOF(expectedBuffer));
+	decode_hex(expected, expectedBuffer, SIZEOF(expectedBuffer));
 	EXPECT_EQ_BYTES(expectedBuffer, publicKeyRaw, SIZEOF(expectedBuffer));
 }
 
@@ -170,7 +170,7 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
 	uint8_t expectedBuffer[32];
-	parseHexString(expectedHex, expectedBuffer, 32);
+	decode_hex(expectedHex, expectedBuffer, 32);
 	EXPECT_EQ_BYTES(expectedBuffer, chainCode.code, 32);
 }
 

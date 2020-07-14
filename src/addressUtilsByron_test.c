@@ -36,7 +36,7 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	size_t addressSize = deriveAddress(&pathSpec, address, SIZEOF(address));
 
 	uint8_t expected[100];
-	size_t expectedSize = parseHexString(expectedHex, expected, SIZEOF(expected));
+	size_t expectedSize = decode_hex(expectedHex, expected, SIZEOF(expected));
 
 	EXPECT_EQ(addressSize, expectedSize);
 	EXPECT_EQ_BYTES(address, expected, expectedSize);

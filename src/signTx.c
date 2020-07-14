@@ -349,7 +349,7 @@ static void signTx_handleOutput_ui_runStep()
 	UI_STEP(HANDLE_OUTPUT_STEP_DISPLAY_ADDRESS) {
 		char address58Str[200];
 		ASSERT(ctx->currentAddress.size <= SIZEOF(ctx->currentAddress.buffer));
-		encode_base58(
+		base58_encode(
 		        ctx->currentAddress.buffer,
 		        ctx->currentAddress.size,
 		        address58Str,
@@ -391,7 +391,7 @@ static void signTx_handleConfirmAPDU(uint8_t p2, uint8_t* dataBuffer MARK_UNUSED
 {
 	TRACE();
 	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
-	VALIDATE(dataSize == 0, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(dataSize == 0, ERR_INVALID_DATA);
 
 	CHECK_STAGE(SIGN_STAGE_CONFIRM);
 	VALIDATE(ctx->sumAmountInputs > ctx->sumAmountOutputs, ERR_INVALID_DATA);

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-size_t encode_base58(
+size_t base58_encode(
         const uint8_t *inBuffer, size_t inSize,
         char *outStr, size_t outMaxSize
 );

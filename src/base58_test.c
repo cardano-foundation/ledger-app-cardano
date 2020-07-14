@@ -15,9 +15,9 @@ void testcase_base58(const char* inputHex, const char* expectedStr)
 	PRINTF("testcase_base58: %s\n", inputHex);
 	uint8_t inputBuffer[100];
 	size_t inputSize;
-	inputSize = parseHexString(inputHex, inputBuffer, SIZEOF(inputBuffer));
+	inputSize = decode_hex(inputHex, inputBuffer, SIZEOF(inputBuffer));
 	char outputStr[100];
-	size_t outputLen = encode_base58(inputBuffer, inputSize, outputStr, SIZEOF(outputStr));
+	size_t outputLen = base58_encode(inputBuffer, inputSize, outputStr, SIZEOF(outputStr));
 	EXPECT_EQ(outputLen, strlen(expectedStr));
 	EXPECT_EQ_BYTES(expectedStr, outputStr, outputLen + 1);
 }

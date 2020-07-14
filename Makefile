@@ -158,5 +158,5 @@ listvariants:
 ##############
 
 # better to run this manually to avoid irrelevant dependencies processing
-style:
-	astyle --options=.astylerc src/*
+format:
+	astyle --options=.astylerc src/*.h src/*.c

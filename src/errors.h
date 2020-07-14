@@ -18,12 +18,11 @@ enum {
 	ERR_UNKNOWN_INS                = 0x6E03,
 	// TODO(should we move this to ERR_INVALID_STATE) ?
 	ERR_STILL_IN_CALL              = 0x6E04,
-	// TODO(ppershing): move payload to ERR_INVALID_DATA
-	// P1, P2 or payload is invalid
+	// P1 or P2 is invalid
 	ERR_INVALID_REQUEST_PARAMETERS = 0x6E05,
 	// Request is not valid in the context of previous calls
 	ERR_INVALID_STATE              = 0x6E06,
-	// Some part of request data is invalid
+	// Some part of request data is invalid (includes not enough data)
 	ERR_INVALID_DATA               = 0x6E07,
 	// BIP44 path is rejected
 	ERR_INVALID_BIP44_PATH         = 0x6E08,

@@ -177,7 +177,7 @@ static void cardano_main(void)
 					flags = IO_ASYNCH_REPLY;
 					ui_idle();
 				} else {
-					PRINTF("Uncaught error %x", (unsigned) e);
+					PRINTF("Uncaught error 0x%x", (unsigned) e);
 					#ifdef RESET_ON_CRASH
 					// Reset device
 					io_seproxyhal_se_reset();

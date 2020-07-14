@@ -11,7 +11,7 @@ void testcase_bech32(const char* hrp, const char* inputBytesHex, const char* exp
 	PRINTF("testcase_bech32: %s %s\n", hrp, inputBytesHex);
 	uint8_t inputBuffer[100];
 	size_t inputSize;
-	inputSize = parseHexString(inputBytesHex, inputBuffer, SIZEOF(inputBuffer));
+	inputSize = decode_hex(inputBytesHex, inputBuffer, SIZEOF(inputBuffer));
 	char outputStr[300];
 	size_t outputLen = bech32_encode(hrp, inputBuffer, inputSize, outputStr, 300);
 	EXPECT_EQ(outputLen, strlen(expectedStr));
