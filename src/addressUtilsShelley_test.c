@@ -58,12 +58,20 @@ static void testcase_deriveAddressShelley(
 
 	PRINTF("testcase_deriveAddressShelley 0x%02x ", header);
 	bip44_PRINTF(&params.spendingKeyPath);
-	if (params.stakingKeyPath.length > 0)
+	if (params.stakingKeyPath.length > 0) {
 		bip44_PRINTF(&params.stakingKeyPath);
-	if (stakingKeyHashHex != NULL)
+	}
+	if (stakingKeyHashHex != NULL) {
 		PRINTF(" %s", stakingKeyHashHex);
-	if (stakingKeyBlockchainPointer != NULL)
-		PRINTF(" (%d, %d, %d)", stakingKeyBlockchainPointer->blockIndex, stakingKeyBlockchainPointer->txIndex, stakingKeyBlockchainPointer->certificateIndex);
+	}
+	if (stakingKeyBlockchainPointer != NULL) {
+		PRINTF(
+			" (%u, %u, %u)",
+			(unsigned) stakingKeyBlockchainPointer->blockIndex,
+			(unsigned) stakingKeyBlockchainPointer->txIndex,
+			(unsigned) stakingKeyBlockchainPointer->certificateIndex
+		);
+	}
 	PRINTF("\n");
 
 	uint8_t address[MAX_ADDRESS_LENGTH];

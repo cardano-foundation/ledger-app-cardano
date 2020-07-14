@@ -351,11 +351,12 @@ void printBlockchainPointerToStr(blockchainPointer_t blockchainPointer, char* ou
 		ptr += res; \
 	}
 
-	STATIC_ASSERT(sizeof(int) >= sizeof(blockchainIndex_t), "bad blockchainIndex_t size");
-	WRITE("(%d, %d, %d)",
-		(int) blockchainPointer.blockIndex,
-		(int) blockchainPointer.txIndex,
-		(int) blockchainPointer.certificateIndex
+	STATIC_ASSERT(sizeof(unsigned) >= sizeof(blockchainIndex_t), "bad blockchainIndex_t size");
+	WRITE(
+	        "(%u, %u, %u)",
+	        (unsigned) blockchainPointer.blockIndex,
+	        (unsigned) blockchainPointer.txIndex,
+	        (unsigned) blockchainPointer.certificateIndex
 	);
 
 	ASSERT(ptr < end);

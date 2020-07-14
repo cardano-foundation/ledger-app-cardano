@@ -7,6 +7,7 @@
 #define PUBLIC_KEY_HASH_LENGTH 28
 
 // supported address types
+// (we avoid all types related to scripts)
 typedef enum {
 	BASE       = 0b0000,  // 0x0
 	POINTER    = 0b0100,  // 0x4
