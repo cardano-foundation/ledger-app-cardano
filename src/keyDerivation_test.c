@@ -1,13 +1,15 @@
 #ifdef DEVEL
 
+#include <string.h>
+
 #include "keyDerivation.h"
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "stream.h"
-#include <string.h>
 #include "errors.h"
 #include "utils.h"
 #include "state.h"
+#include "bip44.h"
 
 
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
@@ -19,21 +21,13 @@ static void pathSpec_init(bip44_path_t* pathSpec, uint32_t* pathArray, uint32_t 
 	os_memmove(pathSpec->path, pathArray, pathLength * 4);
 }
 
-static void PRINTF_bip44(const bip44_path_t* pathSpec)
-{
-	char tmp[100];
-	SIZEOF(*pathSpec);
-	bip44_printToStr(pathSpec, tmp, SIZEOF(tmp));
-	PRINTF("%s", tmp);
-};
-
 void testcase_derivePrivateKey(uint32_t* path, uint32_t pathLen, const char* expectedHex)
 {
 	PRINTF("testcase_derivePrivateKey ");
 
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
-	PRINTF_bip44(&pathSpec);
+	bip44_PRINTF(&pathSpec);
 	PRINTF("\n");
 
 	uint8_t expected[64];
@@ -109,7 +103,7 @@ void testcase_derivePublicKey(uint32_t* path, uint32_t pathLen, const char* expe
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
-	PRINTF_bip44(&pathSpec);
+	bip44_PRINTF(&pathSpec);
 	PRINTF("\n");
 
 	chain_code_t chainCode;
@@ -171,7 +165,7 @@ void testcase_deriveChainCode(uint32_t* path, uint32_t pathLen, const char* expe
 	bip44_path_t pathSpec;
 	pathSpec_init(&pathSpec, path, pathLen);
 
-	PRINTF_bip44(&pathSpec);
+	bip44_PRINTF(&pathSpec);
 	PRINTF("\n");
 
 	derivePrivateKey(&pathSpec, &chainCode, &privateKey);
