@@ -37,8 +37,8 @@ void getExtendedPublicKey_handleAPDU(
 	ctx->responseReadyMagic = 0;
 
 	// Validate params
-	VALIDATE(p1 == 0, ERR_INVALID_REQUEST_PARAMETERS);
-	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(p1 == P1_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	VALIDATE(p2 == P2_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
 
 	// Parse wire
 	size_t parsedSize = bip44_parseFromWire(&ctx->pathSpec, wireDataBuffer, wireDataSize);
