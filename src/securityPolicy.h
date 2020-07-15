@@ -20,11 +20,34 @@ security_policy_t policyForReturnDeriveAddress(addressParams_t* addressParams);
 
 
 security_policy_t policyForSignTxInit();
+
 security_policy_t policyForSignTxInput();
-security_policy_t policyForSignTxOutputAddress(const uint8_t* rawAddressBuffer, size_t rawAddressSize);
-security_policy_t policyForSignTxOutputPath(const bip44_path_t* pathSpec);
-security_policy_t policyForSignTxFee(uint64_t fee );
+
+security_policy_t policyForSignTxOutputAddress(
+        const uint8_t* rawAddressBuffer, size_t rawAddressSize,
+        const uint8_t networkId, const uint32_t protocolMagic
+);
+security_policy_t policyForSignTxOutputAddressParams(
+        const addressParams_t* params,
+        const uint8_t networkId, const uint32_t protocolMagic
+);
+
+security_policy_t policyForSignTxFee(uint64_t fee);
+
+security_policy_t policyForSignTxTtl(uint32_t ttl);
+
+security_policy_t policyForSignTxCertificate(
+        const uint8_t certificateType, const bip44_path_t* stakingKeyPath
+);
+
+security_policy_t policyForSignTxWithdrawal();
+
+security_policy_t policyForSignTxMetadata();
+
 security_policy_t policyForSignTxWitness(const bip44_path_t* pathSpec);
+
+security_policy_t policyForSignTxConfirm();
+
 
 static inline void ENSURE_NOT_DENIED(security_policy_t policy)
 {

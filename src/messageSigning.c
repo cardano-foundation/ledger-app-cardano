@@ -1,3 +1,4 @@
+#include "cardano.h"
 #include "hex_utils.h"
 #include "utils.h"
 #include "assert.h"
@@ -38,23 +39,18 @@ void getTxWitness(bip44_path_t* pathSpec,
                   const uint8_t* txHashBuffer, size_t txHashSize,
                   uint8_t* outBuffer, size_t outSize)
 {
-
 	chain_code_t chainCode;
 	privateKey_t privateKey;
 
+	// TODO is this the proper key for both Byron and Shelley?
 	TRACE("derive private key");
 	derivePrivateKey(pathSpec, &chainCode, &privateKey);
 
-	ASSERT(txHashSize == 32);
-	uint8_t messageBuffer[8 + txHashSize];
-	// Warning(ppershing): following magic contains some CBOR parts so
-	// be careful if txHashSize changes
-	u8be_write(messageBuffer, 0x011a2d964a095820);
-	os_memmove(messageBuffer + 8, txHashBuffer, txHashSize);
+	ASSERT(txHashSize == TX_HASH_LENGTH);
 
 	signRawMessage(
 	        &privateKey,
-	        messageBuffer, SIZEOF(messageBuffer),
+	        txHashBuffer, txHashSize,
 	        outBuffer, outSize
 	);
 }

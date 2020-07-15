@@ -120,37 +120,88 @@ security_policy_t policyForSignTxInit()
 // For each transaction UTxO input
 security_policy_t policyForSignTxInput()
 {
-	// No need to check (attested) tx inputs
+	// No need to check tx inputs
 	ALLOW_IF(true);
 }
 
 // For each transaction (third-party) address output
 security_policy_t policyForSignTxOutputAddress(
-        const uint8_t* rawAddressBuffer MARK_UNUSED, size_t rawAddressSize MARK_UNUSED
+        const uint8_t* rawAddressBuffer, size_t rawAddressSize,
+        const uint8_t networkId, const uint32_t protocolMagic
 )
 {
+	ASSERT(rawAddressSize >= 1);
+	address_type_t addressType = getAddressType(rawAddressBuffer[0]);
+	if (addressType == BYRON) {
+		// TODO deny if protocol magic is inconsistent with the given one
+	} else { // shelley
+		uint8_t addressNetworkId = getNetworkId(rawAddressBuffer[0]);
+		DENY_IF(addressNetworkId != networkId);
+		DENY_IF(addressType == REWARD);
+	}
+
 	// We always show third-party output addresses
 	SHOW_IF(true);
 }
 
-// For each transaction change (Ledger's) output
-security_policy_t policyForSignTxOutputPath(const bip44_path_t* pathSpec)
+// For each output given by derivation path
+security_policy_t policyForSignTxOutputAddressParams(
+        const addressParams_t* params,
+        const uint8_t networkId, const uint32_t protocolMagic
+)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
-	DENY_IF(!has_valid_change_and_any_address(pathSpec));
+	DENY_UNLESS(has_cardano_prefix_and_any_account(&params->spendingKeyPath));
+	DENY_UNLESS(has_valid_change_and_any_address(&params->spendingKeyPath));
 
-	// Note: we use SHOW_IF to display these unusual requests
-	// as 3-rd party addresses
-	SHOW_IF(!has_reasonable_account_and_address(pathSpec))
-	SHOW_IF(is_too_deep(pathSpec));
+	if (params->type == BYRON) {
+		// TODO deny if protocol magic is inconsistent with the given one
+	} else { // shelley
+		DENY_IF(params->networkId != networkId);
+	}
+
+	// TODO should we allow these at all?
+	SHOW_IF(!has_reasonable_account_and_address(&params->spendingKeyPath))
+	SHOW_IF(is_too_deep(&params->spendingKeyPath));
+
+	// TODO checks for staking info?
+	// TODO determine what is a change output (not to be shown)?
 
 	ALLOW_IF(true);
 }
 
 // For transaction fee
-security_policy_t policyForSignTxFee(uint64_t fee MARK_UNUSED)
+security_policy_t policyForSignTxFee(uint64_t fee)
 {
+	// always show the fee
 	SHOW_IF(true);
+}
+
+// For transaction TTL
+security_policy_t policyForSignTxTtl(uint32_t ttl)
+{
+	// ttl == 0 will not be accepted by a node
+	// and indicates a likely bug somewhere
+	DENY_IF(ttl == 0);
+
+	// might be changed to POLICY_ALLOW_WITHOUT_PROMPT
+	// to avoid bothering the user with TTL
+	// (Daedalus does not show this)
+	SHOW_IF(true);
+}
+
+// For each certificate
+security_policy_t policyForSignTxCertificate(const uint8_t certificateType, const bip44_path_t* stakingKeyPath)
+{
+	DENY_UNLESS(bip44_isValidStakingKeyPath(stakingKeyPath));
+
+	PROMPT_IF(true);
+}
+
+// For each withdrawal
+security_policy_t policyForSignTxWithdrawal()
+{
+	// No need to check withdrawals
+	ALLOW_IF(true);
 }
 
 // For each transaction witness
@@ -158,12 +209,22 @@ security_policy_t policyForSignTxFee(uint64_t fee MARK_UNUSED)
 // and Ledger *does not* check whether they correspond to previously declared UTxOs
 security_policy_t policyForSignTxWitness(const bip44_path_t* pathSpec)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
-	DENY_IF(!has_valid_change_and_any_address(pathSpec));
+	DENY_UNLESS(has_cardano_prefix_and_any_account(pathSpec));
+	DENY_UNLESS(has_valid_change_and_any_address(pathSpec));
 
 	// Perhaps we can relax these?
 	WARN_IF(!has_reasonable_account_and_address(pathSpec))
 	WARN_IF(is_too_deep(pathSpec));
 
 	ALLOW_IF(true);
+}
+
+security_policy_t policyForSignTxMetadata()
+{
+	SHOW_IF(true);
+}
+
+security_policy_t policyForSignTxConfirm()
+{
+	PROMPT_IF(true);
 }
