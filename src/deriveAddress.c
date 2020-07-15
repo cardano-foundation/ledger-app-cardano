@@ -23,7 +23,7 @@ enum {
 
 static void prepareResponse()
 {
-	ctx->address.size = deriveAddress_shelley(&ctx->addressParams, ctx->address.buffer, SIZEOF(ctx->address.buffer));
+	ctx->address.size = deriveAddress(&ctx->addressParams, ctx->address.buffer, SIZEOF(ctx->address.buffer));
 	ctx->responseReadyMagic = RESPONSE_READY_MAGIC;
 }
 
@@ -33,10 +33,8 @@ static const char STAKING_HEADING_HASH[]    = "Staking key hash: ";
 static const char STAKING_HEADING_POINTER[] = "Staking key pointer: ";
 static const char STAKING_HEADING_WARNING[] = "WARNING: ";
 
-static void ui_displayStakingInfo(shelleyAddressParams_t* addressParams, ui_callback_fn_t callback)
+static void ui_displayStakingInfo(addressParams_t* addressParams, ui_callback_fn_t callback)
 {
-	const uint8_t addressType = getAddressType(addressParams->header);
-
 	const char *heading = NULL;
 	char stakingInfo[120];
 	os_memset(stakingInfo, 0, SIZEOF(stakingInfo));
@@ -44,11 +42,11 @@ static void ui_displayStakingInfo(shelleyAddressParams_t* addressParams, ui_call
 	switch (addressParams->stakingChoice) {
 
 	case NO_STAKING:
-		if (addressType == ENTERPRISE) {
+		if (addressParams->type == ENTERPRISE) {
 			heading = STAKING_HEADING_WARNING;
 			strncpy(stakingInfo, "no staking rewards", SIZEOF(stakingInfo));
 
-		} else if (addressType == BYRON) {
+		} else if (addressParams->type == BYRON) {
 			heading = STAKING_HEADING_WARNING;
 			strncpy(stakingInfo, "legacy Byron address (no staking rewards)", SIZEOF(stakingInfo));
 
@@ -239,13 +237,7 @@ static void deriveAddress_display_ui_runStep()
 		ui_displayStakingInfo(&ctx->addressParams, this_fn);
 	}
 	UI_STEP(DISPLAY_UI_STEP_ADDRESS) {
-		// for Shelley, address is at most 1 + 28 + 28 = 57 bytes,
-		// encoded in bech32 as 11 + 8/5 * 57 = 103 chars
-
-		// TODO why was 100 enough for Byron?! the examples at
-		// https://docs.cardano.org/cardano-components/adrestia/doc/key-concepts/addresses-byron.html
-		// use even 114 chars
-		char humanAddress[120];
+		char humanAddress[MAX_HUMAN_ADDRESS_LENGTH];
 		os_memset(humanAddress, 0, SIZEOF(humanAddress));
 
 		ASSERT(ctx->address.size <= SIZEOF(ctx->address.buffer));
@@ -277,13 +269,14 @@ void deriveAddress_handleAPDU(
         bool isNewCall
 )
 {
+	VALIDATE(p2 == P2_UNUSED, ERR_INVALID_REQUEST_PARAMETERS);
+	TRACE_BUFFER(wireDataBuffer, wireDataSize);
+
 	// Initialize state
 	if (isNewCall) {
 		os_memset(ctx, 0, SIZEOF(*ctx));
 	}
 	ctx->responseReadyMagic = 0;
-
-	VALIDATE(p2 == 0, ERR_INVALID_REQUEST_PARAMETERS);
 
 	parseAddressParams(wireDataBuffer, wireDataSize, &ctx->addressParams);
 

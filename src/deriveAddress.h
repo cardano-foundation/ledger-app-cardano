@@ -10,9 +10,9 @@ handler_fn_t deriveAddress_handleAPDU;
 
 typedef struct {
 	uint16_t responseReadyMagic;
-	shelleyAddressParams_t addressParams;
+	addressParams_t addressParams;
 	struct {
-		uint8_t buffer[128]; // TODO is this enough?
+		uint8_t buffer[MAX_ADDRESS_SIZE];
 		size_t size;
 	} address;
 	int ui_step;

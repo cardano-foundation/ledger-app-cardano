@@ -4,8 +4,9 @@
 #include "common.h"
 #include "bip44.h"
 
-size_t deriveAddress(
+size_t deriveAddress_byron(
         const bip44_path_t* pathSpec,
+        uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
 );
 
