@@ -3,7 +3,11 @@
 
 #include "common.h"
 
-size_t str_formatAdaAmount(char* out, size_t outSize, uint64_t amount);
+size_t str_formatAdaAmount(uint64_t amount, char* out, size_t outSize);
+
+size_t str_formatTtl(uint64_t ttl, char* out, size_t outSize);
+
+size_t str_formatMetadata(const uint8_t* metadataHash, size_t metadataHashSize, char* out, size_t outSize);
 
 void run_textUtils_test();
 

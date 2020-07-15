@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include "textUtils.h"
+#include "hex_utils.h"
 
 #define WRITE_CHAR(ptr, end, c) \
 	{ \
@@ -7,10 +10,7 @@
 		ptr++; \
 	}
 
-size_t str_formatAdaAmount(
-        char* out, size_t outSize,
-        uint64_t amount
-)
+size_t str_formatAdaAmount(uint64_t amount, char* out, size_t outSize)
 {
 	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 
@@ -53,4 +53,25 @@ size_t str_formatAdaAmount(
 	out[rawSize] = 0;
 
 	return rawSize;
+}
+
+size_t str_formatTtl(uint64_t ttl, char* out, size_t outSize)
+{
+	const uint64_t SLOTS_IN_EPOCH = 21600;
+	uint64_t epoch = ttl / SLOTS_IN_EPOCH;
+	uint64_t slotInEpoch = ttl % SLOTS_IN_EPOCH;
+
+	ASSERT(sizeof(int) >= sizeof(uint32_t));
+
+	if (epoch < 1000000)  // thousands of years
+		snprintf(out, outSize, "epoch %d / slot %d", (int) epoch, (int) slotInEpoch);
+	else
+		snprintf(out, outSize, "epoch more than 1000000");
+
+	return strlen(out);
+}
+
+size_t str_formatMetadata(const uint8_t* metadataHash, size_t metadataHashSize, char* out, size_t outSize)
+{
+	return encode_hex(metadataHash, metadataHashSize, out, outSize);
 }
