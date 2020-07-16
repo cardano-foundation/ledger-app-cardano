@@ -63,6 +63,7 @@ void addressRootFromExtPubKey(
 
 size_t cborEncodePubkeyAddressInner(
         const uint8_t* addressRoot, size_t addressRootSize,
+		uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
         /* potential attributes */
 )
@@ -79,7 +80,15 @@ size_t cborEncodePubkeyAddressInner(
 			view_appendData(&out, addressRoot, addressRootSize);
 		} {
 			// 2
-			view_appendToken(&out, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
+			if (protocolMagic == MAINNET_PROTOCOL_MAGIC) {
+				view_appendToken(&out, CBOR_TYPE_MAP, 0 /* addrAttributes is empty */);
+			} else {
+				/* addrAddtributes contains protocol magic for non-mainnet Byron addresses */
+				view_appendToken(&out, CBOR_TYPE_MAP, 1);
+				view_appendToken(&out, CBOR_TYPE_UNSIGNED, 2); /* map key for protocol magic */
+				view_appendToken(&out, CBOR_TYPE_BYTES, cbor_getValueEncodingSize(protocolMagic));
+				view_appendToken(&out, CBOR_TYPE_UNSIGNED, protocolMagic);
+			}
 		} {
 			// 3
 			view_appendToken(&out, CBOR_TYPE_UNSIGNED, CARDANO_ADDRESS_TYPE_PUBKEY);
@@ -182,7 +191,7 @@ size_t unboxChecksummedAddress(
 
 
 size_t deriveRawAddress(
-        const bip44_path_t* pathSpec,
+        const bip44_path_t* pathSpec, uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
 )
 {
@@ -200,21 +209,19 @@ size_t deriveRawAddress(
 
 	return cborEncodePubkeyAddressInner(
 	               addressRoot, SIZEOF(addressRoot),
+				   protocolMagic,
 	               outBuffer, outSize
 	       );
 }
 
 size_t deriveAddress_byron(
-        const bip44_path_t* pathSpec,
-        uint32_t protocolMagic,
+        const bip44_path_t* pathSpec, uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
 )
 {
-	// TODO incorporate protocolMagic
-
 	uint8_t rawAddressBuffer[40];
 	size_t rawAddressSize = deriveRawAddress(
-	                                pathSpec,
+	                                pathSpec, protocolMagic,
 	                                rawAddressBuffer, SIZEOF(rawAddressBuffer)
 	                        );
 

@@ -68,6 +68,8 @@ bool cbor_peekNextIsIndefEnd(stream_t* stream);
 
 cbor_token_t cbor_parseToken(const uint8_t* buf, size_t size);
 
+size_t cbor_getValueEncodingSize(uint64_t value);
+
 
 void run_cbor_test();
 #endif

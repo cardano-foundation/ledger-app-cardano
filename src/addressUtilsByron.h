@@ -23,6 +23,7 @@ size_t cborPackRawAddressWithChecksum(
 
 size_t deriveRawAddress(
         const bip44_path_t* pathSpec,
+        uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
 );
 

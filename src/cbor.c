@@ -206,3 +206,18 @@ bool cbor_peekNextIsIndefEnd(stream_t* stream)
 	cbor_token_t head = cbor_peekToken(stream);
 	return (head.type == CBOR_TYPE_INDEF_END);
 }
+
+size_t cbor_getValueEncodingSize(uint64_t value)
+{
+	if (value < VALUE_MIN_W1) {
+		return 1;
+	} else if (value < VALUE_MIN_W2) {
+		return 1 + 1;
+	} else if (value < VALUE_MIN_W4) {
+		return 1 + 2;
+	} else if (value < VALUE_MIN_W8) {
+		return 1 + 4;
+	} else {
+		return 1 + 8;
+	}
+}
