@@ -4,6 +4,7 @@
 #include "test_utils.h"
 #include "hex_utils.h"
 #include "bip44.h"
+#include "cardano.h"
 
 // Note(ppershing): Used in macros to have (parenthesis) => {initializer} magic
 #define UNWRAP(...) __VA_ARGS__
@@ -17,8 +18,9 @@ static void pathSpec_init(bip44_path_t* pathSpec, const uint32_t* pathArray, uin
 	os_memmove(pathSpec->path, pathArray, pathLength * 4);
 }
 
+// networkIdOrProtocolMagic is used as networkId for Shelley addresses and as protocol magic for Byron addresses
 static void testcase_deriveAddressShelley(
-        uint8_t type, uint8_t networkId, const uint32_t* spendingPathArray, size_t spendingPathLen,
+        uint8_t type, uint32_t networkIdOrProtocolMagic, const uint32_t* spendingPathArray, size_t spendingPathLen,
         uint8_t stakingChoice, const uint32_t* stakingPathArray, size_t stakingPathLen,
         const char* stakingKeyHashHex, const blockchainPointer_t* stakingKeyBlockchainPointer,
         const char* expectedHex)
@@ -41,11 +43,22 @@ static void testcase_deriveAddressShelley(
 		ASSERT(false);
 	}
 
-	addressParams_t params = {
-		.type = type,
-		.networkId = networkId,
-		.stakingChoice = stakingChoice
-	}; // the rest is initialized to zero
+	addressParams_t params;
+
+	if (type == BYRON) {
+		params = (addressParams_t){
+			.type = type,
+			.protocolMagic = networkIdOrProtocolMagic,
+			.stakingChoice = stakingChoice
+		};
+	} else {
+		params = (addressParams_t){
+			.type = type,
+			.networkId = (uint8_t) networkIdOrProtocolMagic,
+			.stakingChoice = stakingChoice
+		};
+	}  // the rest of params is initialized to zero
+
 	pathSpec_init(&params.spendingKeyPath, spendingPathArray, spendingPathLen);
 	if (stakingPathLen > 0)
 		pathSpec_init(&params.stakingKeyPath, stakingPathArray, stakingPathLen);
@@ -57,7 +70,11 @@ static void testcase_deriveAddressShelley(
 		params.stakingKeyBlockchainPointer = *stakingKeyBlockchainPointer;
 	}
 
-	PRINTF("testcase_deriveAddressShelley 0x%02x ", constructShelleyAddressHeader(type, networkId));
+	if (type == BYRON) {
+		PRINTF("testcase_deriveAddressShelley (byron) %d ", networkIdOrProtocolMagic);
+	} else {
+		PRINTF("testcase_deriveAddressShelley 0x%02x ", constructShelleyAddressHeader(type, (uint8_t) networkIdOrProtocolMagic));
+	}
 	bip44_PRINTF(&params.spendingKeyPath);
 	if (params.stakingKeyPath.length > 0) {
 		bip44_PRINTF(&params.stakingKeyPath);
@@ -91,15 +108,15 @@ static void testAddressDerivation()
 {
 #define NO_STAKING_KEY_PATH ()
 #define NO_STAKING_KEY_HASH NULL
-#define TESTCASE(type_, networkId_, spendingPath_, stakingChoice_, stakingPath_, stakingKeyHashHex_, expected_) \
+#define TESTCASE(type_, networkIdOrProtocolMagic_, spendingPath_, stakingChoice_, stakingPath_, stakingKeyHashHex_, expected_) \
 	{ \
 		uint32_t spendingPath[] = { UNWRAP spendingPath_ }; \
 		uint32_t stakingPath[] = { UNWRAP stakingPath_ }; \
-		testcase_deriveAddressShelley(type_, networkId_, spendingPath, ARRAY_LEN(spendingPath), stakingChoice_, stakingPath, ARRAY_LEN(stakingPath), stakingKeyHashHex_, NULL, expected_); \
+		testcase_deriveAddressShelley(type_, networkIdOrProtocolMagic_, spendingPath, ARRAY_LEN(spendingPath), stakingChoice_, stakingPath, ARRAY_LEN(stakingPath), stakingKeyHashHex_, NULL, expected_); \
 	}
 
 	TESTCASE(
-	        BYRON, 0x00, (HD + 44, HD + 1815, HD + 0, 1, 55),
+	        BYRON, MAINNET_PROTOCOL_MAGIC, (HD + 44, HD + 1815, HD + 0, 1, 55),
 	        NO_STAKING, NO_STAKING_KEY_PATH, NO_STAKING_KEY_HASH,
 	        "82d818582183581cb1999ee43d0c3a9fe4a1a5d959ae87069781fbb7f60ff7e8e0136881a0001ad7ed912f"
 	);

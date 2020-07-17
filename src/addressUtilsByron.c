@@ -15,13 +15,16 @@ enum {
 	*/
 };
 
+static const size_t ADDRESS_ROOT_SIZE = 28;
+static const size_t PROTOCOL_MAGIC_ADDRESS_ATTRIBUTE_KEY = 2;
+
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
         uint8_t* outBuffer, size_t outSize
 )
 {
 	ASSERT(SIZEOF(*extPubKey) == EXTENDED_PUBKEY_SIZE);
-	ASSERT(outSize == 28);
+	ASSERT(outSize == ADDRESS_ROOT_SIZE);
 
 	uint8_t cborBuffer[64 + 10];
 	write_view_t cbor = make_write_view(cborBuffer, END(cborBuffer));
@@ -68,7 +71,7 @@ size_t cborEncodePubkeyAddressInner(
         /* potential attributes */
 )
 {
-	ASSERT(addressRootSize == 28); // should be result of blake2b_224
+	ASSERT(addressRootSize == ADDRESS_ROOT_SIZE); // should be result of blake2b_224
 	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
 
 	write_view_t out = make_write_view(outBuffer, outBuffer + outSize);
@@ -143,52 +146,105 @@ static void parseTokenWithValue(read_view_t* view, uint8_t type, uint64_t value)
 	VALIDATE(token.value  == value, ERR_INVALID_DATA);
 }
 
+static size_t parseBytesSizeToken(read_view_t* view) {
+	uint64_t parsedSize = parseToken(view, CBOR_TYPE_BYTES);
+	// Validate that we can down-cast
+	STATIC_ASSERT(sizeof(parsedSize) >= sizeof(SIZE_MAX), "bad int size");
+	VALIDATE(parsedSize < (uint64_t) SIZE_MAX, ERR_INVALID_DATA);
 
-size_t unboxChecksummedAddress(
-        const uint8_t* addressBuffer, size_t addressSize,
-        uint8_t* outputBuffer, size_t outputSize
+	size_t parsedSizeDowncasted = (size_t) parsedSize;
+
+	// overflow pre-check
+	VALIDATE(parsedSizeDowncasted < BUFFER_SIZE_PARANOIA, ERR_INVALID_DATA);
+	VALIDATE(parsedSizeDowncasted <= view_remainingSize(view), ERR_INVALID_DATA);
+
+	return parsedSizeDowncasted;
+}
+
+
+uint32_t extractProtocolMagic(
+        const uint8_t* addressBuffer, size_t addressSize
 )
 {
 	ASSERT(addressSize < BUFFER_SIZE_PARANOIA);
-	ASSERT(outputSize < BUFFER_SIZE_PARANOIA);
 
 	read_view_t view = make_read_view(addressBuffer, addressBuffer + addressSize);
 
-	uint32_t checksum;
-	size_t unboxedSize;
-	const uint8_t* unboxedBuffer;
+	uint32_t protocolMagic;
+	bool protocolMagicFound = false;
 	{
+		const uint8_t* unboxedAddressPayload;
+		size_t unboxedAddressPayloadSize;
 		parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 2);
 		{
 			parseTokenWithValue(&view, CBOR_TYPE_TAG, CBOR_TAG_EMBEDDED_CBOR_BYTE_STRING);
 
-			uint64_t tmp = parseToken(&view, CBOR_TYPE_BYTES);
-			// Validate that we can down-cast
-			STATIC_ASSERT(sizeof(tmp) >= sizeof(SIZE_MAX), "bad int size");
-			VALIDATE(tmp < (uint64_t) SIZE_MAX, ERR_INVALID_DATA);
+			unboxedAddressPayloadSize = parseBytesSizeToken(&view);
+			unboxedAddressPayload = view.ptr;
 
-			unboxedSize = (size_t) tmp;
+			parseTokenWithValue(&view, CBOR_TYPE_ARRAY, 3);
+			{
+				// address root (public key hash, 224 bits)
+				{
+					size_t parsedAddressRootSize = parseBytesSizeToken(&view);
+					VALIDATE(parsedAddressRootSize == ADDRESS_ROOT_SIZE, ERR_INVALID_DATA);
+					view_skipBytes(&view, ADDRESS_ROOT_SIZE);
+				}
 
-			unboxedBuffer = view.ptr;
-			// overflow pre-check, should not be needed with view_skipBytes but ...
-			VALIDATE(unboxedSize < BUFFER_SIZE_PARANOIA, ERR_INVALID_DATA);
-			VALIDATE(unboxedSize <= view_remainingSize(&view), ERR_INVALID_DATA);
+				// address attributes map { key (unsigned): value(bytes) }
+				{
+					/*
+					* max attributes threshold based on https://github.com/input-output-hk/cardano-wallet/wiki/About-Address-Format---Byron
+					* address atrributes are technically "open for extension" but unlikely to happen
+					* as byron addresses are already being deprecated
+					*/
+					const size_t MAX_ADDRESS_ATTRIBUTES_MAP_LENGTH = 3;
+					uint64_t addressAttributesMapLength = parseToken(&view, CBOR_TYPE_MAP);
+					VALIDATE(addressAttributesMapLength <= (uint64_t) MAX_ADDRESS_ATTRIBUTES_MAP_LENGTH, ERR_INVALID_DATA);
 
-			view_skipBytes(&view, unboxedSize);
+					for (size_t i = 0; i < addressAttributesMapLength; i++) {
+						uint64_t currentKey = parseToken(&view, CBOR_TYPE_UNSIGNED);
+						size_t currentValueSize = parseBytesSizeToken(&view);
+
+						if (currentKey == (uint64_t) PROTOCOL_MAGIC_ADDRESS_ATTRIBUTE_KEY) {
+							VALIDATE(protocolMagicFound == false, ERR_INVALID_DATA);
+							
+							uint64_t parsedProtocolMagic = parseToken(&view, CBOR_TYPE_UNSIGNED);
+							// ensure the parsed protocol magic can be downcasted to uint32 (its size by spec)
+							STATIC_ASSERT(sizeof(parsedProtocolMagic) >= sizeof(SIZE_MAX), "bad int size");
+							VALIDATE(parsedProtocolMagic < (uint32_t) SIZE_MAX, ERR_INVALID_DATA);
+							
+							protocolMagic = (uint32_t) parsedProtocolMagic;
+							// mainnet addresses are not supposed to explicitly contain protocol magic at all
+							VALIDATE(protocolMagic != MAINNET_PROTOCOL_MAGIC, ERR_INVALID_DATA);
+
+							protocolMagicFound = true;
+						} else {
+							view_skipBytes(&view, currentValueSize);
+						}
+					}
+				}
+
+				// address type (unsigned)
+				{
+					parseToken(&view, CBOR_TYPE_UNSIGNED);
+				}
+			}
 		}
 		{
-			checksum = crc32(unboxedBuffer, unboxedSize);
+			uint32_t checksum = crc32(unboxedAddressPayload, unboxedAddressPayloadSize);
 			parseTokenWithValue(&view, CBOR_TYPE_UNSIGNED, checksum);
 		}
 	}
 
 	VALIDATE(view_remainingSize(&view) == 0, ERR_INVALID_DATA);
 
-	VALIDATE(unboxedSize <= outputSize, ERR_DATA_TOO_LARGE);
-	os_memmove(outputBuffer, unboxedBuffer, unboxedSize);
-	return unboxedSize;
-}
+	if (!protocolMagicFound) {
+		protocolMagic = MAINNET_PROTOCOL_MAGIC;
+	}
 
+	return protocolMagic;
+}
 
 size_t deriveRawAddress(
         const bip44_path_t* pathSpec, uint32_t protocolMagic,

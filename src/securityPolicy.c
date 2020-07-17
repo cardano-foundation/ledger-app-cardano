@@ -1,4 +1,5 @@
 #include "addressUtilsShelley.h"
+#include "addressUtilsByron.h"
 #include "securityPolicy.h"
 #include "bip44.h"
 
@@ -133,7 +134,8 @@ security_policy_t policyForSignTxOutputAddress(
 	ASSERT(rawAddressSize >= 1);
 	address_type_t addressType = getAddressType(rawAddressBuffer[0]);
 	if (addressType == BYRON) {
-		// TODO deny if protocol magic is inconsistent with the given one
+		uint32_t addressProtocolMagic = extractProtocolMagic(rawAddressBuffer, rawAddressSize);
+		DENY_IF(addressProtocolMagic != protocolMagic);
 	} else { // shelley
 		uint8_t addressNetworkId = getNetworkId(rawAddressBuffer[0]);
 		DENY_IF(addressNetworkId != networkId);
