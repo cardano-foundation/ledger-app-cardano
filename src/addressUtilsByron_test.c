@@ -22,7 +22,7 @@ static void PRINTF_bip44(const bip44_path_t* pathSpec)
 	PRINTF("%s", tmp);
 };
 
-void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expectedHex)
+void testcase_deriveAddress_byron(uint32_t* path, uint32_t pathLen, uint32_t protocolMagic, const char* expectedHex)
 {
 	PRINTF("testcase_deriveAddressByron ");
 
@@ -33,7 +33,7 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 	PRINTF("\n");
 
 	uint8_t address[128];
-	size_t addressSize = deriveAddress(&pathSpec, address, SIZEOF(address));
+	size_t addressSize = deriveAddress_byron(&pathSpec, protocolMagic, address, SIZEOF(address));
 
 	uint8_t expected[100];
 	size_t expectedSize = decode_hex(expectedHex, expected, SIZEOF(expected));
@@ -44,24 +44,25 @@ void testcase_deriveAddress(uint32_t* path, uint32_t pathLen, const char* expect
 
 void testAddressDerivation()
 {
-#define TESTCASE(path_, expected_) \
+#define TESTCASE(path_, protocolMagic_, expected_) \
 	{ \
 		uint32_t path[] = { UNWRAP path_ }; \
-		testcase_deriveAddress(path, ARRAY_LEN(path), expected_); \
+		testcase_deriveAddress_byron(path, ARRAY_LEN(path), protocolMagic_, expected_); \
 	}
 
+	// TODO use meaningful protocol magic
 
 	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, 55),
+	        (HD + 44, HD + 1815, HD + 0, 1, 55), 0x0,
 	        "82d818582183581cb1999ee43d0c3a9fe4a1a5d959ae87069781fbb7f60ff7e8e0136881a0001ad7ed912f"
 	);
 	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26),
+	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26), 0x0,
 	        "82d818582183581c49dda88b3cdb4c9b60ad35699b2795a446120a2460f1a789c6152ce2a0001a00fb5684"
 	);
 
 	TESTCASE(
-	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26, 32, 54, 61),
+	        (HD + 44, HD + 1815, HD + 0, 1, HD + 26, 32, 54, 61), 0x0,
 	        "82d818582183581c7cef664fa8b2c01a9d31cfdc2b0ed662b3b16be4f5bcaf783c24c729a0001aab55fb52"
 	);
 #undef TESTCASE

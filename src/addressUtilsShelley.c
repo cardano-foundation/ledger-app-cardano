@@ -13,9 +13,8 @@ address_type_t getAddressType(uint8_t addressHeader)
 	return (addressHeader & ADDRESS_TYPE_MASK) >> 4;
 }
 
-bool isSupportedAddressType(uint8_t addressHeader)
+bool isSupportedAddressType(uint8_t addressType)
 {
-	const address_type_t addressType = getAddressType(addressHeader);
 	switch (addressType) {
 	case BASE:
 	case POINTER:
@@ -28,10 +27,25 @@ bool isSupportedAddressType(uint8_t addressHeader)
 	}
 }
 
+uint8_t constructShelleyAddressHeader(address_type_t type, uint8_t networkId)
+{
+	ASSERT(isSupportedAddressType(type));
+	ASSERT(isValidNetworkId(networkId));
+
+	return (type << 4) | networkId;
+}
+
 uint8_t getNetworkId(uint8_t addressHeader)
 {
+	ASSERT(isSupportedAddressType(getAddressType(addressHeader)));
+
 	const uint8_t NETWORK_ID_MASK = 0b00001111;
 	return addressHeader & NETWORK_ID_MASK;
+}
+
+bool isValidNetworkId(uint8_t networkId)
+{
+	return networkId <= 0b1111;
 }
 
 bool isValidStakingChoice(uint8_t stakingChoice)
@@ -47,13 +61,12 @@ bool isValidStakingChoice(uint8_t stakingChoice)
 	}
 }
 
-bool isStakingInfoConsistentWithHeader(const shelleyAddressParams_t* addressParams)
+bool isStakingInfoConsistentWithAddressType(const addressParams_t* addressParams)
 {
 #define INCONSISTENT_WITH(STAKING_CHOICE) if (addressParams->stakingChoice == (STAKING_CHOICE)) return false
 #define CONSISTENT_ONLY_WITH(STAKING_CHOICE) if (addressParams->stakingChoice != (STAKING_CHOICE)) return false
 
-	const address_type_t addressType = getAddressType(addressParams->header);
-	switch (addressType) {
+	switch (addressParams->type) {
 
 	case BASE:
 		INCONSISTENT_WITH(NO_STAKING);
@@ -86,7 +99,7 @@ size_t view_appendPublicKeyHash(write_view_t* view, const bip44_path_t* keyDeriv
 	extendedPublicKey_t extPubKey;
 	deriveExtendedPublicKey(keyDerivationPath, &extPubKey);
 
-	uint8_t hashedPubKey[PUBLIC_KEY_HASH_LENGTH];
+	uint8_t hashedPubKey[ADDRESS_KEY_HASH_LENGTH];
 	blake2b_224_hash(
 	        extPubKey.pubKey, SIZEOF(extPubKey.pubKey),
 	        hashedPubKey, SIZEOF(hashedPubKey)
@@ -94,7 +107,7 @@ size_t view_appendPublicKeyHash(write_view_t* view, const bip44_path_t* keyDeriv
 
 	view_appendData(view, hashedPubKey, SIZEOF(hashedPubKey));
 
-	return PUBLIC_KEY_HASH_LENGTH;
+	return ADDRESS_KEY_HASH_LENGTH;
 }
 
 static size_t deriveAddress_base_stakingKeyPath(
@@ -118,7 +131,7 @@ static size_t deriveAddress_base_stakingKeyPath(
 		view_appendPublicKeyHash(&out, stakingKeyPath);
 	}
 
-	const int ADDRESS_LENGTH = 1 + 2 * PUBLIC_KEY_HASH_LENGTH;
+	const int ADDRESS_LENGTH = 1 + 2 * ADDRESS_KEY_HASH_LENGTH;
 	ASSERT(view_processedSize(&out) == ADDRESS_LENGTH);
 
 	return ADDRESS_LENGTH;
@@ -141,24 +154,28 @@ static size_t deriveAddress_base_stakingKeyHash(
 		view_appendPublicKeyHash(&out, spendingKeyPath);
 	}
 	{
-		ASSERT(stakingKeyHashSize == PUBLIC_KEY_HASH_LENGTH);
-		view_appendData(&out, stakingKeyHash, PUBLIC_KEY_HASH_LENGTH);
+		ASSERT(stakingKeyHashSize == ADDRESS_KEY_HASH_LENGTH);
+		view_appendData(&out, stakingKeyHash, ADDRESS_KEY_HASH_LENGTH);
 	}
 
-	const int ADDRESS_LENGTH = 1 + 2 * PUBLIC_KEY_HASH_LENGTH;
+	const int ADDRESS_LENGTH = 1 + 2 * ADDRESS_KEY_HASH_LENGTH;
 	ASSERT(view_processedSize(&out) == ADDRESS_LENGTH);
 
 	return ADDRESS_LENGTH;
 }
 
-static size_t deriveAddress_base(const shelleyAddressParams_t* addressParams, uint8_t* outBuffer, size_t outSize)
+static size_t deriveAddress_base(const addressParams_t* addressParams, uint8_t* outBuffer, size_t outSize)
 {
-	ASSERT(getAddressType(addressParams->header) == BASE);
+	ASSERT(addressParams->type == BASE);
+
+	const uint8_t header = constructShelleyAddressHeader(
+	                               addressParams->type, addressParams->networkId
+	                       );
 
 	switch (addressParams->stakingChoice) {
 	case STAKING_KEY_PATH:
 		return deriveAddress_base_stakingKeyPath(
-		               addressParams->header,
+		               header,
 		               &addressParams->spendingKeyPath,
 		               &addressParams->stakingKeyPath,
 		               outBuffer, outSize
@@ -166,7 +183,7 @@ static size_t deriveAddress_base(const shelleyAddressParams_t* addressParams, ui
 
 	case STAKING_KEY_HASH:
 		return deriveAddress_base_stakingKeyHash(
-		               addressParams->header,
+		               header,
 		               &addressParams->spendingKeyPath,
 		               addressParams->stakingKeyHash,
 		               SIZEOF(addressParams->stakingKeyHash),
@@ -257,23 +274,10 @@ static size_t deriveAddress_enterprise(
 		// no staking data
 	}
 
-	const int ADDRESS_LENGTH = 1 + PUBLIC_KEY_HASH_LENGTH;
+	const int ADDRESS_LENGTH = 1 + ADDRESS_KEY_HASH_LENGTH;
 	ASSERT(view_processedSize(&out) == ADDRESS_LENGTH);
 
 	return ADDRESS_LENGTH;
-}
-
-static size_t deriveAddress_byron(
-        uint8_t addressHeader, const bip44_path_t* spendingKeyPath,
-        uint8_t* outBuffer, size_t outSize
-)
-{
-	ASSERT(getAddressType(addressHeader) == BYRON);
-	ASSERT(outSize < BUFFER_SIZE_PARANOIA);
-
-	// the old Byron version
-	// TODO network_id is ignored, should be?
-	return deriveAddress(spendingKeyPath, outBuffer, outSize);
 }
 
 static size_t deriveAddress_reward(
@@ -290,26 +294,31 @@ static size_t deriveAddress_reward(
 	}
 	{
 		// staking key path expected (corresponds to reward account)
-		ASSERT(bip44_isValidStakingKeyPath(spendingKeyPath));
+		ASSERT(bip44_isValidStakingKeyPath(spendingKeyPath)); // TODO check for unusual account?
 		view_appendPublicKeyHash(&out, spendingKeyPath);
 	}
 	{
 		// no staking data
 	}
 
-	const int ADDRESS_LENGTH = 1 + PUBLIC_KEY_HASH_LENGTH;
+	const int ADDRESS_LENGTH = 1 + ADDRESS_KEY_HASH_LENGTH;
 	ASSERT(view_processedSize(&out) == ADDRESS_LENGTH);
 
 	return ADDRESS_LENGTH;
 }
 
-size_t deriveAddress_shelley(const shelleyAddressParams_t* addressParams, uint8_t* outBuffer, size_t outSize)
+size_t deriveAddress(const addressParams_t* addressParams, uint8_t* outBuffer, size_t outSize)
 {
-	const address_type_t addressType = getAddressType(addressParams->header);
-	const uint8_t header = addressParams->header;
 	const bip44_path_t* spendingPath = &addressParams->spendingKeyPath;
 
-	switch (addressType) {
+	if (addressParams->type == BYRON) {
+		return deriveAddress_byron(spendingPath, addressParams->protocolMagic, outBuffer, outSize);
+	}
+
+	// shelley
+	const uint8_t header = constructShelleyAddressHeader(addressParams->type, addressParams->networkId);
+
+	switch (addressParams->type) {
 	case BASE:
 		return deriveAddress_base(addressParams, outBuffer, outSize);
 	case POINTER:
@@ -317,10 +326,10 @@ size_t deriveAddress_shelley(const shelleyAddressParams_t* addressParams, uint8_
 		return deriveAddress_pointer(header, spendingPath, &addressParams->stakingKeyBlockchainPointer, outBuffer, outSize);
 	case ENTERPRISE:
 		return deriveAddress_enterprise(header, spendingPath, outBuffer, outSize);
-	case BYRON:
-		return deriveAddress_byron(header, spendingPath, outBuffer, outSize);
 	case REWARD:
 		return deriveAddress_reward(header, spendingPath, outBuffer, outSize);
+	case BYRON:
+		ASSERT(false);
 	default:
 		THROW(ERR_UNSUPPORTED_ADDRESS_TYPE);
 	}
@@ -354,12 +363,16 @@ void printBlockchainPointerToStr(blockchainPointer_t blockchainPointer, char* ou
 		ptr += res; \
 	}
 
-	STATIC_ASSERT(sizeof(unsigned) >= sizeof(blockchainIndex_t), "bad blockchainIndex_t size");
+	STATIC_ASSERT(sizeof(int) >= sizeof(blockchainIndex_t), "bad blockchainIndex_t size");
+	STATIC_ASSERT(sizeof(int) == 4, "bad int size"); // because of the checks below
+	ASSERT(blockchainPointer.blockIndex <= INT32_MAX);
+	ASSERT(blockchainPointer.txIndex <= INT32_MAX);
+	ASSERT(blockchainPointer.certificateIndex <= INT32_MAX);
 	WRITE(
-	        "(%u, %u, %u)",
-	        (unsigned) blockchainPointer.blockIndex,
-	        (unsigned) blockchainPointer.txIndex,
-	        (unsigned) blockchainPointer.certificateIndex
+	        "(%d, %d, %d)",
+	        (int) blockchainPointer.blockIndex,
+	        (int) blockchainPointer.txIndex,
+	        (int) blockchainPointer.certificateIndex
 	);
 
 	ASSERT(ptr < end);
@@ -385,7 +398,11 @@ size_t humanReadableAddress(const uint8_t* address, size_t addressSize, char* ou
  *
  * The serialization format:
  *
- * address header 1B
+ * address type 1B
+ * if address type == BYRON
+ *     protocol magic 4B
+ * else
+ *     network id 1B
  * spending public key derivation path (1B for length + [0-10] x 4B)
  * staking choice 1B
  *     if NO_STAKING:
@@ -399,24 +416,37 @@ size_t humanReadableAddress(const uint8_t* address, size_t addressSize, char* ou
  *
  * (see also enums in addressUtilsShelley.h)
  */
-void parseAddressParams(const uint8_t *wireDataBuffer, size_t wireDataSize, shelleyAddressParams_t* params)
+void parseAddressParams(const uint8_t *wireDataBuffer, size_t wireDataSize, addressParams_t* params)
 {
-	TRACE();
-
 	read_view_t view = make_read_view(wireDataBuffer, wireDataBuffer + wireDataSize);
 
-	// address header
-	params->header = parse_u1be(&view);
-	TRACE("Address header: 0x%x\n", params->header);
-	VALIDATE(isSupportedAddressType(params->header), ERR_UNSUPPORTED_ADDRESS_TYPE);
+	// address type
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
+	params->type = parse_u1be(&view);
+	TRACE("Address type: 0x%x", params->type);
+	VALIDATE(isSupportedAddressType(params->type), ERR_UNSUPPORTED_ADDRESS_TYPE);
+
+	// protocol magic / network id
+	if (params->type == BYRON) {
+		VALIDATE(view_remainingSize(&view) >= 4, ERR_INVALID_DATA);
+		params->protocolMagic = parse_u4be(&view);
+		TRACE("Protocol magic: 0x%x", params->protocolMagic);
+		// TODO is there something to validate?
+	} else {
+		VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
+		params->networkId = parse_u1be(&view);
+		TRACE("Network id: 0x%x", params->networkId);
+		VALIDATE(params->networkId <= 0b1111, ERR_INVALID_DATA);
+	}
 
 	// spending public key derivation path
 	view_skipBytes(&view, bip44_parseFromWire(&params->spendingKeyPath, VIEW_REMAINING_TO_TUPLE_BUF_SIZE(&view)));
-	bip44_PRINTF(&params->stakingKeyPath);
+	bip44_PRINTF(&params->spendingKeyPath);
 
 	// staking choice
+	VALIDATE(view_remainingSize(&view) >= 1, ERR_INVALID_DATA);
 	params->stakingChoice = parse_u1be(&view);
-	TRACE("Staking choice: 0x%x\n", params->stakingChoice);
+	TRACE("Staking choice: 0x%x", params->stakingChoice);
 	VALIDATE(isValidStakingChoice(params->stakingChoice), ERR_INVALID_DATA);
 
 	// staking choice determines what to parse next
@@ -431,11 +461,12 @@ void parseAddressParams(const uint8_t *wireDataBuffer, size_t wireDataSize, shel
 		break;
 
 	case STAKING_KEY_HASH:
-		VALIDATE(view_remainingSize(&view) == PUBLIC_KEY_HASH_LENGTH, ERR_INVALID_DATA);
-		ASSERT(SIZEOF(params->stakingKeyHash) == PUBLIC_KEY_HASH_LENGTH);
-		os_memcpy(params->stakingKeyHash, view.ptr, PUBLIC_KEY_HASH_LENGTH);
-		view_skipBytes(&view, PUBLIC_KEY_HASH_LENGTH);
-		// TODO printf / trace?
+		VALIDATE(view_remainingSize(&view) == ADDRESS_KEY_HASH_LENGTH, ERR_INVALID_DATA);
+		ASSERT(SIZEOF(params->stakingKeyHash) == ADDRESS_KEY_HASH_LENGTH);
+		os_memmove(params->stakingKeyHash, view.ptr, ADDRESS_KEY_HASH_LENGTH);
+		view_skipBytes(&view, ADDRESS_KEY_HASH_LENGTH);
+		TRACE("Staking key hash: ");
+		TRACE_BUFFER(params->stakingKeyHash, SIZEOF(params->stakingKeyHash));
 		break;
 
 	case BLOCKCHAIN_POINTER:

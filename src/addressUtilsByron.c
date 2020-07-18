@@ -7,6 +7,14 @@
 #include "crc32.h"
 #include "bufView.h"
 
+enum {
+	CARDANO_ADDRESS_TYPE_PUBKEY = 0,
+	/*
+	CARDANO_ADDRESS_TYPE_SCRIPT = 1,
+	CARDANO_ADDRESS_TYPE_REDEEM = 2,
+	*/
+};
+
 void addressRootFromExtPubKey(
         const extendedPublicKey_t* extPubKey,
         uint8_t* outBuffer, size_t outSize
@@ -196,11 +204,14 @@ size_t deriveRawAddress(
 	       );
 }
 
-size_t deriveAddress(
+size_t deriveAddress_byron(
         const bip44_path_t* pathSpec,
+        uint32_t protocolMagic,
         uint8_t* outBuffer, size_t outSize
 )
 {
+	// TODO incorporate protocolMagic
+
 	uint8_t rawAddressBuffer[40];
 	size_t rawAddressSize = deriveRawAddress(
 	                                pathSpec,

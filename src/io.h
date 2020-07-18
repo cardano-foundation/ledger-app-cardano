@@ -48,4 +48,9 @@ void nanos_clear_timer();
 // does not actually work anymore in Nano X
 #endif
 
+enum  {
+	P1_UNUSED = 0,
+	P2_UNUSED = 0
+};
+
 #endif
