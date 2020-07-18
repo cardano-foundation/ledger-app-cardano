@@ -14,8 +14,10 @@ typedef enum {
 
 security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec);
 
-security_policy_t policyForShowDeriveAddress(shelleyAddressParams_t* addressParams);
-security_policy_t policyForReturnDeriveAddress(shelleyAddressParams_t* addressParams);
+
+security_policy_t policyForShowDeriveAddress(addressParams_t* addressParams);
+security_policy_t policyForReturnDeriveAddress(addressParams_t* addressParams);
+
 
 security_policy_t policyForSignTxInit();
 security_policy_t policyForSignTxInput();

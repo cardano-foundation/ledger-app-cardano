@@ -6,11 +6,9 @@
 
 // Helper macros
 
-static inline bool spending_path_is_consistent_with_header(uint8_t header, const bip44_path_t* spendingPath)
+static inline bool spending_path_is_consistent_with_address_type(address_type_t addressType, const bip44_path_t* spendingPath)
 {
 #define CHECK(cond) if (!(cond)) return false
-	const uint8_t addressType = getAddressType(header);
-
 	// Byron derivation path is only valid for a Byron address
 	// the rest should be Shelley derivation scheme
 	if (addressType == BYRON) {
@@ -31,10 +29,10 @@ static inline bool spending_path_is_consistent_with_header(uint8_t header, const
 #undef CHECK
 }
 
-static inline bool staking_info_is_valid(const shelleyAddressParams_t* addressParams)
+static inline bool staking_info_is_valid(const addressParams_t* addressParams)
 {
 #define CHECK(cond) if (!(cond)) return false
-	CHECK(isStakingInfoConsistentWithHeader(addressParams));
+	CHECK(isStakingInfoConsistentWithAddressType(addressParams));
 	if (addressParams->stakingChoice == STAKING_KEY_PATH) {
 		CHECK(bip44_isValidStakingKeyPath(&addressParams->stakingKeyPath));
 	}
@@ -66,16 +64,17 @@ static inline bool is_too_deep(const bip44_path_t* pathSpec)
 	return bip44_containsMoreThanAddress(pathSpec);
 }
 
-#define DENY_IF(expr)   if (expr) return POLICY_DENY;
-#define WARN_IF(expr)   if (expr) return POLICY_PROMPT_WARN_UNUSUAL;
-#define PROMPT_IF(expr) if (expr) return POLICY_PROMPT_BEFORE_RESPONSE;
-#define ALLOW_IF(expr)  if (expr) return POLICY_ALLOW_WITHOUT_PROMPT;
-#define SHOW_IF(expr)   if (expr) return POLICY_SHOW_BEFORE_RESPONSE;
+#define DENY_IF(expr)      if (expr)    return POLICY_DENY;
+#define DENY_UNLESS(expr)  if (!(expr)) return POLICY_DENY;
+#define WARN_IF(expr)      if (expr)    return POLICY_PROMPT_WARN_UNUSUAL;
+#define PROMPT_IF(expr)    if (expr)    return POLICY_PROMPT_BEFORE_RESPONSE;
+#define ALLOW_IF(expr)     if (expr)    return POLICY_ALLOW_WITHOUT_PROMPT;
+#define SHOW_IF(expr)      if (expr)    return POLICY_SHOW_BEFORE_RESPONSE;
 
 // Get extended public key and return it to the host
 security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(pathSpec));
+	DENY_UNLESS(has_cardano_prefix_and_any_account(pathSpec));
 
 	WARN_IF(!bip44_hasReasonableAccount(pathSpec));
 	// Normally extPubKey is asked only for an account
@@ -85,11 +84,11 @@ security_policy_t policyForGetExtendedPublicKey(const bip44_path_t* pathSpec)
 }
 
 // Derive address and return it to the host
-security_policy_t policyForReturnDeriveAddress(shelleyAddressParams_t* addressParams)
+security_policy_t policyForReturnDeriveAddress(addressParams_t* addressParams)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
-	DENY_IF(!spending_path_is_consistent_with_header(addressParams->header, &addressParams->spendingKeyPath));
-	DENY_IF(!staking_info_is_valid(addressParams));
+	DENY_UNLESS(has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
+	DENY_UNLESS(spending_path_is_consistent_with_address_type(addressParams->type, &addressParams->spendingKeyPath));
+	DENY_UNLESS(staking_info_is_valid(addressParams));
 
 	WARN_IF(!has_reasonable_account_and_address(&addressParams->spendingKeyPath));
 	WARN_IF(is_too_deep(&addressParams->spendingKeyPath)); // TODO change to DENY?
@@ -98,11 +97,11 @@ security_policy_t policyForReturnDeriveAddress(shelleyAddressParams_t* addressPa
 }
 
 // Derive address and show it to the user
-security_policy_t policyForShowDeriveAddress(shelleyAddressParams_t* addressParams)
+security_policy_t policyForShowDeriveAddress(addressParams_t* addressParams)
 {
-	DENY_IF(!has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
-	DENY_IF(!spending_path_is_consistent_with_header(addressParams->header, &addressParams->spendingKeyPath));
-	DENY_IF(!staking_info_is_valid(addressParams));
+	DENY_UNLESS(has_cardano_prefix_and_any_account(&addressParams->spendingKeyPath));
+	DENY_UNLESS(spending_path_is_consistent_with_address_type(addressParams->type, &addressParams->spendingKeyPath));
+	DENY_UNLESS(staking_info_is_valid(addressParams));
 
 	WARN_IF(!has_reasonable_account_and_address(&addressParams->spendingKeyPath));
 	WARN_IF(is_too_deep(&addressParams->spendingKeyPath)); // TODO change to DENY?
