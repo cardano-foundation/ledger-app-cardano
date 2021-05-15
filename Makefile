@@ -16,7 +16,7 @@
 #*******************************************************************************
 
 ifeq ($(BOLOS_SDK),)
-	$(error Environment variable BOLOS_SDK is not set)
+  $(error Environment variable BOLOS_SDK is not set)
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
@@ -33,9 +33,9 @@ APP_LOAD_PARAMS =--appFlags 0x240 --curve ed25519 --path "44'/1815'"
 APP_LOAD_PARAMS += $(COMMON_LOAD_PARAMS)
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	ICONNAME=icon_ada_nanox.gif
+  ICONNAME=icon_ada_nanox.gif
 else
-	ICONNAME=icon_ada_nanos.gif
+  ICONNAME=icon_ada_nanos.gif
 endif
 
 ################
@@ -62,23 +62,23 @@ DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) 
 
 ## BLUETOOTH
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	DEFINES += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
+  DEFINES += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000 HAVE_BLE_APDU
 endif
 
 ## Protect stack overflows
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
-	DEFINES += HAVE_GLO096
-	DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
-	DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
-	DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
-	DEFINES += HAVE_UX_FLOW
+  DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
+  DEFINES += HAVE_GLO096
+  DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+  DEFINES += HAVE_BAGL_ELLIPSIS # long label truncation feature
+  DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+  DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+  DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+  DEFINES += HAVE_UX_FLOW
 else
-	DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+  DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 endif
 
 DEFINES += RESET_ON_CRASH
@@ -89,12 +89,12 @@ DEFINES += RESET_ON_CRASH
 
 # Enabling debug PRINTF
 ifeq ($(DEVEL), 1)
-	DEFINES += DEVEL HAVE_PRINTF
-	ifeq ($(TARGET_NAME),TARGET_NANOX)
-		DEFINES += PRINTF=mcu_usb_printf
-	else
-		DEFINES += PRINTF=screen_printf
-	endif
+  DEFINES += DEVEL HAVE_PRINTF
+  ifeq ($(TARGET_NAME),TARGET_NANOX)
+  DEFINES += PRINTF=mcu_usb_printf
+  else
+  DEFINES += PRINTF=screen_printf
+  endif
 else
     DEFINES += PRINTF\(...\)=
 endif
@@ -104,16 +104,16 @@ endif
 ##############
 ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
-	CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-	GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+  CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
+  GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 else
-	$(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
+  $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif
 ifeq ($(CLANGPATH),)
-	$(info CLANGPATH is not set: clang will be used from PATH)
+  $(info CLANGPATH is not set: clang will be used from PATH)
 endif
 ifeq ($(GCCPATH),)
-	$(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
+  $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC       := $(CLANGPATH)clang
@@ -140,8 +140,8 @@ include $(BOLOS_SDK)/Makefile.glyphs
 APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl lib_u2f
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-	SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-	SDK_SOURCE_PATH  += lib_ux
+  SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+  SDK_SOURCE_PATH  += lib_ux
 endif
 ##############
 #   Build    #
